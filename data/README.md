@@ -19,3 +19,8 @@ Requirements:
 
 Do not commit licensed raw market data unless its provider's terms explicitly
 allow redistribution. `artifacts/` and local research data are Git ignored.
+
+The current source is Massive's daily aggregates endpoint with `adjusted=true`.
+The downloader writes its provider, endpoint, date range, symbols, adjustment
+flag, row count, and retrieval time to a local manifest without recording its
+API key.

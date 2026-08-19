@@ -44,8 +44,10 @@ executed weights, and summary metrics. It has no broker dependency at runtime
 and no order-submission capability.
 
 The required data schema and provenance rules are in `data/README.md`. A market
-data provider has not yet been selected; no unlicensed or unadjusted data may
-be used to judge strategy performance.
+data provider has now been selected: Massive supplies split- and
+dividend-adjusted daily research data; IBKR provides execution-time prices and
+account state. No unlicensed or unadjusted data may be used to judge strategy
+performance.
 
 ## Key Decisions
 
@@ -61,3 +63,4 @@ be used to judge strategy performance.
 | Execution host | User laptop | TWS is installed there; server has no graphical environment |
 | IBKR validation path | Read-only probe script only | Approved scope excludes any order-submission capability |
 | First research strategy | Defensive ETF trend allocation | Implemented as a reproducible, no-order backtest |
+| Historical research data | Massive adjusted daily bars | User subscription; key remains in local `.env` |

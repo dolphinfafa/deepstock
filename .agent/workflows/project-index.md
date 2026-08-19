@@ -60,6 +60,7 @@ without user confirmation.
 | Language | Python | 3.12.13 | Locked |
 | Broker API | `ibapi` | 9.81.1.post1 | Approved for read-only IBKR connectivity checks |
 | Research | `numpy`, `pandas` | See `pyproject.toml` | Approved for deterministic backtesting |
+| Research data | Massive REST API | API account subscription | Adjusted daily ETF history only |
 | Framework | Unselected | - | Requires approval |
 | Database | Unselected | - | Requires approval |
 | ORM | Unselected | - | Requires approval |
@@ -120,4 +121,8 @@ conda run -n deepstock python -m pip install -e '.[dev]'
 
 # Run research tests
 conda run -n deepstock python -m pytest
+
+# Download adjusted ETF daily bars using the local Massive key
+conda run -n deepstock python scripts/download_massive_adjusted_prices.py \
+  --from 2010-01-01 --to 2026-08-19
 ```
