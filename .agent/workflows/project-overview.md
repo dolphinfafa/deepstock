@@ -31,6 +31,13 @@ No project API, database schema, or persistence layer exists yet. Document
 request/response contracts, authentication, table design, indices, and data
 licenses here as they are introduced.
 
+The current executable integration surface is the local script
+`scripts/ibkr_read_only_check.py`. It connects only to a laptop-local TWS or IB
+Gateway session in paper mode, loads connection settings from the untracked
+`.env`, and returns four read-only datasets: server time, account summary,
+positions, and open orders. Order placement is explicitly disabled inside the
+probe class.
+
 ## Key Decisions
 
 | Decision | Status | Rationale |
@@ -43,3 +50,4 @@ licenses here as they are introduced.
 | Initial strategy | Proposed, pending approval | Defensive, low-frequency ETF trend allocation |
 | Execution broker | IBKR selected for paper-integration planning | User account opened and funded; no API or live trading enabled |
 | Execution host | User laptop | TWS is installed there; server has no graphical environment |
+| IBKR validation path | Read-only probe script only | Approved scope excludes any order-submission capability |

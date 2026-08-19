@@ -58,6 +58,7 @@ without user confirmation.
 | Category | Technology | Version | Notes |
 | --- | --- | --- | --- |
 | Language | Python | 3.12.13 | Locked |
+| Broker API | `ibapi` | 9.81.1.post1 | Approved for read-only IBKR connectivity checks |
 | Framework | Unselected | - | Requires approval |
 | Database | Unselected | - | Requires approval |
 | ORM | Unselected | - | Requires approval |
@@ -107,7 +108,11 @@ milestone/         Daily work records
 
 ```bash
 # Confirm the required Python runtime
-conda run -n deepstock python --version
+conda run -p /Users/yangzhe/workspace/deepstock/.conda/envs/deepstock python --version
+
+# Run the read-only IBKR connectivity probe
+conda run -p /Users/yangzhe/workspace/deepstock/.conda/envs/deepstock \
+  python scripts/ibkr_read_only_check.py --json
 
 # Test command (defined when the test framework is selected)
 # Not configured yet

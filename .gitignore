@@ -11,6 +11,8 @@ __pycache__/
 htmlcov/
 
 # Local environments and editor files
+.conda/
+.condarc
 .venv/
 venv/
 .idea/
