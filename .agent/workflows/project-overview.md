@@ -38,6 +38,15 @@ Gateway session in paper mode, loads connection settings from the untracked
 positions, and open orders. Order placement is explicitly disabled inside the
 probe class.
 
+The research surface is `scripts/run_defensive_etf_backtest.py`, which accepts
+local, adjusted-close CSV data and writes daily results, target weights,
+executed weights, and summary metrics. It has no broker dependency at runtime
+and no order-submission capability.
+
+The required data schema and provenance rules are in `data/README.md`. A market
+data provider has not yet been selected; no unlicensed or unadjusted data may
+be used to judge strategy performance.
+
 ## Key Decisions
 
 | Decision | Status | Rationale |
@@ -51,3 +60,4 @@ probe class.
 | Execution broker | IBKR selected for paper-integration planning | User account opened and funded; no API or live trading enabled |
 | Execution host | User laptop | TWS is installed there; server has no graphical environment |
 | IBKR validation path | Read-only probe script only | Approved scope excludes any order-submission capability |
+| First research strategy | Defensive ETF trend allocation | Implemented as a reproducible, no-order backtest |

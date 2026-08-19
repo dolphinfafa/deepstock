@@ -1,6 +1,8 @@
 # TODO
 
-- Open a higher-permission Codex task with localhost access to the laptop TWS socket.
-- Re-run the IBKR read-only connectivity probe against `127.0.0.1:7497`.
-- Confirm server time, account summary, positions, and open orders return successfully.
-- Normalize local `.env` keys to `IBKR_CLIENT_ID` and `IBKR_READ_ONLY`.
+- Select a licensed source of adjusted daily ETF prices and record its license.
+- Import a fixed historical dataset using `data/README.md` as the data contract.
+- Run the defensive ETF backtest and review results against `SPY` over distinct
+  in-sample and out-of-sample periods.
+- Review drawdown, turnover, transaction costs, and parameter robustness before
+  adding any paper-order capability.

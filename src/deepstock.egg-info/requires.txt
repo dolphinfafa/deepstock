@@ -1,0 +1,6 @@
+ibapi==9.81.1.post1
+numpy<3.0,>=2.0
+pandas<3.0,>=2.2
+
+[dev]
+pytest<9.0,>=8.0

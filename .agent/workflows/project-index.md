@@ -59,6 +59,7 @@ without user confirmation.
 | --- | --- | --- | --- |
 | Language | Python | 3.12.13 | Locked |
 | Broker API | `ibapi` | 9.81.1.post1 | Approved for read-only IBKR connectivity checks |
+| Research | `numpy`, `pandas` | See `pyproject.toml` | Approved for deterministic backtesting |
 | Framework | Unselected | - | Requires approval |
 | Database | Unselected | - | Requires approval |
 | ORM | Unselected | - | Requires approval |
@@ -114,6 +115,9 @@ conda run -p /Users/yangzhe/workspace/deepstock/.conda/envs/deepstock python --v
 conda run -p /Users/yangzhe/workspace/deepstock/.conda/envs/deepstock \
   python scripts/ibkr_read_only_check.py --json
 
-# Test command (defined when the test framework is selected)
-# Not configured yet
+# Install project and approved development dependencies
+conda run -n deepstock python -m pip install -e '.[dev]'
+
+# Run research tests
+conda run -n deepstock python -m pytest
 ```
