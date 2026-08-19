@@ -3,9 +3,9 @@
 ## Status
 
 The user has opened and funded an IBKR account with approximately USD 10,000,
-enabled Paper Trading, and logged in to TWS in paper mode. No API connection,
-market-data subscription, paper order, or live order is configured by this
-project yet.
+enabled Paper Trading, and logged in to TWS in paper mode. The local read-only
+API probe has verified server time, account summary, positions, and open
+orders. No paper order or live order is configured by this project.
 
 The user has configured the laptop TWS Socket API for local read-only access.
 The host, port, account identifier, and credentials are private local values
@@ -85,9 +85,10 @@ Laptop: execution agent -> localhost TWS API -> IBKR paper account
    different default paper ports, so the configured value must be verified in
    the app.
 4. Set up the `deepstock` Conda environment and project checkout on the laptop.
-5. Run a read-only smoke test that retrieves server time, account summary,
-   positions, and open orders. It must submit no order.
-6. Reconcile those values against TWS and Client Portal. Resolve every
+5. The read-only smoke test has retrieved server time, account summary,
+   positions, and open orders without submitting an order.
+6. Reconcile these values against TWS and Client Portal before enabling any
+   paper-order capability. Resolve every
    difference before enabling paper-order capability.
 7. Test rejected-order, disconnect, duplicate-run, and restart behavior in
    paper mode. Verify that alerts reach the approved channel.

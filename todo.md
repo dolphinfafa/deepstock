@@ -1,8 +1,10 @@
 # TODO
 
-- Select a licensed source of adjusted daily ETF prices and record its license.
-- Import a fixed historical dataset using `data/README.md` as the data contract.
-- Run the defensive ETF backtest and review results against `SPY` over distinct
-  in-sample and out-of-sample periods.
-- Review drawdown, turnover, transaction costs, and parameter robustness before
-  adding any paper-order capability.
+- Download a fixed Massive adjusted-daily dataset for the seven strategy ETFs
+  and retain its generated manifest in local artifacts.
+- Run the defensive ETF backtest over a declared in-sample and out-of-sample
+  split, then preserve the summary metrics and configuration.
+- Review drawdown, turnover, transaction costs, benchmark comparison, and the
+  robustness of 150/200/250-day trend windows before paper-order work.
+- Define the laptop runtime schedule and alert channel before implementing an
+  unattended paper-execution agent.

@@ -2,8 +2,8 @@
 
 ## Status
 
-This is a proposed design for approval. It does not authorize live trading,
-broker account creation, dependency installation, or order submission.
+This plan is in Phase 1 research validation. It does not authorize live trading
+or order submission.
 
 ## Objectives and Constraints
 
@@ -21,6 +21,7 @@ Use a broker adapter so strategy code is independent of the selected broker.
 | --- | --- | --- |
 | Initial paper execution | IBKR TWS API with an IBKR paper account | The user has an opened and funded IBKR account; paper mode validates the same broker workflow |
 | Potential live execution | Interactive Brokers, subject to paper-trading gates | Uses the selected broker while keeping live execution separately controlled |
+| Historical research data | Massive adjusted daily aggregates | Reproducible adjusted-price history from the user's subscription |
 | Market calendar | Exchange calendar source | Avoid orders on holidays and early closes |
 | Persistent state | SQLite initially; upgrade only if concurrent workloads require it | Simple, auditable, recoverable |
 | Scheduling | System scheduler invoking a Python entry point | Fewer moving parts for a once-daily system |
@@ -114,8 +115,8 @@ Implementation requirements:
 
 ## Decisions Required Before Implementation
 
-1. Confirm the paper-trading API setup for IBKR TWS API.
-2. Confirm the initial strategy universe: defensive ETF allocation is
-   recommended before individual-stock selection.
-3. Confirm a paid or free data provider and its data-license constraints.
-4. Confirm where the system will run continuously and the approved alert channel.
+1. Download a fixed Massive historical dataset and run the first real backtest.
+2. Review in-sample/out-of-sample performance, drawdown, turnover, and
+   parameter robustness before any paper-order capability is considered.
+3. Confirm the runtime host and approved alert channel before unattended paper
+   execution is implemented.

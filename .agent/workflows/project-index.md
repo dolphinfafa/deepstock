@@ -105,6 +105,7 @@ milestone/         Daily work records
 | `IBKR_PORT` | Configured API socket port | Set only after verifying the app setting |
 | `IBKR_CLIENT_ID` | API client identifier | Unique local integer |
 | `IBKR_READ_ONLY` | Blocks order submission | `true` |
+| `MASSIVE_API_KEY` | Massive research-data credential | Kept only in `.env` |
 
 ### Common Commands
 

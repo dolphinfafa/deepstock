@@ -3,8 +3,9 @@
 ## Scope
 
 Deepstock is a US-equities quantitative research and paper-trading project.
-The current phase is project initialization. Live trading is excluded until a
-separate execution and risk-control design is approved.
+The current phase is reproducible strategy research and backtest validation.
+Live trading is excluded until a separate execution and risk-control design is
+approved.
 
 ## Architecture and Data Flow
 
@@ -64,3 +65,4 @@ performance.
 | IBKR validation path | Read-only probe script only | Approved scope excludes any order-submission capability |
 | First research strategy | Defensive ETF trend allocation | Implemented as a reproducible, no-order backtest |
 | Historical research data | Massive adjusted daily bars | User subscription; key remains in local `.env` |
+| IBKR market data | Fee-waived account entitlement | Reserved for execution-time validation, not research history |
