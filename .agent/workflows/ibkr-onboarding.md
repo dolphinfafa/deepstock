@@ -14,6 +14,11 @@ and are intentionally not recorded here.
 TWS runs on the user's laptop. This server has no graphical environment and
 must not connect directly to the laptop's TWS API socket.
 
+The server-to-laptop SSH route has been verified for read-only operations. The
+route is for operating the laptop execution node only; it does not expose or
+forward the TWS API socket. During the latest remote audit, TWS/IB Gateway was
+not running, so no local API socket was available to probe.
+
 ## Required Account Checks
 
 Complete these checks in IBKR Client Portal before any software integration:
