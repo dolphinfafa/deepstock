@@ -115,8 +115,11 @@ Implementation requirements:
 
 ## Decisions Required Before Implementation
 
-1. Download a fixed Massive historical dataset and run the first real backtest.
-2. Review in-sample/out-of-sample performance, drawdown, turnover, and
-   parameter robustness before any paper-order capability is considered.
+1. Review the completed fixed-split parameter-grid result, including the
+   strategy's 14.14% to 19.22% out-of-sample return range versus `SPY` at
+   39.72%, before selecting further research work.
+2. Test the strategy across explicitly defined market regimes and review the
+   consequence of its low-beta design before any paper-order capability is
+   considered.
 3. Confirm the runtime host and approved alert channel before unattended paper
    execution is implemented.

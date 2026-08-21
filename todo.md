@@ -2,12 +2,11 @@
 
 - Verify the TWS trusted-IP allowlist remains limited to the local execution
   node; do not expose or forward its API socket.
-- Define an explicit in-sample/out-of-sample split within the available
-  2021-08-23 to 2026-08-20 history, then preserve both result sets.
-- Test 150/200/250-day trend windows and alternate momentum/volatility windows
-  without selecting parameters on the out-of-sample result.
-- Review the defensive strategy's material `SPY` underperformance alongside its
-  drawdown, turnover, transaction costs, and regime behavior before any
-  paper-order work.
+- Review the completed fixed-split result: all 18 predeclared parameter sets
+  preserved low out-of-sample drawdown (-5.12% to -4.42%) but returned 14.14%
+  to 19.22%, versus `SPY` at 39.72%.
+- Add a market-regime comparison and assess whether low-beta defensive behavior
+  is acceptable despite material `SPY` underperformance; do not begin
+  paper-order work before that review.
 - Define the laptop runtime schedule and alert channel before implementing an
   unattended paper-execution agent.

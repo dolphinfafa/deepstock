@@ -55,6 +55,16 @@ The first real backtest used 1,254 aligned sessions from 2021-08-23 through
 is an initial in-sample result, not a go-live decision: the defensive strategy
 returned 34.63% versus 82.47% for `SPY`, with a 6.25% maximum drawdown.
 
+The first robustness run fixed its split before examining out-of-sample results:
+2021-08-23 through 2024-08-20 is in sample and 2024-08-21 through 2026-08-20
+is out of sample. It evaluated all 18 combinations of 150/200/250-day trend,
+126/252-day momentum, and 42/63/126-day volatility windows. Results are ranked
+only by in-sample Sharpe ratio. Across the out-of-sample period, strategy
+returns ranged from 14.14% to 19.22% with maximum drawdowns from -5.12% to
+-4.42%; `SPY` returned 39.72%. The defensive outcome is stable within this
+narrow grid but materially underperforms the benchmark, so paper-order work
+remains blocked pending further research review.
+
 ## Key Decisions
 
 | Decision | Status | Rationale |
