@@ -105,6 +105,14 @@ costs 6.25%, versus `SPY` at 39.72%. All six combinations underperformed `SPY`.
 This invalidates the apparent full-sample 20/10 outperformance as a selection
 basis and keeps paper orders blocked.
 
+After downloading `FB` and merging it into `META` at the 2022-06-09 ticker
+switch, the complete 16-stock universe had 22,572 rows and zero missing values.
+The same six fixed-split combinations still all underperformed `SPY`; the
+in-sample-ranked 20/10 with five positions returned 20.30% out of sample,
+Sharpe 0.76, maximum drawdown -11.02%, turnover 68.06, and modeled costs 6.81%
+versus `SPY` at 39.72%. The ticker correction does not change the decision to
+block paper orders.
+
 ## Key Decisions
 
 | Decision | Status | Rationale |

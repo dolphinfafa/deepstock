@@ -23,3 +23,5 @@
 - Review the fixed-split stock-Turtle result: all six tested combinations
   underperformed `SPY`; do not enable paper orders or retune on this out-of-
   sample period.
+- Add a survivorship-free, point-in-time universe and liquidity/sector controls;
+  the corrected `FB` -> `META` result remains based on today's selected names.
