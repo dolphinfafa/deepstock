@@ -50,6 +50,11 @@ and dividend factors, which the project combines into total-return research
 data; IBKR provides execution-time prices and account state. No unlicensed or
 unadjusted data may be used to judge strategy performance.
 
+The first real backtest used 1,254 aligned sessions from 2021-08-23 through
+2026-08-20, the full history returned by the current Massive subscription. It
+is an initial in-sample result, not a go-live decision: the defensive strategy
+returned 34.63% versus 82.47% for `SPY`, with a 6.25% maximum drawdown.
+
 ## Key Decisions
 
 | Decision | Status | Rationale |
@@ -66,3 +71,4 @@ unadjusted data may be used to judge strategy performance.
 | First research strategy | Defensive ETF trend allocation | Implemented as a reproducible, no-order backtest |
 | Historical research data | Massive adjusted daily bars | User subscription; key remains in local `.env` |
 | IBKR market data | Fee-waived account entitlement | Reserved for execution-time validation, not research history |
+| Initial real backtest | Completed, not approved for trading | Five-year window requires robustness and out-of-sample review |

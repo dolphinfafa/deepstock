@@ -1,12 +1,13 @@
 # TODO
 
-- Download a fixed Massive adjusted-daily dataset for the seven strategy ETFs
-  and retain its generated manifest in local artifacts.
 - Verify the TWS trusted-IP allowlist remains limited to the local execution
   node; do not expose or forward its API socket.
-- Run the defensive ETF backtest over a declared in-sample and out-of-sample
-  split, then preserve the summary metrics and configuration.
-- Review drawdown, turnover, transaction costs, benchmark comparison, and the
-  robustness of 150/200/250-day trend windows before paper-order work.
+- Define an explicit in-sample/out-of-sample split within the available
+  2021-08-23 to 2026-08-20 history, then preserve both result sets.
+- Test 150/200/250-day trend windows and alternate momentum/volatility windows
+  without selecting parameters on the out-of-sample result.
+- Review the defensive strategy's material `SPY` underperformance alongside its
+  drawdown, turnover, transaction costs, and regime behavior before any
+  paper-order work.
 - Define the laptop runtime schedule and alert channel before implementing an
   unattended paper-execution agent.
