@@ -30,3 +30,7 @@ symbols, row count, and retrieval time without recording the API key.
 Massive may label a valid response as `DELAYED` under the current subscription.
 This is acceptable for fixed historical research data, but never for real-time
 execution checks or order pricing; those remain an IBKR responsibility.
+
+Always compare the requested and actual date ranges in the manifest. Subscription
+history limits can return less data than the requested range; do not describe a
+period as tested unless it appears in `actual_from` through `actual_to`.
