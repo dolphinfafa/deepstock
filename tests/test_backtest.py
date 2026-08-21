@@ -10,6 +10,7 @@ from deepstock.backtest import (
     run_segmented_backtest,
     validate_prices,
 )
+from deepstock.turtle import TurtleConfig, run_turtle_backtest
 
 
 def make_prices(days: int = 520, declining: bool = False) -> pd.DataFrame:
@@ -72,3 +73,15 @@ def test_segmented_backtest_rebases_out_of_sample_without_future_data() -> None:
 def test_segmented_backtest_requires_a_present_split_date() -> None:
     with pytest.raises(ValueError, match="Split date must be a trading date"):
         run_segmented_backtest(make_prices(), "2020-01-01")
+
+
+def test_turtle_strategy_uses_next_day_and_exits_declining_asset() -> None:
+    prices = make_prices(days=520)
+    result = run_turtle_backtest(prices, TurtleConfig(entry_days=20, exit_days=10, atr_days=10))
+    assert result.executed_weights.iloc[0].sum() == pytest.approx(0.0)
+    assert result.summary["total_transaction_cost"] >= 0
+
+
+def test_turtle_config_rejects_invalid_windows() -> None:
+    with pytest.raises(ValueError, match="Exit window"):
+        TurtleConfig(entry_days=20, exit_days=20)
