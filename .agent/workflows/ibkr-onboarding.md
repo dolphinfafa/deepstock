@@ -16,6 +16,11 @@ and are intentionally not recorded here.
 TWS runs on the user's laptop. This server has no graphical environment and
 must not connect directly to the laptop's TWS API socket.
 
+A separate Windows node now runs TWS Paper and Norgate Data Updater. It is a
+future local data/research or paper-execution node, not a server-exposed broker
+endpoint. Its TWS API listener was observed on all interfaces at port 7497;
+limit it to localhost or the minimum trusted IP list before any API use.
+
 The server-to-laptop SSH route has been verified for read-only operations. The
 route is for operating the laptop execution node only; it does not expose or
 forward the TWS API socket. The latest remote audit connected successfully to

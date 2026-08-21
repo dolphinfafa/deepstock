@@ -86,6 +86,12 @@ local research data, emits deterministic target weights and a `plan_id`, and
 supports a kill switch. It has no broker dependency and never submits an order;
 the laptop is the only paper TWS connection point.
 
+A separate Windows data node is now reachable by verified SSH. It runs TWS
+Paper and Norgate Data Updater locally, but the `norgatedata` Python package is
+not installed yet. Its TWS API listener currently binds to all interfaces on
+port 7497; restrict it to localhost or a minimal trusted-IP allowlist before
+any local API read test. The port must never be forwarded or exposed.
+
 The first server stock-Turtle download contained 18 symbols and 22,482 rows
 (2021-08-23 through 2026-08-20; the subscription did not provide the requested
 2015 start). `META` had 90 missing sessions because its pre-2022 ticker was

@@ -32,3 +32,6 @@
   underperformed `SPY`; do not paper-trade it yet.
 - Define explicit acceptance criteria for a defensive strategy, including
   whether lower drawdown justifies lower long-run return versus `SPY`.
+- On the Windows data node, install `norgatedata` only after the Norgate
+  subscription is active, and restrict TWS port 7497 to localhost or the
+  minimal trusted-IP allowlist before any API read test.
