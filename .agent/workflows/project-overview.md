@@ -73,6 +73,13 @@ turnover 27.87, and modeled costs 2.79%; 20/10 returned 19.79% with -13.39%
 drawdown, Sharpe 0.55, turnover 64.38, and costs 6.44%. `SPY` returned 82.47%.
 These exploratory results do not authorize execution.
 
+The stock variant reuses the Turtle engine with a caller-supplied stock
+universe, a maximum number of concurrent positions, and breakout-strength
+ranking when more names qualify than the cap. It still requires a safe asset
+column (normally `SHY`) and remains long-only. No stock history has been
+downloaded or evaluated yet; the current ETF dataset must not be reused as a
+stock result.
+
 ## Key Decisions
 
 | Decision | Status | Rationale |

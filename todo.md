@@ -10,5 +10,8 @@
   paper-order work before that review.
 - Run fixed-split and walk-forward validation for the Turtle module. Initial
   55/20 and 20/10 full-sample tests underperformed `SPY` with higher turnover.
+- Build a point-in-time, liquid stock universe with delisted names and run the
+  stock Turtle script using a fixed split before comparing it with the ETF
+  version. Do not use today's survivors as the historical universe.
 - Define the laptop runtime schedule and alert channel before implementing an
   unattended paper-execution agent.

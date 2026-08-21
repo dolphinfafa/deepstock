@@ -34,3 +34,14 @@ execution checks or order pricing; those remain an IBKR responsibility.
 Always compare the requested and actual date ranges in the manifest. Subscription
 history limits can return less data than the requested range; do not describe a
 period as tested unless it appears in `actual_from` through `actual_to`.
+
+## Stock Turtle Input
+
+The stock version of the Turtle research script accepts the same long CSV
+schema, but `symbol` may contain a predeclared, point-in-time stock universe
+instead of the seven ETF symbols. The dataset must be adjusted for splits and
+cash dividends, include delisted names when they were historically eligible,
+and include a non-secret manifest documenting the universe construction,
+liquidity filter, provider, actual coverage, and license. Close-only data cannot
+validate bid-ask spreads, gaps, or earnings-event execution; those limitations
+must remain in the backtest report.

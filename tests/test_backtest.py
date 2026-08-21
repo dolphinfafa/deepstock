@@ -85,3 +85,15 @@ def test_turtle_strategy_uses_next_day_and_exits_declining_asset() -> None:
 def test_turtle_config_rejects_invalid_windows() -> None:
     with pytest.raises(ValueError, match="Exit window"):
         TurtleConfig(entry_days=20, exit_days=20)
+
+
+def test_turtle_config_limits_stock_positions() -> None:
+    prices = make_prices(days=520)
+    config = TurtleConfig(max_positions=2)
+    result = run_turtle_backtest(prices, config)
+    assert (result.target_weights.drop(columns="SHY") > 0).sum(axis=1).max() <= 2
+
+
+def test_turtle_config_rejects_too_many_positions() -> None:
+    with pytest.raises(ValueError, match="max_positions"):
+        TurtleConfig(max_positions=7)

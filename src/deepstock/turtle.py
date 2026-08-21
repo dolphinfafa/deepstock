@@ -1,4 +1,4 @@
-"""A conservative, long-only Turtle-style ETF breakout backtest."""
+"""A conservative, long-only Turtle-style ETF or stock breakout backtest."""
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ class TurtleConfig(StrategyConfig):
     atr_days: int = 20
     stop_atr: float = 2.0
     risk_per_position: float = 0.01
+    max_positions: int = 5
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -29,6 +30,8 @@ class TurtleConfig(StrategyConfig):
             raise ValueError("Exit window must be shorter than entry window.")
         if self.stop_atr <= 0 or self.risk_per_position <= 0:
             raise ValueError("ATR stop and per-position risk must be positive.")
+        if self.max_positions < 1 or self.max_positions > len(self.risk_assets):
+            raise ValueError("max_positions must be between one and the risk-asset count.")
 
 
 def _summary(daily: pd.DataFrame, config: TurtleConfig) -> dict[str, Any]:
@@ -73,6 +76,18 @@ def run_turtle_backtest(prices: pd.DataFrame, config: TurtleConfig | None = None
         for symbol in config.risk_assets:
             if symbol not in active and pd.notna(entry.at[date, symbol]) and risk.at[date, symbol] > entry.at[date, symbol]:
                 active.add(symbol)
+        if len(active) > config.max_positions:
+            active = set(
+                sorted(
+                    active,
+                    key=lambda symbol: (
+                        risk.at[date, symbol] / entry.at[date, symbol]
+                        if pd.notna(entry.at[date, symbol]) and entry.at[date, symbol] > 0
+                        else 0.0
+                    ),
+                    reverse=True,
+                )[: config.max_positions]
+            )
         if active:
             raw = pd.Series(
                 {
