@@ -25,6 +25,10 @@ class StrategyConfig:
     total_exposure: float = 0.80
     max_position_weight: float = 0.20
     transaction_cost_bps: float = 5.0
+    top_k_assets: int | None = None
+    market_filter_days: int | None = None
+    exposure_above_filter: float | None = None
+    exposure_below_filter: float | None = None
 
     def __post_init__(self) -> None:
         if not self.risk_assets:
@@ -41,6 +45,15 @@ class StrategyConfig:
             raise ValueError("Max position weight must be in (0, total exposure].")
         if self.transaction_cost_bps < 0:
             raise ValueError("Transaction costs cannot be negative.")
+        if self.top_k_assets is not None and not 1 <= self.top_k_assets <= len(self.risk_assets):
+            raise ValueError("top_k_assets must be between one and the risk-asset count.")
+        if self.market_filter_days is not None and self.market_filter_days < 2:
+            raise ValueError("market_filter_days must be at least two.")
+        exposures = (self.exposure_above_filter, self.exposure_below_filter)
+        if any(value is not None and not 0 < value <= 1 for value in exposures):
+            raise ValueError("Filtered exposures must be in (0, 1].")
+        if self.market_filter_days is not None and any(value is None for value in exposures):
+            raise ValueError("Both filtered exposure values are required with a market filter.")
 
     @property
     def symbols(self) -> tuple[str, ...]:
@@ -113,8 +126,21 @@ def _target_for_date(
         and volatility[symbol] > 0
     ]
     if eligible:
+        if config.top_k_assets is not None:
+            eligible = sorted(eligible, key=lambda symbol: momentum[symbol], reverse=True)[
+                : config.top_k_assets
+            ]
+        exposure = config.total_exposure
+        if config.market_filter_days is not None:
+            market = prices[config.benchmark]
+            market_average = market.rolling(config.market_filter_days).mean().loc[date]
+            exposure = (
+                config.exposure_above_filter
+                if current[config.benchmark] > market_average
+                else config.exposure_below_filter
+            )
         inverse_volatility = 1.0 / volatility.loc[eligible]
-        allocation = inverse_volatility / inverse_volatility.sum() * config.total_exposure
+        allocation = inverse_volatility / inverse_volatility.sum() * exposure
         weights.loc[eligible] = allocation.clip(upper=config.max_position_weight)
 
     weights.loc[config.safe_asset] = 1.0 - weights.sum()

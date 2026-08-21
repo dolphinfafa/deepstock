@@ -121,6 +121,15 @@ modeled costs 7.26%, versus `SPY` at 39.72%. The cap reduced concentration but
 materially reduced returns in this sample; sector labels are a research
 snapshot, not point-in-time classifications.
 
+The adaptive defensive ETF grid evaluated 32 predeclared combinations of
+126/252-day momentum, 150/200-day trend, top 2/3 assets, and 80%/100% above-
+trend versus 20%/40% below-trend exposure. The in-sample-ranked winner was
+252-day momentum, 200-day trend, top 2, and 80%/40% exposure; out of sample it
+returned 27.17%, Sharpe 1.87, maximum drawdown -5.79%, turnover 2.06, and
+modeled costs 0.21%, versus `SPY` at 39.72%. This improves on the original
+defensive result but still does not beat the benchmark or establish paper-order
+readiness.
+
 ## Key Decisions
 
 | Decision | Status | Rationale |

@@ -124,6 +124,19 @@ def test_benchmark_can_be_separate_from_trade_universe() -> None:
     assert result.target_weights["SPY"].sum() == pytest.approx(0.0)
 
 
+def test_adaptive_filter_and_top_k_limit_targets() -> None:
+    prices = make_prices(days=520)
+    config = StrategyConfig(
+        top_k_assets=2,
+        market_filter_days=50,
+        exposure_above_filter=0.8,
+        exposure_below_filter=0.4,
+    )
+    result = run_backtest(prices, config)
+    assert (result.target_weights.drop(columns="SHY") > 0).sum(axis=1).max() <= 2
+    assert result.target_weights.sum(axis=1).max() <= 1.0 + 1e-9
+
+
 def test_paper_plan_is_idempotent_and_kill_switch_blocks() -> None:
     prices = make_prices(days=520)
     config = TurtleConfig(entry_days=20, exit_days=10, atr_days=10)

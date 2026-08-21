@@ -27,3 +27,6 @@
   the corrected `FB` -> `META` result remains based on today's selected names.
 - Treat the static sector-cap run as a separate risk-control baseline. It also
   underperformed `SPY`; do not change the cap based on this single interval.
+- Validate the adaptive ETF winner with walk-forward windows and more market
+  regimes. Its fixed-split result improved risk-adjusted returns but still
+  underperformed `SPY`; do not paper-trade it yet.
