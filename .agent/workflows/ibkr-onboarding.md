@@ -16,8 +16,14 @@ must not connect directly to the laptop's TWS API socket.
 
 The server-to-laptop SSH route has been verified for read-only operations. The
 route is for operating the laptop execution node only; it does not expose or
-forward the TWS API socket. During the latest remote audit, TWS/IB Gateway was
-not running, so no local API socket was available to probe.
+forward the TWS API socket. The latest remote audit connected successfully to
+paper TWS and returned the read-only snapshot with zero positions and zero open
+orders.
+
+The audit also observed the TWS API listener on `*:7497`. Restrict it to
+localhost or explicitly trusted local addresses in TWS API settings before any
+future execution-agent work. Do not rely on the SSH route as a substitute for
+that restriction.
 
 ## Required Account Checks
 
