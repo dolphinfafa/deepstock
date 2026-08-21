@@ -30,3 +30,5 @@
 - Validate the adaptive ETF winner with walk-forward windows and more market
   regimes. Its fixed-split result improved risk-adjusted returns but still
   underperformed `SPY`; do not paper-trade it yet.
+- Define explicit acceptance criteria for a defensive strategy, including
+  whether lower drawdown justifies lower long-run return versus `SPY`.

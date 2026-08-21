@@ -130,6 +130,12 @@ modeled costs 0.21%, versus `SPY` at 39.72%. This improves on the original
 defensive result but still does not beat the benchmark or establish paper-order
 readiness.
 
+Rolling evaluation of that fixed configuration used a 504-session training
+history and five 126-session test windows. Strategy maximum drawdown was
+-3.30% to -1.36%; it underperformed `SPY` in the first four windows and
+outperformed only in the final window (12.38% versus 6.69%). This is consistent
+with a defensive regime-dependent profile, not persistent benchmark alpha.
+
 ## Key Decisions
 
 | Decision | Status | Rationale |
