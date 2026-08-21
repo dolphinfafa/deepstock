@@ -5,7 +5,7 @@ import argparse
 import json
 import sys
 import threading
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -342,11 +342,13 @@ class ReadOnlyIbkrProbe(EWrapper, EClient):
         self.cancelAccountSummary(ACCOUNT_SUMMARY_REQ_ID)
         self.cancelPositions()
 
+        # Keep account identifiers, balances, quantities, and order details out
+        # of console/JSON output. The probe only needs connectivity health.
         return {
             "server_time_utc": self.server_time,
-            "account_summary": [asdict(item) for item in self.account_summary],
-            "positions": [asdict(item) for item in self.positions],
-            "open_orders": [asdict(item) for item in self.open_orders],
+            "account_summary_rows": len(self.account_summary),
+            "positions_count": len(self.positions),
+            "open_orders_count": len(self.open_orders),
             "messages": self.messages,
             "errors": self.errors,
         }
@@ -367,9 +369,9 @@ def render_text(result: dict[str, Any], config: ProbeConfig) -> str:
         f"Host: {config.host}:{config.port}",
         f"Client ID: {config.client_id}",
         f"Server time (UTC): {result['server_time_utc']}",
-        f"Account summary rows: {len(result['account_summary'])}",
-        f"Positions: {len(result['positions'])}",
-        f"Open orders: {len(result['open_orders'])}",
+        f"Account summary rows: {result['account_summary_rows']}",
+        f"Positions: {result['positions_count']}",
+        f"Open orders: {result['open_orders_count']}",
     ]
     if result["messages"]:
         lines.append("Messages:")

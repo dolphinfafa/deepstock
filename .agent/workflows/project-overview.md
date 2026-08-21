@@ -35,9 +35,10 @@ licenses here as they are introduced.
 The current executable integration surface is the local script
 `scripts/ibkr_read_only_check.py`. It connects only to a laptop-local TWS or IB
 Gateway session in paper mode, loads connection settings from the untracked
-`.env`, and returns four read-only datasets: server time, account summary,
-positions, and open orders. Order placement is explicitly disabled inside the
-probe class.
+`.env`, and returns server time plus counts for account-summary rows, positions,
+and open orders. Account identifiers, balances, quantities, and order details
+are redacted from console and JSON output. Order placement is explicitly
+disabled inside the probe class.
 
 The research surface is `scripts/run_defensive_etf_backtest.py`, which accepts
 local, adjusted-close CSV data and writes daily results, target weights,
@@ -79,6 +80,11 @@ ranking when more names qualify than the cap. It still requires a safe asset
 column (normally `SHY`) and remains long-only. No stock history has been
 downloaded or evaluated yet; the current ETF dataset must not be reused as a
 stock result.
+
+The server-side paper boundary is `scripts/generate_paper_plan.py`. It reads
+local research data, emits deterministic target weights and a `plan_id`, and
+supports a kill switch. It has no broker dependency and never submits an order;
+the laptop is the only paper TWS connection point.
 
 ## Key Decisions
 

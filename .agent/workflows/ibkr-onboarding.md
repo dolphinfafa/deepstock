@@ -4,8 +4,10 @@
 
 The user has opened and funded an IBKR account with approximately USD 10,000,
 enabled Paper Trading, and logged in to TWS in paper mode. The local read-only
-API probe has verified server time, account summary, positions, and open
-orders. No paper order or live order is configured by this project.
+API probe has verified server time and the presence/counts of account-summary
+rows, positions, and open orders. Its output redacts account identifiers,
+balances, quantities, and order details. No paper order or live order is
+configured by this project.
 
 The user has configured the laptop TWS Socket API for local read-only access.
 The host, port, account identifier, and credentials are private local values

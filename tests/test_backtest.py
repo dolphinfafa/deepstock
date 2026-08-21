@@ -11,6 +11,7 @@ from deepstock.backtest import (
     validate_prices,
 )
 from deepstock.turtle import TurtleConfig, run_turtle_backtest
+from deepstock.paper_plan import create_paper_plan
 
 
 def make_prices(days: int = 520, declining: bool = False) -> pd.DataFrame:
@@ -97,3 +98,16 @@ def test_turtle_config_limits_stock_positions() -> None:
 def test_turtle_config_rejects_too_many_positions() -> None:
     with pytest.raises(ValueError, match="max_positions"):
         TurtleConfig(max_positions=7)
+
+
+def test_paper_plan_is_idempotent_and_kill_switch_blocks() -> None:
+    prices = make_prices(days=520)
+    config = TurtleConfig(entry_days=20, exit_days=10, atr_days=10)
+    generated = pd.Timestamp("2026-08-21T00:00:00Z").to_pydatetime()
+    first = create_paper_plan(prices, config, generated_at=generated)
+    second = create_paper_plan(prices, config, generated_at=generated)
+    blocked = create_paper_plan(prices, config, generated_at=generated, kill_switch=True)
+    assert first["plan_id"] == second["plan_id"]
+    assert first["status"] == "ready_for_review"
+    assert blocked["status"] == "blocked"
+    assert blocked["plan_id"] == first["plan_id"]

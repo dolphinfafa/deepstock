@@ -15,3 +15,5 @@
   version. Do not use today's survivors as the historical universe.
 - Define the laptop runtime schedule and alert channel before implementing an
   unattended paper-execution agent.
+- Start the laptop paper observation period. Record daily plan IDs, TWS health,
+  and reconciliation results for eight weeks before enabling paper orders.
