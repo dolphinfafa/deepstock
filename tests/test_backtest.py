@@ -10,7 +10,7 @@ from deepstock.backtest import (
     run_segmented_backtest,
     validate_prices,
 )
-from deepstock.turtle import TurtleConfig, run_turtle_backtest
+from deepstock.turtle import TurtleConfig, run_turtle_backtest, summarize_turtle_segment
 from deepstock.paper_plan import create_paper_plan
 
 
@@ -123,3 +123,12 @@ def test_paper_plan_is_idempotent_and_kill_switch_blocks() -> None:
     assert first["status"] == "ready_for_review"
     assert blocked["status"] == "blocked"
     assert blocked["plan_id"] == first["plan_id"]
+
+
+def test_turtle_segment_summary_rebases_equity() -> None:
+    prices = make_prices(days=520)
+    result = run_turtle_backtest(prices, TurtleConfig(entry_days=20, exit_days=10, atr_days=10))
+    dates = prices.index[300:]
+    summary = summarize_turtle_segment(result, dates)
+    assert summary["start"] == dates[0].date().isoformat()
+    assert summary["end"] == dates[-1].date().isoformat()

@@ -20,3 +20,6 @@
 - Resolve historical ticker mappings such as `FB` -> `META`, then build a
   point-in-time stock universe including delisted names. The current 15-stock
   result is exploratory and survivor-prone.
+- Review the fixed-split stock-Turtle result: all six tested combinations
+  underperformed `SPY`; do not enable paper orders or retune on this out-of-
+  sample period.

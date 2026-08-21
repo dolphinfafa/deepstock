@@ -121,3 +121,18 @@ def run_turtle_backtest(prices: pd.DataFrame, config: TurtleConfig | None = None
         }
     )
     return BacktestResult(daily, targets, executed, _summary(daily, config))
+
+
+def summarize_turtle_segment(result: BacktestResult, dates: pd.DatetimeIndex) -> dict[str, Any]:
+    """Rebase a contiguous segment of a causal Turtle run for reporting."""
+
+    daily = result.daily.loc[dates].copy()
+    daily["portfolio_equity"] = (1.0 + daily["portfolio_net_return"]).cumprod()
+    benchmark_returns = daily["benchmark_equity"].pct_change(fill_method=None).fillna(0.0)
+    first = dates[0]
+    prior = result.daily.loc[:first, "benchmark_equity"]
+    benchmark_returns.iloc[0] = result.daily.loc[first, "benchmark_equity"] / (
+        prior.iloc[-2] if len(prior) > 1 else 1.0
+    ) - 1.0
+    daily["benchmark_equity"] = (1.0 + benchmark_returns).cumprod()
+    return _summary(daily, TurtleConfig(**result.summary["config"]))

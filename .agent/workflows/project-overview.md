@@ -96,6 +96,15 @@ renaming the gap. With the remaining 15 stocks, 55/20 returned 64.32% with
 and costs 16.75%. `SPY` returned 82.47%. These are full-sample, survivor-prone
 exploratory results and do not authorize paper orders.
 
+The fixed stock-Turtle split uses 2021-08-23 through 2024-08-20 in sample and
+2024-08-21 through 2026-08-20 out of sample. Six predeclared combinations of
+20/55 entry, 10/20 exit, and 3/5 maximum positions were evaluated. The
+in-sample-ranked winner was 20/10 with five positions; out of sample it returned
+20.60%, Sharpe 0.77, maximum drawdown -11.46%, turnover 62.51, and modeled
+costs 6.25%, versus `SPY` at 39.72%. All six combinations underperformed `SPY`.
+This invalidates the apparent full-sample 20/10 outperformance as a selection
+basis and keeps paper orders blocked.
+
 ## Key Decisions
 
 | Decision | Status | Rationale |
