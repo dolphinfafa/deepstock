@@ -81,7 +81,7 @@ def _fetch_pages(url: str, api_key: str, fetch: JsonFetcher) -> list[dict[str, A
             raise RuntimeError("Massive pagination loop detected.")
         seen_urls.add(url)
         payload = fetch(url)
-        if payload.get("status") not in {None, "OK"}:
+        if payload.get("status") not in {None, "OK", "DELAYED"}:
             raise RuntimeError("Massive returned a non-success response.")
         results.extend(payload.get("results", []))
         next_url = payload.get("next_url")

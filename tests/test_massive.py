@@ -44,6 +44,17 @@ def test_rejects_empty_response() -> None:
         )
 
 
+def test_accepts_delayed_historical_response() -> None:
+    prices = download_split_adjusted_daily_prices(
+        ["SPY"],
+        "2024-01-02",
+        "2024-01-03",
+        "secret",
+        lambda _: {"status": "DELAYED", "results": [{"t": 1704171600000, "c": 472.65}]},
+    )
+    assert len(prices) == 1
+
+
 def test_builds_total_return_prices_with_dividend_factor() -> None:
     def fetch(url: str) -> dict:
         if "/v2/aggs/" in url:

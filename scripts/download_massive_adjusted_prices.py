@@ -46,6 +46,7 @@ def main() -> int:
                 "price_adjustment": "splits",
                 "dividend_endpoint": "stocks/v1/dividends",
                 "total_return_adjustment": "sequential ex-dividend cash return",
+                "response_status_policy": "OK or DELAYED accepted for historical research only",
                 "symbols": symbols,
                 "from": args.start,
                 "to": args.end,

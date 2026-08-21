@@ -26,3 +26,7 @@ total-return index, adding the split-adjusted cash dividend on each ex-dividend
 date. This avoids future corporate-action leakage into historical signals. The
 local manifest records both endpoints, the adjustment method, date range,
 symbols, row count, and retrieval time without recording the API key.
+
+Massive may label a valid response as `DELAYED` under the current subscription.
+This is acceptable for fixed historical research data, but never for real-time
+execution checks or order pricing; those remain an IBKR responsibility.
