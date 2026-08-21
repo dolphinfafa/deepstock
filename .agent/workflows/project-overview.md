@@ -87,10 +87,19 @@ supports a kill switch. It has no broker dependency and never submits an order;
 the laptop is the only paper TWS connection point.
 
 A separate Windows data node is now reachable by verified SSH. It runs TWS
-Paper and Norgate Data Updater locally, but the `norgatedata` Python package is
-not installed yet. Its TWS API listener currently binds to all interfaces on
-port 7497; restrict it to localhost or a minimal trusted-IP allowlist before
-any local API read test. The port must never be forwarded or exposed.
+Paper and Norgate Data Updater locally. The project is cloned at
+`F:\\workspace\\deepstock`; Conda environment `deepstock` uses the existing
+Miniconda installation (Windows Python 3.12.1) and contains `norgatedata
+1.0.77`, `ibapi 9.81.1.post1`, and the project dependencies. Windows pip could
+not complete a TLS handshake with PyPI, so wheels were downloaded on the
+server with normal certificate verification and installed offline on Windows;
+certificate verification was not disabled. Imports succeeded and the project
+test suite passed (`21 passed`, 2 pandas deprecation warnings).
+
+Its TWS API listener currently binds to all interfaces on port 7497; the user
+has configured the TWS trusted-IP allowlist to `127.0.0.1`. Keep this allowlist
+in place, verify it with a local read-only probe before use, and never forward
+or expose the port.
 
 The first server stock-Turtle download contained 18 symbols and 22,482 rows
 (2021-08-23 through 2026-08-20; the subscription did not provide the requested
@@ -141,6 +150,14 @@ history and five 126-session test windows. Strategy maximum drawdown was
 -3.30% to -1.36%; it underperformed `SPY` in the first four windows and
 outperformed only in the final window (12.38% versus 6.69%). This is consistent
 with a defensive regime-dependent profile, not persistent benchmark alpha.
+
+The Windows Norgate Python connection was verified on 2026-08-21. The updater
+reported a healthy status and exposed 14,633 symbols in `US Equities` plus
+1,413 in `US Equities Delisted`. Under the current US Stock Data Trial,
+`AAPL` returned daily history only from 2024-08-21 through 2026-08-20; this is
+shorter than the long-history tiers and is insufficient for the planned
+survivorship-free long-horizon backtest. Do not bulk-download until the
+available history and the trial/export terms are confirmed.
 
 ## Key Decisions
 

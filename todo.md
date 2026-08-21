@@ -32,6 +32,11 @@
   underperformed `SPY`; do not paper-trade it yet.
 - Define explicit acceptance criteria for a defensive strategy, including
   whether lower drawdown justifies lower long-run return versus `SPY`.
-- On the Windows data node, install `norgatedata` only after the Norgate
-  subscription is active, and restrict TWS port 7497 to localhost or the
-  minimal trusted-IP allowlist before any API read test.
+- On the Windows data node, run a local Norgate data query and record the
+  returned schema/provenance; do not use it for live orders.
+- Confirm whether the current Norgate trial is intentionally limited to
+  approximately two years of history and whether bulk local export remains
+  permitted after the trial; upgrade or adjust the backtest horizon before
+  downloading the full universe.
+- Run the Windows local read-only TWS probe after confirming the trusted-IP
+  allowlist remains `127.0.0.1`; never forward port 7497.
