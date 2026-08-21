@@ -12,7 +12,7 @@ Requirements:
 
 - One row per trading date and symbol.
 - ISO-8601 dates, sorted ascending after loading.
-- Positive, complete, split- and dividend-adjusted closing prices.
+- Positive, complete total-return adjusted closing prices.
 - All required symbols: `SPY`, `QQQ`, `IWM`, `TLT`, `IEF`, `GLD`, and `SHY`.
 - Preserve a source manifest alongside every imported dataset: provider, symbol
   mapping, retrieval timestamp, date range, adjustment method, and license.
@@ -20,7 +20,9 @@ Requirements:
 Do not commit licensed raw market data unless its provider's terms explicitly
 allow redistribution. `artifacts/` and local research data are Git ignored.
 
-The current source is Massive's daily aggregates endpoint with `adjusted=true`.
-The downloader writes its provider, endpoint, date range, symbols, adjustment
-flag, row count, and retrieval time to a local manifest without recording its
-API key.
+Massive daily aggregates with `adjusted=true` adjust only for splits. The
+downloader combines those bars with Massive dividend events into a sequential
+total-return index, adding the split-adjusted cash dividend on each ex-dividend
+date. This avoids future corporate-action leakage into historical signals. The
+local manifest records both endpoints, the adjustment method, date range,
+symbols, row count, and retrieval time without recording the API key.

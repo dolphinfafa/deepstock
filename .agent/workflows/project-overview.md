@@ -45,10 +45,10 @@ executed weights, and summary metrics. It has no broker dependency at runtime
 and no order-submission capability.
 
 The required data schema and provenance rules are in `data/README.md`. A market
-data provider has now been selected: Massive supplies split- and
-dividend-adjusted daily research data; IBKR provides execution-time prices and
-account state. No unlicensed or unadjusted data may be used to judge strategy
-performance.
+data provider has now been selected: Massive supplies split-adjusted daily bars
+and dividend factors, which the project combines into total-return research
+data; IBKR provides execution-time prices and account state. No unlicensed or
+unadjusted data may be used to judge strategy performance.
 
 ## Key Decisions
 

@@ -2,8 +2,8 @@
 
 - Download a fixed Massive adjusted-daily dataset for the seven strategy ETFs
   and retain its generated manifest in local artifacts.
-- Restrict the TWS API listener from `*:7497` to localhost or explicitly trusted
-  local addresses, then rerun the read-only probe.
+- Verify the TWS trusted-IP allowlist remains limited to the local execution
+  node; do not expose or forward its API socket.
 - Run the defensive ETF backtest over a declared in-sample and out-of-sample
   split, then preserve the summary metrics and configuration.
 - Review drawdown, turnover, transaction costs, benchmark comparison, and the

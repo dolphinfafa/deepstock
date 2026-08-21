@@ -8,7 +8,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from deepstock.massive import download_adjusted_daily_prices, load_env_value
+from deepstock.massive import download_total_return_daily_prices, load_env_value
 
 
 DEFAULT_SYMBOLS = "SPY,QQQ,IWM,TLT,IEF,GLD,SHY"
@@ -31,7 +31,7 @@ def main() -> int:
     if not api_key:
         raise SystemExit("Missing MASSIVE_API_KEY in the local .env file.")
     symbols = tuple(item.strip().upper() for item in args.symbols.split(",") if item.strip())
-    prices = download_adjusted_daily_prices(symbols, args.start, args.end, api_key)
+    prices = download_total_return_daily_prices(symbols, args.start, args.end, api_key)
 
     output = Path(args.output)
     manifest = Path(args.manifest)
@@ -42,8 +42,10 @@ def main() -> int:
         json.dumps(
             {
                 "provider": "Massive",
-                "endpoint": "v2/aggs ticker range, 1 day",
-                "adjusted": True,
+                "price_endpoint": "v2/aggs ticker range, 1 day",
+                "price_adjustment": "splits",
+                "dividend_endpoint": "stocks/v1/dividends",
+                "total_return_adjustment": "sequential ex-dividend cash return",
                 "symbols": symbols,
                 "from": args.start,
                 "to": args.end,
