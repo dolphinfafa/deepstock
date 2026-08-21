@@ -8,5 +8,7 @@
 - Add a market-regime comparison and assess whether low-beta defensive behavior
   is acceptable despite material `SPY` underperformance; do not begin
   paper-order work before that review.
+- Run fixed-split and walk-forward validation for the Turtle module. Initial
+  55/20 and 20/10 full-sample tests underperformed `SPY` with higher turnover.
 - Define the laptop runtime schedule and alert channel before implementing an
   unattended paper-execution agent.

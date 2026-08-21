@@ -65,6 +65,14 @@ returns ranged from 14.14% to 19.22% with maximum drawdowns from -5.12% to
 narrow grid but materially underperforms the benchmark, so paper-order work
 remains blocked pending further research review.
 
+A separate Turtle-style breakout module is available for research only. It
+uses configurable entry/exit channels, a close-based ATR proxy for risk sizing,
+2-ATR stops, 80% total exposure, and next-session execution. On the same full
+history, 55/20 returned 20.10% with -14.46% maximum drawdown, Sharpe 0.59,
+turnover 27.87, and modeled costs 2.79%; 20/10 returned 19.79% with -13.39%
+drawdown, Sharpe 0.55, turnover 64.38, and costs 6.44%. `SPY` returned 82.47%.
+These exploratory results do not authorize execution.
+
 ## Key Decisions
 
 | Decision | Status | Rationale |
