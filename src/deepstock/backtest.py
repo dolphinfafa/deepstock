@@ -31,8 +31,8 @@ class StrategyConfig:
             raise ValueError("At least one risk asset is required.")
         if self.safe_asset in self.risk_assets:
             raise ValueError("The safe asset cannot also be a risk asset.")
-        if self.benchmark not in self.risk_assets:
-            raise ValueError("The benchmark must be one of the risk assets.")
+        if not self.benchmark:
+            raise ValueError("A benchmark symbol is required.")
         if min(self.momentum_days, self.moving_average_days, self.volatility_days) < 2:
             raise ValueError("Lookback windows must be at least two trading days.")
         if not 0 < self.total_exposure <= 1:
@@ -44,7 +44,8 @@ class StrategyConfig:
 
     @property
     def symbols(self) -> tuple[str, ...]:
-        return (*self.risk_assets, self.safe_asset)
+        symbols = (*self.risk_assets, self.safe_asset)
+        return symbols if self.benchmark in symbols else (*symbols, self.benchmark)
 
 
 @dataclass

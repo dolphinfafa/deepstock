@@ -100,6 +100,18 @@ def test_turtle_config_rejects_too_many_positions() -> None:
         TurtleConfig(max_positions=7)
 
 
+def test_benchmark_can_be_separate_from_trade_universe() -> None:
+    prices = make_prices(days=520).assign(SPY=lambda frame: frame["SPY"])
+    config = TurtleConfig(
+        risk_assets=("QQQ", "IWM", "TLT", "IEF", "GLD"),
+        benchmark="SPY",
+        max_positions=3,
+    )
+    result = run_turtle_backtest(prices, config)
+    assert "SPY" in result.target_weights.columns
+    assert result.target_weights["SPY"].sum() == pytest.approx(0.0)
+
+
 def test_paper_plan_is_idempotent_and_kill_switch_blocks() -> None:
     prices = make_prices(days=520)
     config = TurtleConfig(entry_days=20, exit_days=10, atr_days=10)

@@ -86,6 +86,16 @@ local research data, emits deterministic target weights and a `plan_id`, and
 supports a kill switch. It has no broker dependency and never submits an order;
 the laptop is the only paper TWS connection point.
 
+The first server stock-Turtle download contained 18 symbols and 22,482 rows
+(2021-08-23 through 2026-08-20; the subscription did not provide the requested
+2015 start). `META` had 90 missing sessions because its pre-2022 ticker was
+`FB`, so the initial backtest excluded it rather than filling or silently
+renaming the gap. With the remaining 15 stocks, 55/20 returned 64.32% with
+-15.49% maximum drawdown, Sharpe 0.84, turnover 89.36, and modeled costs 8.94%;
+20/10 returned 101.33% with -12.39% drawdown, Sharpe 1.12, turnover 167.47,
+and costs 16.75%. `SPY` returned 82.47%. These are full-sample, survivor-prone
+exploratory results and do not authorize paper orders.
+
 ## Key Decisions
 
 | Decision | Status | Rationale |

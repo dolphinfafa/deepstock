@@ -17,3 +17,6 @@
   unattended paper-execution agent.
 - Start the laptop paper observation period. Record daily plan IDs, TWS health,
   and reconciliation results for eight weeks before enabling paper orders.
+- Resolve historical ticker mappings such as `FB` -> `META`, then build a
+  point-in-time stock universe including delisted names. The current 15-stock
+  result is exploratory and survivor-prone.
