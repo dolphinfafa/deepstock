@@ -25,3 +25,5 @@
   sample period.
 - Add a survivorship-free, point-in-time universe and liquidity/sector controls;
   the corrected `FB` -> `META` result remains based on today's selected names.
+- Treat the static sector-cap run as a separate risk-control baseline. It also
+  underperformed `SPY`; do not change the cap based on this single interval.

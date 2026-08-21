@@ -113,6 +113,14 @@ Sharpe 0.76, maximum drawdown -11.02%, turnover 68.06, and modeled costs 6.81%
 versus `SPY` at 39.72%. The ticker correction does not change the decision to
 block paper orders.
 
+An additional static sector-cap baseline grouped the 16 stocks into technology,
+internet, consumer, financial, energy, and health, with at most two positions
+per group. Its in-sample-ranked 20/10 plus five-position configuration returned
+5.90% out of sample, Sharpe 0.29, maximum drawdown -12.67%, turnover 72.62, and
+modeled costs 7.26%, versus `SPY` at 39.72%. The cap reduced concentration but
+materially reduced returns in this sample; sector labels are a research
+snapshot, not point-in-time classifications.
+
 ## Key Decisions
 
 | Decision | Status | Rationale |

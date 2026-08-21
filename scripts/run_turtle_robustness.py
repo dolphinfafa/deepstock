@@ -25,12 +25,17 @@ def main() -> int:
     parser.add_argument("--entry-days", type=int, nargs="+", default=[20, 55])
     parser.add_argument("--exit-days", type=int, nargs="+", default=[10, 20])
     parser.add_argument("--max-positions", type=int, nargs="+", default=[3, 5])
+    parser.add_argument("--max-per-sector", type=int, default=None)
+    parser.add_argument("--sector-map", default="", help="Comma-separated SYMBOL=SECTOR pairs.")
     args = parser.parse_args()
 
     raw = pd.read_csv(args.prices)
     raw["date"] = pd.to_datetime(raw["date"])
     prices = raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
     symbols = (*args.symbols, args.safe_asset, args.benchmark)
+    sector_map = tuple(
+        tuple(item.split("=", 1)) for item in args.sector_map.split(",") if "=" in item
+    )
     prices = prices.loc[:, list(dict.fromkeys(symbols))].dropna()
     split = pd.Timestamp(args.split_date)
     if split not in prices.index:
@@ -53,6 +58,8 @@ def main() -> int:
             entry_days=entry,
             exit_days=exit_,
             max_positions=max_positions,
+            sector_by_symbol=sector_map,
+            max_per_sector=args.max_per_sector,
         )
         result = run_turtle_backtest(prices, config)
         record: dict[str, object] = asdict(config)

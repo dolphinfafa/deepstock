@@ -21,6 +21,8 @@ class TurtleConfig(StrategyConfig):
     stop_atr: float = 2.0
     risk_per_position: float = 0.01
     max_positions: int = 5
+    sector_by_symbol: tuple[tuple[str, str], ...] = ()
+    max_per_sector: int | None = None
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -32,6 +34,11 @@ class TurtleConfig(StrategyConfig):
             raise ValueError("ATR stop and per-position risk must be positive.")
         if self.max_positions < 1 or self.max_positions > len(self.risk_assets):
             raise ValueError("max_positions must be between one and the risk-asset count.")
+        sector_map = dict(self.sector_by_symbol)
+        if set(sector_map) - set(self.risk_assets):
+            raise ValueError("Sector map contains symbols outside the risk universe.")
+        if self.max_per_sector is not None and self.max_per_sector < 1:
+            raise ValueError("max_per_sector must be positive.")
 
 
 def _summary(daily: pd.DataFrame, config: TurtleConfig) -> dict[str, Any]:
@@ -76,18 +83,27 @@ def run_turtle_backtest(prices: pd.DataFrame, config: TurtleConfig | None = None
         for symbol in config.risk_assets:
             if symbol not in active and pd.notna(entry.at[date, symbol]) and risk.at[date, symbol] > entry.at[date, symbol]:
                 active.add(symbol)
-        if len(active) > config.max_positions:
-            active = set(
-                sorted(
-                    active,
-                    key=lambda symbol: (
-                        risk.at[date, symbol] / entry.at[date, symbol]
-                        if pd.notna(entry.at[date, symbol]) and entry.at[date, symbol] > 0
-                        else 0.0
-                    ),
-                    reverse=True,
-                )[: config.max_positions]
-            )
+        ranked = sorted(
+            active,
+            key=lambda symbol: (
+                risk.at[date, symbol] / entry.at[date, symbol]
+                if pd.notna(entry.at[date, symbol]) and entry.at[date, symbol] > 0
+                else 0.0
+            ),
+            reverse=True,
+        )
+        sector_map = dict(config.sector_by_symbol)
+        selected: list[str] = []
+        sector_counts: dict[str, int] = {}
+        for symbol in ranked:
+            sector = sector_map.get(symbol, symbol)
+            if config.max_per_sector is not None and sector_counts.get(sector, 0) >= config.max_per_sector:
+                continue
+            selected.append(symbol)
+            sector_counts[sector] = sector_counts.get(sector, 0) + 1
+            if len(selected) >= config.max_positions:
+                break
+        active = set(selected)
         if active:
             raw = pd.Series(
                 {

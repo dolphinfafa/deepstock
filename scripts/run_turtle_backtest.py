@@ -25,10 +25,15 @@ def main() -> int:
     parser.add_argument("--benchmark", default=None)
     parser.add_argument("--safe-asset", default="SHY")
     parser.add_argument("--max-positions", type=int, default=6)
+    parser.add_argument("--max-per-sector", type=int, default=None)
+    parser.add_argument("--sector-map", default="", help="Comma-separated SYMBOL=SECTOR pairs.")
     args = parser.parse_args()
     raw = pd.read_csv(args.prices)
     raw["date"] = pd.to_datetime(raw["date"])
     benchmark = args.benchmark or args.symbols[0]
+    sector_map = tuple(
+        tuple(item.split("=", 1)) for item in args.sector_map.split(",") if "=" in item
+    )
     config = TurtleConfig(
         risk_assets=tuple(args.symbols),
         benchmark=benchmark,
@@ -36,6 +41,8 @@ def main() -> int:
         entry_days=args.entry_days,
         exit_days=args.exit_days,
         max_positions=args.max_positions,
+        sector_by_symbol=sector_map,
+        max_per_sector=args.max_per_sector,
     )
     prices = raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
     result = run_turtle_backtest(prices, config)

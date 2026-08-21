@@ -100,6 +100,18 @@ def test_turtle_config_rejects_too_many_positions() -> None:
         TurtleConfig(max_positions=7)
 
 
+def test_turtle_sector_cap_limits_concentration() -> None:
+    prices = make_prices(days=520)
+    config = TurtleConfig(
+        max_positions=5,
+        max_per_sector=1,
+        sector_by_symbol=tuple((symbol, "growth") for symbol in ("SPY", "QQQ", "IWM"))
+        + tuple((symbol, symbol) for symbol in ("TLT", "IEF", "GLD")),
+    )
+    result = run_turtle_backtest(prices, config)
+    assert (result.target_weights.drop(columns="SHY") > 0).sum(axis=1).max() <= 4
+
+
 def test_benchmark_can_be_separate_from_trade_universe() -> None:
     prices = make_prices(days=520).assign(SPY=lambda frame: frame["SPY"])
     config = TurtleConfig(
