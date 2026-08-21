@@ -55,6 +55,16 @@ class BacktestResult:
     summary: dict[str, Any]
 
 
+@dataclass
+class SegmentedBacktestResult:
+    """A contiguous in-sample/out-of-sample view of one backtest run."""
+
+    full: BacktestResult
+    in_sample: BacktestResult
+    out_of_sample: BacktestResult
+    split_date: pd.Timestamp
+
+
 def validate_prices(prices: pd.DataFrame, config: StrategyConfig) -> pd.DataFrame:
     """Validate a daily adjusted-close matrix before any calculation."""
 
@@ -140,6 +150,28 @@ def _performance_summary(daily: pd.DataFrame, config: StrategyConfig) -> dict[st
     }
 
 
+def _slice_result(result: BacktestResult, dates: pd.DatetimeIndex) -> BacktestResult:
+    """Rebase a contiguous period while retaining weights set from prior history."""
+
+    daily = result.daily.loc[dates].copy()
+    daily["portfolio_equity"] = (1.0 + daily["portfolio_net_return"]).cumprod()
+    benchmark_returns = daily["benchmark_equity"].pct_change(fill_method=None).fillna(0.0)
+    # The first benchmark return belongs to the selected period, not the full run.
+    benchmark_returns.iloc[0] = result.daily.loc[dates[0], "benchmark_equity"] / (
+        result.daily.loc[: dates[0], "benchmark_equity"].iloc[-2]
+        if len(result.daily.loc[: dates[0]]) > 1
+        else 1.0
+    ) - 1.0
+    daily["benchmark_equity"] = (1.0 + benchmark_returns).cumprod()
+    config = StrategyConfig(**result.summary["config"])
+    return BacktestResult(
+        daily=daily,
+        target_weights=result.target_weights.loc[dates].copy(),
+        executed_weights=result.executed_weights.loc[dates].copy(),
+        summary=_performance_summary(daily, config),
+    )
+
+
 def run_backtest(prices: pd.DataFrame, config: StrategyConfig | None = None) -> BacktestResult:
     """Run an end-of-day backtest without look-ahead trading.
 
@@ -182,4 +214,34 @@ def run_backtest(prices: pd.DataFrame, config: StrategyConfig | None = None) -> 
         target_weights=target_weights,
         executed_weights=executed_weights,
         summary=_performance_summary(daily, config),
+    )
+
+
+def run_segmented_backtest(
+    prices: pd.DataFrame,
+    split_date: str | pd.Timestamp,
+    config: StrategyConfig | None = None,
+) -> SegmentedBacktestResult:
+    """Run one causal backtest and report contiguous in/out-of-sample periods.
+
+    ``split_date`` is the first out-of-sample trading session. Signals on that
+    date may use only prior and same-day prices, exactly as in ``run_backtest``;
+    no future observations are used. The out-of-sample equity curve is rebased
+    to one, while its initial weights retain the position established from the
+    preceding historical signal.
+    """
+
+    full = run_backtest(prices, config)
+    boundary = pd.Timestamp(split_date)
+    if boundary not in full.daily.index:
+        raise ValueError("Split date must be a trading date present in the prices.")
+    in_dates = full.daily.index[full.daily.index < boundary]
+    out_dates = full.daily.index[full.daily.index >= boundary]
+    if len(in_dates) < 2 or len(out_dates) < 2:
+        raise ValueError("The split must leave at least two trading days in each period.")
+    return SegmentedBacktestResult(
+        full=full,
+        in_sample=_slice_result(full, in_dates),
+        out_of_sample=_slice_result(full, out_dates),
+        split_date=boundary,
     )

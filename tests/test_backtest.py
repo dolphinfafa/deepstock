@@ -4,7 +4,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from deepstock.backtest import StrategyConfig, run_backtest, validate_prices
+from deepstock.backtest import (
+    StrategyConfig,
+    run_backtest,
+    run_segmented_backtest,
+    validate_prices,
+)
 
 
 def make_prices(days: int = 520, declining: bool = False) -> pd.DataFrame:
@@ -48,3 +53,22 @@ def test_rejects_missing_symbols() -> None:
     prices = make_prices().drop(columns="GLD")
     with pytest.raises(ValueError, match="Missing adjusted-close columns"):
         validate_prices(prices, StrategyConfig())
+
+
+def test_segmented_backtest_rebases_out_of_sample_without_future_data() -> None:
+    prices = make_prices(days=520)
+    split_date = prices.index[350]
+    result = run_segmented_backtest(prices, split_date)
+
+    assert result.in_sample.daily.index[-1] < split_date
+    assert result.out_of_sample.daily.index[0] == split_date
+    assert result.out_of_sample.summary["start"] == split_date.date().isoformat()
+    assert result.out_of_sample.daily["portfolio_equity"].iloc[0] == pytest.approx(
+        1 + result.out_of_sample.daily["portfolio_net_return"].iloc[0]
+    )
+    assert result.out_of_sample.summary["end"] == prices.index[-1].date().isoformat()
+
+
+def test_segmented_backtest_requires_a_present_split_date() -> None:
+    with pytest.raises(ValueError, match="Split date must be a trading date"):
+        run_segmented_backtest(make_prices(), "2020-01-01")
