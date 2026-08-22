@@ -51,3 +51,12 @@ The first command runs only on the Windows Norgate node. The latter two run on
 the host holding the downloaded file. Licensed Norgate data and all artifacts
 remain local and must not be committed. Do not rerun the record command for an
 unchanged plan: duplicate plan IDs are rejected by design.
+
+## Windows Scheduling
+
+The Windows node uses China Standard Time. After confirming NDU has completed
+its daily update, the wrapper
+`scripts\\run_defensive_etf_observation.cmd` can be registered as a daily
+Task Scheduler job at 07:30 local time. It stops on the first failure and
+appends diagnostics to `artifacts\\paper\\defensive-etf\\scheduler.log`.
+The task is an observation job only; it does not start TWS or submit orders.
