@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import numpy as np
 
-from scripts.download_norgate_stock_universe import membership_intervals
+from pathlib import Path
+
+import pandas as pd
+
+from scripts.download_norgate_stock_universe import chunk_has_liquidity_fields, membership_intervals
 
 
 def test_membership_intervals_compress_daily_membership() -> None:
@@ -21,3 +25,13 @@ def test_membership_intervals_compress_daily_membership() -> None:
         {"start": "2020-01-02", "end": "2020-01-03"},
         {"start": "2020-01-07", "end": "2020-01-07"},
     ]
+
+
+def test_chunk_schema_requires_liquidity_fields(tmp_path: Path) -> None:
+    path = tmp_path / "prices.csv"
+    pd.DataFrame({"date": [], "symbol": [], "adjusted_close": []}).to_csv(path, index=False)
+    assert not chunk_has_liquidity_fields(path)
+    pd.DataFrame(
+        {"date": [], "symbol": [], "adjusted_close": [], "volume": [], "turnover": []}
+    ).to_csv(path, index=False)
+    assert chunk_has_liquidity_fields(path)

@@ -21,6 +21,8 @@ class TurtleConfig(StrategyConfig):
     stop_atr: float = 2.0
     risk_per_position: float = 0.01
     max_positions: int = 5
+    liquidity_days: int = 20
+    min_avg_turnover: float | None = None
     sector_by_symbol: tuple[tuple[str, str], ...] = ()
     max_per_sector: int | None = None
 
@@ -34,6 +36,10 @@ class TurtleConfig(StrategyConfig):
             raise ValueError("ATR stop and per-position risk must be positive.")
         if self.max_positions < 1 or self.max_positions > len(self.risk_assets):
             raise ValueError("max_positions must be between one and the risk-asset count.")
+        if self.liquidity_days < 2:
+            raise ValueError("Liquidity lookback must be at least two days.")
+        if self.min_avg_turnover is not None and self.min_avg_turnover <= 0:
+            raise ValueError("Minimum average turnover must be positive.")
         sector_map = dict(self.sector_by_symbol)
         if set(sector_map) - set(self.risk_assets):
             raise ValueError("Sector map contains symbols outside the risk universe.")
@@ -67,10 +73,16 @@ def run_turtle_backtest(
     prices: pd.DataFrame,
     config: TurtleConfig | None = None,
     eligibility: pd.DataFrame | None = None,
+    turnover: pd.DataFrame | None = None,
+    strategy_routes: pd.Series | None = None,
 ) -> BacktestResult:
     """Run a close-only Turtle breakout model with next-session execution."""
 
     config = config or TurtleConfig()
+    if strategy_routes is not None:
+        if not strategy_routes.index.equals(prices.index):
+            raise ValueError("Strategy routes must cover the exact price index.")
+        strategy_routes = strategy_routes.astype(str)
     if eligibility is None:
         prices = validate_prices(prices, config)
         eligibility = pd.DataFrame(True, index=prices.index, columns=config.risk_assets)
@@ -95,6 +107,18 @@ def run_turtle_backtest(
         if eligibility.isna().any().any():
             raise ValueError("Eligibility must cover every price date and risk asset.")
         eligibility = eligibility.astype(bool)
+    if config.min_avg_turnover is not None:
+        if turnover is None:
+            raise ValueError("Turnover data is required when a liquidity threshold is configured.")
+        missing_turnover = set(config.risk_assets).difference(turnover.columns)
+        if missing_turnover:
+            raise ValueError(f"Missing turnover columns: {sorted(missing_turnover)}")
+        turnover = turnover.reindex(index=prices.index, columns=config.risk_assets).astype(float)
+        if (turnover.where(turnover.notna()) < 0).any().any():
+            raise ValueError("Turnover cannot be negative.")
+        average_turnover = turnover.rolling(config.liquidity_days, min_periods=config.liquidity_days).mean().shift(1)
+    else:
+        average_turnover = None
     returns = prices.pct_change(fill_method=None).fillna(0.0)
     risk = prices.loc[:, list(config.risk_assets)]
     entry = risk.rolling(config.entry_days).max().shift(1)
@@ -104,6 +128,9 @@ def run_turtle_backtest(
     targets = pd.DataFrame(0.0, index=prices.index, columns=config.symbols)
     active: set[str] = set()
     for date in prices.index:
+        route_allows_entries = strategy_routes is None or strategy_routes.at[date] == "stock_turtle_research"
+        if not route_allows_entries:
+            active.clear()
         for symbol in tuple(active):
             if pd.isna(risk.at[date, symbol]) or (
                 pd.notna(exit_.at[date, symbol]) and risk.at[date, symbol] < exit_.at[date, symbol]
@@ -111,7 +138,11 @@ def run_turtle_backtest(
                 active.remove(symbol)
         new_candidates: list[str] = []
         for symbol in config.risk_assets:
-            if symbol not in active and eligibility.at[date, symbol] and pd.notna(entry.at[date, symbol]) and pd.notna(risk.at[date, symbol]) and risk.at[date, symbol] > entry.at[date, symbol]:
+            liquid = average_turnover is None or (
+                pd.notna(average_turnover.at[date, symbol])
+                and average_turnover.at[date, symbol] >= config.min_avg_turnover
+            )
+            if route_allows_entries and symbol not in active and liquid and eligibility.at[date, symbol] and pd.notna(entry.at[date, symbol]) and pd.notna(risk.at[date, symbol]) and risk.at[date, symbol] > entry.at[date, symbol]:
                 new_candidates.append(symbol)
 
         def breakout_strength(symbol: str) -> float:
@@ -186,3 +217,29 @@ def summarize_turtle_segment(result: BacktestResult, dates: pd.DatetimeIndex) ->
     ) - 1.0
     daily["benchmark_equity"] = (1.0 + benchmark_returns).cumprod()
     return _summary(daily, TurtleConfig(**result.summary["config"]))
+
+
+def compare_turtle_route_modes(
+    prices: pd.DataFrame,
+    config: TurtleConfig,
+    dates: pd.DatetimeIndex,
+    eligibility: pd.DataFrame | None = None,
+    turnover: pd.DataFrame | None = None,
+    strategy_routes: pd.Series | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Compare standalone and ARC-routed Turtle with identical inputs.
+
+    This helper deliberately does not rank or select a configuration. It is
+    intended for reporting the cost of routing under a predeclared parameter.
+    """
+    standalone = run_turtle_backtest(
+        prices, config, eligibility=eligibility, turnover=turnover
+    )
+    routed = run_turtle_backtest(
+        prices, config, eligibility=eligibility, turnover=turnover,
+        strategy_routes=strategy_routes,
+    ) if strategy_routes is not None else standalone
+    return {
+        "standalone": summarize_turtle_segment(standalone, dates),
+        "arc_routed": summarize_turtle_segment(routed, dates),
+    }

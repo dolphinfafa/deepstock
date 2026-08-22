@@ -29,6 +29,11 @@ class StrategyConfig:
     market_filter_days: int | None = None
     exposure_above_filter: float | None = None
     exposure_below_filter: float | None = None
+    regime_switching: bool = False
+    regime_volatility_days: int = 20
+    regime_baseline_volatility_days: int = 252
+    regime_alert_exposure: float = 0.40
+    regime_crisis_exposure: float = 0.20
 
     def __post_init__(self) -> None:
         if not self.risk_assets:
@@ -54,6 +59,14 @@ class StrategyConfig:
             raise ValueError("Filtered exposures must be in (0, 1].")
         if self.market_filter_days is not None and any(value is None for value in exposures):
             raise ValueError("Both filtered exposure values are required with a market filter.")
+        if self.regime_volatility_days < 2 or self.regime_baseline_volatility_days < 2:
+            raise ValueError("Regime volatility windows must be at least two days.")
+        if self.regime_volatility_days >= self.regime_baseline_volatility_days:
+            raise ValueError("Regime short volatility window must be shorter than the baseline window.")
+        if not 0 < self.regime_crisis_exposure <= self.regime_alert_exposure <= self.total_exposure:
+            raise ValueError("Regime exposures must satisfy 0 < crisis <= alert <= total exposure.")
+        if self.regime_switching and self.market_filter_days is not None:
+            raise ValueError("Regime switching cannot be combined with the market filter.")
 
     @property
     def symbols(self) -> tuple[str, ...]:
@@ -131,7 +144,23 @@ def _target_for_date(
                 : config.top_k_assets
             ]
         exposure = config.total_exposure
-        if config.market_filter_days is not None:
+        if config.regime_switching:
+            market = prices[config.benchmark]
+            market_returns = returns[config.benchmark]
+            market_average = market.rolling(config.moving_average_days).mean().loc[date]
+            short_volatility = (
+                market_returns.rolling(config.regime_volatility_days).std(ddof=0).loc[date]
+                * np.sqrt(TRADING_DAYS_PER_YEAR)
+            )
+            baseline_volatility = (
+                market_returns.rolling(config.regime_baseline_volatility_days).std(ddof=0).loc[date]
+                * np.sqrt(TRADING_DAYS_PER_YEAR)
+            )
+            if pd.notna(market_average) and pd.notna(short_volatility) and pd.notna(baseline_volatility) and baseline_volatility > 0:
+                crisis = current[config.benchmark] <= market_average and short_volatility >= 2.0 * baseline_volatility
+                alert = current[config.benchmark] <= market_average or short_volatility >= 1.5 * baseline_volatility
+                exposure = config.regime_crisis_exposure if crisis else config.regime_alert_exposure if alert else config.total_exposure
+        elif config.market_filter_days is not None:
             market = prices[config.benchmark]
             market_average = market.rolling(config.market_filter_days).mean().loc[date]
             exposure = (

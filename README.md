@@ -45,3 +45,25 @@ conda run -n deepstock python scripts/run_defensive_etf_backtest.py \
 
 The backtest writes reproducible outputs to `artifacts/backtests/latest/` and
 never connects to TWS or submits an order.
+
+## ARC Research Reports
+
+Deepstock ARC keeps regime control, route adapters, and portfolio risk checks
+separate. Regime reports include controlled-state durations and route-conditional
+benchmark results:
+
+```bash
+conda run -n deepstock python scripts/run_arc_regime_backtest.py \
+  --prices data/adjusted_daily_prices.csv
+```
+
+The Range adapter also writes fixed 504/252/252 walk-forward slices and applies
+the predeclared abnormal-move exit:
+
+```bash
+conda run -n deepstock python scripts/run_arc_grid_backtest.py \
+  --prices data/adjusted_daily_prices.csv
+```
+
+These commands are research-only. They include modeled costs and never submit
+orders.

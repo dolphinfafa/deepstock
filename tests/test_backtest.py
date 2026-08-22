@@ -10,7 +10,7 @@ from deepstock.backtest import (
     run_segmented_backtest,
     validate_prices,
 )
-from deepstock.turtle import TurtleConfig, run_turtle_backtest, summarize_turtle_segment
+from deepstock.turtle import TurtleConfig, run_turtle_backtest, summarize_turtle_segment, compare_turtle_route_modes
 from deepstock.paper_plan import create_paper_plan
 
 
@@ -138,6 +138,62 @@ def test_turtle_config_rejects_invalid_windows() -> None:
         TurtleConfig(entry_days=20, exit_days=20)
 
 
+def test_turtle_liquidity_filter_requires_turnover_and_blocks_illiquid_entries() -> None:
+    dates = pd.date_range("2020-01-01", periods=40, freq="B")
+    prices = pd.DataFrame(
+        {
+            "AAA": [100 + index for index in range(40)],
+            "SHY": [100.0] * 40,
+            "SPY": [100.0] * 40,
+        },
+        index=dates,
+    )
+    turnover = pd.DataFrame({"AAA": [1_000_000.0] * 40}, index=dates)
+    config = TurtleConfig(
+        risk_assets=("AAA",),
+        safe_asset="SHY",
+        benchmark="SPY",
+        entry_days=5,
+        exit_days=2,
+        max_positions=1,
+        min_avg_turnover=10_000_000.0,
+    )
+    with pytest.raises(ValueError, match="Turnover data"):
+        run_turtle_backtest(prices, config)
+    result = run_turtle_backtest(prices, config, turnover=turnover)
+    assert result.target_weights["AAA"].sum() == pytest.approx(0.0)
+
+
+def test_turtle_route_exits_when_arc_leaves_bull_state() -> None:
+    dates = pd.date_range("2020-01-01", periods=40, freq="B")
+    prices = pd.DataFrame(
+        {
+            "AAA": [100 + index for index in range(40)],
+            "SHY": [100.0] * 40,
+            "SPY": [100.0] * 40,
+        },
+        index=dates,
+    )
+    routes = pd.Series("stock_turtle_research", index=dates)
+    routes.loc[dates[25]:] = "defensive_etf"
+    config = TurtleConfig(
+        risk_assets=("AAA",), safe_asset="SHY", benchmark="SPY",
+        entry_days=5, exit_days=2, max_positions=1,
+    )
+    result = run_turtle_backtest(prices, config, strategy_routes=routes)
+    assert result.target_weights.loc[dates[24], "AAA"] > 0
+    assert result.target_weights.loc[dates[25], "AAA"] == pytest.approx(0.0)
+
+
+def test_turtle_route_comparison_uses_same_configuration() -> None:
+    prices = make_prices(days=520)
+    config = TurtleConfig(entry_days=20, exit_days=10, atr_days=10, max_positions=2)
+    routes = pd.Series("stock_turtle_research", index=prices.index)
+    comparison = compare_turtle_route_modes(prices, config, prices.index[300:], strategy_routes=routes)
+    assert set(comparison) == {"standalone", "arc_routed"}
+    assert comparison["standalone"]["config"] == comparison["arc_routed"]["config"]
+
+
 def test_turtle_config_limits_stock_positions() -> None:
     prices = make_prices(days=520)
     config = TurtleConfig(max_positions=2)
@@ -185,6 +241,16 @@ def test_adaptive_filter_and_top_k_limit_targets() -> None:
     result = run_backtest(prices, config)
     assert (result.target_weights.drop(columns="SHY") > 0).sum(axis=1).max() <= 2
     assert result.target_weights.sum(axis=1).max() <= 1.0 + 1e-9
+
+
+def test_regime_switching_rejects_market_filter_combination() -> None:
+    with pytest.raises(ValueError, match="cannot be combined"):
+        StrategyConfig(
+            regime_switching=True,
+            market_filter_days=200,
+            exposure_above_filter=0.8,
+            exposure_below_filter=0.4,
+        )
 
 
 def test_paper_plan_is_idempotent_and_kill_switch_blocks() -> None:

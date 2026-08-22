@@ -21,6 +21,18 @@
 - Add liquidity, delisting-return, and sector point-in-time controls before any
   further stock-Turtle parameter experiment; the corrected S&P 500 result is
   still a research baseline and not a paper strategy.
+- Use the refreshed licensed Norgate export's `volume`/`turnover` fields to add
+  one predeclared ADV entry filter. Norgate's Python API has no historical
+  sector-classification series, so do not add a point-in-time sector cap until
+  an appropriate licensed source is available.
+- Review the fixed-ADV result: the in-sample-selected 55/20/5 configuration
+  returned 60.59% OOS (annualized 9.98%, Sharpe 0.60, max drawdown -23.48%)
+  versus SPY 84.79%; the OOS-best 55/20/3 must not be selected retrospectively.
+- Replace the implicit zero-slippage missing-price exit with an explicit
+  delisting-return assumption and report it separately in Turtle results.
+- Do not use the stale `artifacts/robustness/stock-turtle-point-in-time`
+  parameter CSV until it is regenerated after the position-persistence fix;
+  the corrected baseline is recorded in `stock-turtle-research.md`.
 - Define the laptop runtime schedule and alert channel before implementing an
   unattended paper-execution agent.
 - Start the laptop paper observation period. Record daily plan IDs, TWS health,
@@ -38,6 +50,15 @@
 - Validate the adaptive ETF winner with walk-forward windows and more market
   regimes. Its fixed-split result improved risk-adjusted returns but still
   underperformed `SPY`; do not paper-trade it yet.
+- Validate the fixed three-state ETF regime overlay with predeclared
+  walk-forward windows. Its first fixed-split improvement over the 80%/40%
+  baseline is small; do not replace the frozen observation configuration yet.
+- Validate the ARC grid adapter with fixed walk-forward windows and explicit
+  trend, inventory, and loss limits; its first full-history result controlled
+  drawdown but materially lagged SPY.
+- Review the ARC bull-route result: the in-sample-selected 20/10/3 returned
+  -5.77% OOS with -33.36% maximum drawdown versus SPY +84.79%. Do not enable
+  the route or select a different configuration retrospectively.
 - Define explicit acceptance criteria for a defensive strategy, including
   whether lower drawdown justifies lower long-run return versus `SPY`.
 - On the Windows data node, run a local Norgate data query and record the

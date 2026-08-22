@@ -33,6 +33,16 @@ def membership_intervals(series) -> list[dict[str, str]]:
     return intervals
 
 
+def chunk_has_liquidity_fields(path: Path) -> bool:
+    """Return whether a cached chunk contains fields needed for ADV checks."""
+
+    try:
+        columns = set(pd.read_csv(path, nrows=0).columns)
+    except (OSError, pd.errors.EmptyDataError):
+        return False
+    return {"volume", "turnover"}.issubset(columns)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--watchlist", default="S&P 500 Current & Past")
@@ -65,7 +75,7 @@ def main() -> int:
         chunk_id = chunk_index // args.chunk_size
         prices_path = output / f"prices-{chunk_id:04d}.csv"
         membership_path = output / f"membership-{chunk_id:04d}.json"
-        if prices_path.exists() and membership_path.exists():
+        if prices_path.exists() and membership_path.exists() and chunk_has_liquidity_fields(prices_path):
             chunks.append({"chunk": chunk_id, "symbols": chunk_symbols, "status": "resumed"})
             continue
 
@@ -90,6 +100,8 @@ def main() -> int:
                             "date": price_series["Date"],
                             "symbol": symbol,
                             "adjusted_close": price_series["Close"],
+                            "volume": price_series["Volume"],
+                            "turnover": price_series["Turnover"],
                         }
                     )
                 )
@@ -118,6 +130,7 @@ def main() -> int:
         "chunks": chunks,
         "failures": failures,
         "adjustment": "Norgate TOTALRETURN Close",
+        "fields": ["date", "symbol", "adjusted_close", "volume", "turnover"],
         "license_note": "Licensed research data; do not commit or redistribute raw prices.",
     }
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")

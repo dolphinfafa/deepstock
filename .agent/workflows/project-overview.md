@@ -200,6 +200,54 @@ with three positions returned 12.83% out of sample, Sharpe 0.23, maximum
 drawdown -23.28%, and turnover 43.26 versus SPY at 84.79%. All six predeclared
 combinations underperformed SPY, so stock-Turtle paper trading remains blocked.
 
+The refreshed stock export contains adjusted close, volume, and turnover:
+1,301 requested symbols across 14 chunks and 4,108,688 rows, with 261 symbols
+recorded as unavailable. Norgate's Python API exposes current classifications
+but no historical sector time series, so liquidity filters are now possible but
+point-in-time sector caps remain blocked. Missing risk prices currently trigger
+a next-session safe-asset exit, which is an explicit but optimistic
+zero-slippage delisting assumption. The detailed research gate and next data
+requirements are recorded in `stock-turtle-research.md`; no Paper or live
+order is authorized from this baseline.
+
+The first fixed-ADV experiment uses a USD 10 million prior 20-session average
+turnover requirement for new entries and preserves the original six-parameter
+grid and split. The in-sample-ranked 55/20, five-position configuration
+returned 60.59% out of sample (9.98% annualized, Sharpe 0.60, maximum drawdown
+-23.48%) versus SPY at 84.79%. A different configuration had a higher OOS
+return but was not selected in sample, so it is not used retrospectively; the
+stock strategy remains research-only.
+
+A fixed three-state regime overlay was also tested on the defensive ETF history:
+80% exposure in normal conditions, 40% in alert conditions, and 20% in crisis
+conditions using the SPY 200-day trend plus fixed 20/252-day volatility ratios.
+On the 2021-08-23 split it returned 39.30% OOS, annualized 6.88%, Sharpe 1.18,
+and maximum drawdown -11.50%, versus the frozen 80%/40% baseline at 38.96%,
+6.83%, Sharpe 1.17, and -11.70%. The small difference does not authorize
+changing the observed ETF configuration.
+
+The multi-strategy controller is named Deepstock ARC (Adaptive Regime
+Controller). Its fixed four-state routing sends `crisis` and `defensive` to the
+defensive ETF module, `range` to a pending grid adapter, and `bull` to a pending
+point-in-time stock-Turtle adapter. The initial Norgate history check found
+next-session SPY average returns of -0.14% in crisis, +0.07% in defensive,
++0.09% in range, and +0.04% in bull. This is a regime diagnostic, not a
+combined-strategy result; ARC remains research-only with no order capability.
+
+The ARC range-route grid adapter is now implemented as a bounded, long-only
+SPY module. Its fixed 50/20-day anchor-volatility rules, four levels, and 40%
+maximum exposure produced 63.37% total return, 2.29% annualized, Sharpe 1.25,
+and -6.12% maximum drawdown over the 2004-2026 Norgate ETF history, versus SPY
+at 860.23%. This is a drawdown-control result with substantial opportunity
+cost, not evidence that the grid should run outside range states.
+
+The ARC bull route now gates the point-in-time stock Turtle engine: entries are
+allowed only in `bull`, and leaving that state moves targets to SHY on the next
+session. With the fixed ADV rule and six predeclared configurations, the
+in-sample-selected 20/10, three-position route returned -5.77% OOS,
+annualized -1.19%, Sharpe -0.03, and maximum drawdown -33.36%, versus SPY at
+84.79%. This route fails the current acceptance bar and remains research-only.
+
 The first Norgate ETF long-history baseline downloaded the seven defensive ETF
 symbols into a Git-ignored local file (45,596 rows, common coverage
 2004-11-18 through 2026-08-21). The frozen 252/200, top-2, 80%/40% adaptive
