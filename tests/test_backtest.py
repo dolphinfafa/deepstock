@@ -111,6 +111,28 @@ def test_turtle_accepts_missing_risk_prices_with_point_in_time_eligibility() -> 
     assert result.target_weights.loc[dates[5], "BBB"] == 0.0
 
 
+def test_turtle_holds_a_position_until_exit() -> None:
+    dates = pd.date_range("2020-01-01", periods=40, freq="B")
+    prices = pd.DataFrame(
+        {
+            "AAA": [100 + index for index in range(40)],
+            "BBB": [100.0] * 40,
+            "SHY": [100.0] * 40,
+            "SPY": [100.0] * 40,
+        },
+        index=dates,
+    )
+    config = TurtleConfig(
+        risk_assets=("AAA", "BBB"), safe_asset="SHY", benchmark="SPY",
+        entry_days=5, exit_days=2, max_positions=1,
+    )
+
+    result = run_turtle_backtest(prices, config)
+
+    assert result.target_weights.loc[dates[21], "AAA"] > 0
+    assert result.target_weights.loc[dates[30], "AAA"] > 0
+
+
 def test_turtle_config_rejects_invalid_windows() -> None:
     with pytest.raises(ValueError, match="Exit window"):
         TurtleConfig(entry_days=20, exit_days=20)

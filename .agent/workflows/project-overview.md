@@ -191,6 +191,15 @@ inputs. The existing Turtle engine is not yet valid for this matrix because it
 requires complete daily columns; membership-aware, missing-price handling must
 be implemented before ranking any stock-Turtle result.
 
+The membership-aware Turtle engine was then validated on the downloaded
+universe. A correctness bug that discarded existing positions when a stronger
+new breakout appeared was fixed; positions now persist until exit and only
+vacant slots accept new entries. The first run using the buggy behavior was
+discarded. With the corrected engine, the in-sample-ranked 20/10 configuration
+with three positions returned 12.83% out of sample, Sharpe 0.23, maximum
+drawdown -23.28%, and turnover 43.26 versus SPY at 84.79%. All six predeclared
+combinations underperformed SPY, so stock-Turtle paper trading remains blocked.
+
 The first Norgate ETF long-history baseline downloaded the seven defensive ETF
 symbols into a Git-ignored local file (45,596 rows, common coverage
 2004-11-18 through 2026-08-21). The frozen 252/200, top-2, 80%/40% adaptive

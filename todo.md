@@ -18,6 +18,9 @@
 - Implement and test missing-price and point-in-time membership handling in the
   Turtle engine; do not rank or tune parameters on the downloaded chunks until
   this gate passes.
+- Add liquidity, delisting-return, and sector point-in-time controls before any
+  further stock-Turtle parameter experiment; the corrected S&P 500 result is
+  still a research baseline and not a paper strategy.
 - Define the laptop runtime schedule and alert channel before implementing an
   unattended paper-execution agent.
 - Start the laptop paper observation period. Record daily plan IDs, TWS health,
