@@ -24,6 +24,7 @@ def load_point_in_time_inputs(universe_dir: Path, etf_prices_path: Path) -> tupl
     prices_long = pd.concat((prices_long, etf), ignore_index=True)
     prices_long["date"] = pd.to_datetime(prices_long["date"])
     prices = prices_long.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
+    prices = prices.dropna(subset=["SPY", "SHY"])
     risk_symbols = sorted(set(prices.columns).difference({"SPY", "SHY"}))
     eligibility = pd.DataFrame(False, index=prices.index, columns=risk_symbols)
     for path in membership_files:

@@ -105,38 +105,38 @@ def run_turtle_backtest(
     active: set[str] = set()
     for date in prices.index:
         for symbol in tuple(active):
-            if pd.notna(exit_.at[date, symbol]) and risk.at[date, symbol] < exit_.at[date, symbol]:
-                active.remove(symbol)
-        for symbol in config.risk_assets:
-            if (
-                symbol not in active
-                and eligibility is not None
-                and eligibility.at[date, symbol]
-                and pd.notna(entry.at[date, symbol])
-                and pd.notna(risk.at[date, symbol])
-                and risk.at[date, symbol] > entry.at[date, symbol]
+            if pd.isna(risk.at[date, symbol]) or (
+                pd.notna(exit_.at[date, symbol]) and risk.at[date, symbol] < exit_.at[date, symbol]
             ):
-                active.add(symbol)
-        ranked = sorted(
-            active,
-            key=lambda symbol: (
+                active.remove(symbol)
+        new_candidates: list[str] = []
+        for symbol in config.risk_assets:
+            if symbol not in active and eligibility.at[date, symbol] and pd.notna(entry.at[date, symbol]) and pd.notna(risk.at[date, symbol]) and risk.at[date, symbol] > entry.at[date, symbol]:
+                new_candidates.append(symbol)
+
+        def breakout_strength(symbol: str) -> float:
+            return (
                 risk.at[date, symbol] / entry.at[date, symbol]
                 if pd.notna(entry.at[date, symbol]) and entry.at[date, symbol] > 0
                 else 0.0
-            ),
-            reverse=True,
-        )
+            )
+
+        # Existing positions survive until their exit condition; only vacant
+        # slots are filled with the strongest newly qualified breakouts.
+        selected = list(active)
         sector_map = dict(config.sector_by_symbol)
-        selected: list[str] = []
         sector_counts: dict[str, int] = {}
-        for symbol in ranked:
+        for symbol in selected:
+            sector = sector_map.get(symbol, symbol)
+            sector_counts[sector] = sector_counts.get(sector, 0) + 1
+        for symbol in sorted(new_candidates, key=breakout_strength, reverse=True):
+            if len(selected) >= config.max_positions:
+                break
             sector = sector_map.get(symbol, symbol)
             if config.max_per_sector is not None and sector_counts.get(sector, 0) >= config.max_per_sector:
                 continue
             selected.append(symbol)
             sector_counts[sector] = sector_counts.get(sector, 0) + 1
-            if len(selected) >= config.max_positions:
-                break
         active = set(selected)
         if active:
             raw = pd.Series(
