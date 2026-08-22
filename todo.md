@@ -13,6 +13,8 @@
 - Build a point-in-time, liquid stock universe with delisted names and run the
   stock Turtle script using a fixed split before comparing it with the ETF
   version. Do not use today's survivors as the historical universe.
+- Run the Norgate S&P 500 current-and-past exporter pilot, then implement
+  membership-aware Turtle eligibility before downloading all chunks.
 - Define the laptop runtime schedule and alert channel before implementing an
   unattended paper-execution agent.
 - Start the laptop paper observation period. Record daily plan IDs, TWS health,

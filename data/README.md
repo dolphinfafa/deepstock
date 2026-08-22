@@ -45,3 +45,9 @@ and include a non-secret manifest documenting the universe construction,
 liquidity filter, provider, actual coverage, and license. Close-only data cannot
 validate bid-ask spreads, gaps, or earnings-event execution; those limitations
 must remain in the backtest report.
+
+The Norgate stock-universe exporter stores price CSV chunks plus a JSON mapping
+of each symbol to inclusive historical index-membership intervals. These
+intervals must be applied at each signal date; treating the union of current
+and past constituents as eligible on every date recreates survivorship and
+look-ahead bias.

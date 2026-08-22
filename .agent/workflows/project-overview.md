@@ -178,6 +178,12 @@ from 1990-01-02 through 2026-08-21, while `US Equities Delisted` has 21,134
 symbols and returns historical prices. The Windows node is ready for a staged,
 resumable download of the point-in-time research universe.
 
+The stock-Turtle data preparation now includes a resumable Norgate exporter for
+the `S&P 500 Current & Past` watchlist. It stores adjusted price chunks and
+historical constituent intervals separately, so a future engine can enforce
+point-in-time membership instead of treating all current/past symbols as
+always eligible. The initial pilot must be validated before a full download.
+
 The first Norgate ETF long-history baseline downloaded the seven defensive ETF
 symbols into a Git-ignored local file (45,596 rows, common coverage
 2004-11-18 through 2026-08-21). The frozen 252/200, top-2, 80%/40% adaptive
