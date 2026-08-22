@@ -54,9 +54,11 @@ unchanged plan: duplicate plan IDs are rejected by design.
 
 ## Windows Scheduling
 
-The Windows node uses China Standard Time. After confirming NDU has completed
-its daily update, the wrapper
-`scripts\\run_defensive_etf_observation.cmd` can be registered as a daily
-Task Scheduler job at 07:30 local time. It stops on the first failure and
-appends diagnostics to `artifacts\\paper\\defensive-etf\\scheduler.log`.
-The task is an observation job only; it does not start TWS or submit orders.
+The Windows node uses China Standard Time. The wrapper
+`scripts\\run_defensive_etf_observation.cmd` is registered as the daily Task
+Scheduler job `Deepstock_Defensive_ETF_Observation` at 07:30 local time. It is
+configured to wake the computer from sleep and to run as soon as possible after
+a missed start. It stops on the first failure and appends diagnostics to
+`artifacts\\paper\\defensive-etf\\scheduler.log`. The task is an observation
+job only; it does not start TWS or submit orders. Windows power policy or a
+disconnected AC adapter may still prevent wake-up.
