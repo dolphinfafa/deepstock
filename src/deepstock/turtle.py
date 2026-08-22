@@ -63,11 +63,38 @@ def _summary(daily: pd.DataFrame, config: TurtleConfig) -> dict[str, Any]:
     }
 
 
-def run_turtle_backtest(prices: pd.DataFrame, config: TurtleConfig | None = None) -> BacktestResult:
+def run_turtle_backtest(
+    prices: pd.DataFrame,
+    config: TurtleConfig | None = None,
+    eligibility: pd.DataFrame | None = None,
+) -> BacktestResult:
     """Run a close-only Turtle breakout model with next-session execution."""
 
     config = config or TurtleConfig()
-    prices = validate_prices(prices, config)
+    if eligibility is None:
+        prices = validate_prices(prices, config)
+        eligibility = pd.DataFrame(True, index=prices.index, columns=config.risk_assets)
+    else:
+        if not isinstance(prices.index, pd.DatetimeIndex):
+            raise ValueError("Prices must use a DatetimeIndex.")
+        if prices.index.has_duplicates or not prices.index.is_monotonic_increasing:
+            raise ValueError("Price dates must be unique and sorted ascending.")
+        missing = set(config.symbols).difference(prices.columns)
+        if missing:
+            raise ValueError(f"Missing price columns: {sorted(missing)}")
+        missing_eligibility = set(config.risk_assets).difference(eligibility.columns)
+        if missing_eligibility:
+            raise ValueError(f"Missing eligibility columns: {sorted(missing_eligibility)}")
+        prices = prices.loc[:, list(config.symbols)].copy().astype(float)
+        if prices[[config.safe_asset, config.benchmark]].isna().any().any():
+            raise ValueError("Safe asset and benchmark prices cannot be missing.")
+        risk_values = prices.loc[:, list(config.risk_assets)]
+        if (risk_values.where(risk_values.notna()) <= 0).any().any():
+            raise ValueError("Risk-asset prices must be positive where present.")
+        eligibility = eligibility.reindex(index=prices.index, columns=config.risk_assets)
+        if eligibility.isna().any().any():
+            raise ValueError("Eligibility must cover every price date and risk asset.")
+        eligibility = eligibility.astype(bool)
     returns = prices.pct_change(fill_method=None).fillna(0.0)
     risk = prices.loc[:, list(config.risk_assets)]
     entry = risk.rolling(config.entry_days).max().shift(1)
@@ -81,7 +108,14 @@ def run_turtle_backtest(prices: pd.DataFrame, config: TurtleConfig | None = None
             if pd.notna(exit_.at[date, symbol]) and risk.at[date, symbol] < exit_.at[date, symbol]:
                 active.remove(symbol)
         for symbol in config.risk_assets:
-            if symbol not in active and pd.notna(entry.at[date, symbol]) and risk.at[date, symbol] > entry.at[date, symbol]:
+            if (
+                symbol not in active
+                and eligibility is not None
+                and eligibility.at[date, symbol]
+                and pd.notna(entry.at[date, symbol])
+                and pd.notna(risk.at[date, symbol])
+                and risk.at[date, symbol] > entry.at[date, symbol]
+            ):
                 active.add(symbol)
         ranked = sorted(
             active,

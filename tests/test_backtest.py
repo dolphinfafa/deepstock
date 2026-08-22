@@ -83,6 +83,34 @@ def test_turtle_strategy_uses_next_day_and_exits_declining_asset() -> None:
     assert result.summary["total_transaction_cost"] >= 0
 
 
+def test_turtle_accepts_missing_risk_prices_with_point_in_time_eligibility() -> None:
+    dates = pd.date_range("2020-01-01", periods=40, freq="B")
+    prices = pd.DataFrame(
+        {
+            "AAA": range(100, 140),
+            "BBB": [float("nan")] * 10 + list(range(200, 230)),
+            "SHY": [100.0] * 40,
+            "SPY": [100.0] * 40,
+        },
+        index=dates,
+    )
+    eligibility = pd.DataFrame(True, index=dates, columns=["AAA", "BBB"])
+    eligibility.loc[dates[:10], "BBB"] = False
+    config = TurtleConfig(
+        risk_assets=("AAA", "BBB"),
+        safe_asset="SHY",
+        benchmark="SPY",
+        entry_days=5,
+        exit_days=2,
+        max_positions=1,
+    )
+
+    result = run_turtle_backtest(prices, config, eligibility=eligibility)
+
+    assert len(result.daily) == len(dates)
+    assert result.target_weights.loc[dates[5], "BBB"] == 0.0
+
+
 def test_turtle_config_rejects_invalid_windows() -> None:
     with pytest.raises(ValueError, match="Exit window"):
         TurtleConfig(entry_days=20, exit_days=20)
