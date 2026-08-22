@@ -15,6 +15,9 @@
   version. Do not use today's survivors as the historical universe.
 - Run the Norgate S&P 500 current-and-past exporter pilot, then implement
   membership-aware Turtle eligibility before downloading all chunks.
+- Implement and test missing-price and point-in-time membership handling in the
+  Turtle engine; do not rank or tune parameters on the downloaded chunks until
+  this gate passes.
 - Define the laptop runtime schedule and alert channel before implementing an
   unattended paper-execution agent.
 - Start the laptop paper observation period. Record daily plan IDs, TWS health,

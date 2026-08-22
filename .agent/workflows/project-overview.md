@@ -184,6 +184,13 @@ historical constituent intervals separately, so a future engine can enforce
 point-in-time membership instead of treating all current/past symbols as
 always eligible. The initial pilot must be validated before a full download.
 
+The pilot succeeded and the full export completed on 2026-08-22: 1,301 S&P 500
+current-and-past symbols, 14 price chunks, approximately 105 MB, with 261
+symbols recorded as unavailable. The raw chunks are local Git-ignored research
+inputs. The existing Turtle engine is not yet valid for this matrix because it
+requires complete daily columns; membership-aware, missing-price handling must
+be implemented before ranking any stock-Turtle result.
+
 The first Norgate ETF long-history baseline downloaded the seven defensive ETF
 symbols into a Git-ignored local file (45,596 rows, common coverage
 2004-11-18 through 2026-08-21). The frozen 252/200, top-2, 80%/40% adaptive
