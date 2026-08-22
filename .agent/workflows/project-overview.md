@@ -156,8 +156,44 @@ reported a healthy status and exposed 14,633 symbols in `US Equities` plus
 1,413 in `US Equities Delisted`. Under the current US Stock Data Trial,
 `AAPL` returned daily history only from 2024-08-21 through 2026-08-20; this is
 shorter than the long-history tiers and is insufficient for the planned
-survivorship-free long-horizon backtest. Do not bulk-download until the
-available history and the trial/export terms are confirmed.
+survivorship-free long-horizon backtest. The user has since purchased Norgate
+Platinum, but the local updater has not yet reflected the change: on
+2026-08-22 `AAPL` still returned history only from 2024-08-21 through
+2026-08-21 (502 rows). Refresh/re-authenticate the updater and repeat the
+history check before any bulk download.
+
+On a repeat check after the user requested another verification, the same
+Windows node returned empty quote dates for `AAPL` and Norgate rejected
+`price_timeseries` with `Access is denied`. Treat this as an updater
+authorization/session issue, not as evidence that Platinum lacks history.
+
+After the database-folder change and updater restart, Platinum entitlement was
+verified: `AAPL` history begins on 1990-01-02 (9,210 daily rows). The local
+database refresh remains incomplete: AAPL ends on 2026-07-29 and the delisted
+database is not yet exposed by the Python API. Wait for the updater to finish
+before downloading the research universe.
+
+The refresh subsequently completed on 2026-08-22. `AAPL` has 9,227 daily bars
+from 1990-01-02 through 2026-08-21, while `US Equities Delisted` has 21,134
+symbols and returns historical prices. The Windows node is ready for a staged,
+resumable download of the point-in-time research universe.
+
+The first Norgate ETF long-history baseline downloaded the seven defensive ETF
+symbols into a Git-ignored local file (45,596 rows, common coverage
+2004-11-18 through 2026-08-21). The frozen 252/200, top-2, 80%/40% adaptive
+configuration was evaluated without reselecting parameters. A 504/252/252
+walk-forward produced 19 test windows and remained regime-dependent, including
+one -9.81% test window. Full-period cost stress produced Sharpe 1.02 at 0 bps,
+1.00 at 5 bps, 0.98 at 10 bps, and 0.94 at 20 bps, with maximum drawdown from
+-11.56% to -12.12%. This is a robustness baseline, not a go-live result.
+
+An order-free eight-week observation workflow now exists for the frozen ETF
+configuration. On the Windows Norgate node it exports total-return ETF data
+with a provenance manifest; the plan generator then produces a deterministic
+`plan_id` and target weights, while the observer appends one idempotent JSONL
+record. These utilities have no `ibapi` import and cannot submit orders. The
+acceptance criteria and daily procedure are in
+`defensive-etf-observation.md`.
 
 ## Key Decisions
 

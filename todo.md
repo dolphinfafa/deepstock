@@ -34,9 +34,14 @@
   whether lower drawdown justifies lower long-run return versus `SPY`.
 - On the Windows data node, run a local Norgate data query and record the
   returned schema/provenance; do not use it for live orders.
-- Confirm whether the current Norgate trial is intentionally limited to
-  approximately two years of history and whether bulk local export remains
-  permitted after the trial; upgrade or adjust the backtest horizon before
-  downloading the full universe.
+- Design and run a staged, resumable Norgate Platinum download of current and
+  delisted US equities. Record data provenance, update timestamps, symbol
+  coverage, and failed symbols; do not include unlicensed redistribution.
+- Keep the frozen ETF configuration unchanged while starting the eight-week
+  order-free observation and risk review; use Norgate primarily for the
+  separate survivorship-free stock-Turtle research.
+- Run the Windows Norgate exporter after each completed session and preserve
+  eight weeks of unique ETF observation records. Exercise stale-data,
+  duplicate-plan, and kill-switch paths before considering paper orders.
 - Run the Windows local read-only TWS probe after confirming the trusted-IP
   allowlist remains `127.0.0.1`; never forward port 7497.

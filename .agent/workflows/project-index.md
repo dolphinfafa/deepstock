@@ -61,6 +61,7 @@ without user confirmation.
 | Broker API | `ibapi` | 9.81.1.post1 | Approved for read-only IBKR connectivity checks |
 | Research | `numpy`, `pandas` | See `pyproject.toml` | Approved for deterministic backtesting |
 | Research data | Massive REST API | API account subscription | Adjusted daily ETF history only |
+| Research data | Norgate Data Platinum | Windows data node | Licensed long-history US equity/ETF research |
 | Framework | Unselected | - | Requires approval |
 | Database | Unselected | - | Requires approval |
 | ORM | Unselected | - | Requires approval |
@@ -126,4 +127,7 @@ conda run -n deepstock python -m pytest
 # Download adjusted ETF daily bars using the local Massive key
 conda run -n deepstock python scripts/download_massive_adjusted_prices.py \
   --from 2010-01-01 --to 2026-08-19
+
+# Windows Norgate node only: export defensive ETF total-return prices
+conda run -n deepstock python scripts/download_norgate_defensive_etfs.py
 ```
