@@ -10,6 +10,7 @@ from deepstock.backtest import StrategyConfig
 from deepstock.observation import record_observation
 from deepstock.paper_plan import create_defensive_etf_plan
 from scripts.generate_defensive_etf_plan import main as generate_plan_main
+from scripts.record_paper_observation import main as record_observation_main
 
 
 def defensive_prices() -> pd.DataFrame:
@@ -44,6 +45,20 @@ def test_observation_rejects_duplicate_plan_id(tmp_path) -> None:
     assert len(records.read_text(encoding="utf-8").splitlines()) == 1
     with pytest.raises(ValueError, match="already exists"):
         record_observation(plan, records)
+
+
+def test_scheduler_duplicate_skip_is_successful_and_does_not_write(tmp_path, monkeypatch) -> None:
+    plan = create_defensive_etf_plan(defensive_prices())
+    plan_path = tmp_path / "plan.json"
+    records = tmp_path / "observations.jsonl"
+    plan_path.write_text(json.dumps(plan), encoding="utf-8")
+    record_observation(plan, records)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["record_paper_observation.py", "--skip-duplicate", "--plan", str(plan_path), "--records", str(records)],
+    )
+    assert record_observation_main() == 0
+    assert len(records.read_text(encoding="utf-8").splitlines()) == 1
 
 
 def test_generator_drops_pre_inception_missing_rows(tmp_path, monkeypatch) -> None:

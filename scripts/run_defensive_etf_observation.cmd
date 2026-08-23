@@ -16,7 +16,7 @@ if errorlevel 1 (
   echo [%date% %time%] plan generation failed>>%LOG%
   exit /b 1
 )
-C:\ProgramData\miniconda3\Scripts\conda.exe run -n deepstock python scripts\record_paper_observation.py --plan artifacts\paper\defensive-etf\latest.json >>%LOG% 2>&1
+C:\ProgramData\miniconda3\Scripts\conda.exe run -n deepstock python scripts\record_paper_observation.py --skip-duplicate --plan artifacts\paper\defensive-etf\latest.json >>%LOG% 2>&1
 if errorlevel 1 (
   echo [%date% %time%] observation recording failed>>%LOG%
   exit /b 1
