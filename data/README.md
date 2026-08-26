@@ -51,3 +51,30 @@ of each symbol to inclusive historical index-membership intervals. These
 intervals must be applied at each signal date; treating the union of current
 and past constituents as eligible on every date recreates survivorship and
 look-ahead bias.
+
+## Global Futures Trend Input (Planned)
+
+The AHL-inspired global futures trend study has no approved historical input
+yet. It must not run from ETF proxies, IBKR snapshots, or a generic adjusted
+close file. A provider and licensed, roll-aware continuous-contract history
+must be available before implementing a performance backtest.
+
+Each imported futures dataset must have a non-secret manifest containing:
+
+- provider, licence, retrieval timestamp, actual coverage, exchange calendar,
+  and an explicit source-to-research-symbol mapping;
+- contract root, exchange, currency, point value / multiplier, tick size,
+  initial and maintenance margin metadata, and exchange fees when available;
+- daily official settlement prices for individual contracts, including expiry
+  and first-notice / last-trade dates;
+- continuous-series methodology: eligible contracts, roll trigger and dates,
+  roll window, back-adjustment method, and whether returns come from actual
+  contract rolls or an adjusted synthetic series;
+- currency conversion source and timestamp policy for non-USD contracts;
+- missing-session, limit-move, stale-price, and contract-delisting policies.
+
+The research engine must size and book returns on actual contract metadata,
+then independently reconcile results with the documented continuous series.
+It must model both sides of every scheduled roll, commissions, bid-ask/slippage
+and exchange fees. Back-adjusted prices may create signals but are not by
+themselves a tradeable return series.

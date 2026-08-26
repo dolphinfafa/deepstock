@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ARC | Deepstock</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header"><a class="brand" href="index.html"><span class="brand-mark">D</span>DEEPSTOCK</a><div class="header-meta"><span>策略研究库</span><span class="status">研究环境 · 不执行订单</span></div></header>
+  <main class="container">
+    <a class="back" href="index.html">← 返回策略研究库</a>
+    <section class="detail-hero"><p class="eyebrow">COMPOSITE STRATEGY · RESEARCH LOCKED</p><div class="detail-title"><span class="code arc">ARC</span><div><h1>Adaptive Regime Controller</h1><p>以市场状态路由不同策略模块的组合控制器</p></div></div></section>
+    <div class="detail-layout"><div class="detail-main">
+      <section class="block"><h2>策略思想</h2><p>ARC 用 SPY 趋势、波动率和市场宽度划分 Crisis、Defensive、Range、Bull 四种状态。Crisis / Defensive 路由防御型 ETF，Range 路由有界 SPY 网格，Bull 路由点时股票池的个股海龟。</p><p>状态在收盘后形成，下一交易日执行。组合风险层独立于路由，限制总暴露、单标的和行业集中度、单日损失与最大回撤；数据异常时转入 SHY/现金。</p></section>
+      <section class="block"><h2>最新组合回测</h2><p>固定 3 日确认、5 日最短持有、10% 调仓带宽和 10 日路由冷却；连续样本为 2002-07-26 至 2026-08-21，计入 5 bps 成本和切换 / 重新入场成本。</p><div class="metrics"><div class="metric"><span>总收益</span><b>110.30%</b><small>连续组合</small></div><div class="metric"><span>年化收益</span><b>3.14%</b><small>6,057 交易日</small></div><div class="metric"><span>Sharpe</span><b>0.39</b><small>成本后</small></div><div class="metric negative"><span>最大回撤</span><b>-26.34%</b><small>组合级</small></div></div><table class="data-table"><thead><tr><th>项目</th><th>结果</th><th>说明</th></tr></thead><tbody><tr><td>总换手</td><td>98.40</td><td>总成本 9.84%</td></tr><tr><td>状态切换</td><td>153 次</td><td>切换 / 重新入场成本 3.18%</td></tr><tr><td>Walk-Forward</td><td>22 窗口</td><td>第 22 窗口换手超固定阈值</td></tr><tr><td>SPY 总收益</td><td>1,286.07%</td><td>同期基准</td></tr></tbody></table></section>
+      <section class="block"><h2>状态控制器诊断</h2><p>固定反抖动候选采用 5 日确认、10 日最短持有和 20 日状态再入冷却。它把控制器切换从每 252 交易日 7.41 次降至 4.51 次，Bull / Range 往返从 96 次降至 55 次，平均状态持续时间升至 55 日。</p><p>后续的固定“快防守、慢恢复”实验使用 2 日风险进入确认，5 日恢复确认，10 日最短持有和 20 日再入冷却。它将执行路由切换降至 96 次，连续组合改善至总收益 177.26%、年化 4.33%、Sharpe 0.53、最大回撤 -18.22%。</p><table class="data-table"><thead><tr><th>固定组合</th><th>路由切换</th><th>最大回撤</th><th>WF 换手失败</th></tr></thead><tbody><tr><td>现有 3/5 控制器</td><td>153</td><td>-26.34%</td><td>1 / 22</td></tr><tr><td>快防守、慢恢复</td><td>96</td><td>-18.22%</td><td>2 / 22</td></tr></tbody></table><p class="method">这不是已选择的 ARC 规则。三个固定控制器的 Crisis 标签后 5、20、60 日 SPY 平均收益均为正，表明确认可能让防御标签滞后于初始冲击。快防守实验改善连续结果，但增加了固定 Walk-Forward 换手失败，因此不通过准入。</p></section>
+    </div><aside>
+      <section class="rail-block"><p class="eyebrow">CURRENT STATUS</p><h2>研究锁定</h2><p>Walk-Forward 存在换手失败窗口，未获准进入模拟盘或任何订单系统。</p></section>
+      <section class="rail-block"><p class="eyebrow">PROGRESS</p><div class="progress"><div class="progress-item done"><b>状态规则固定</b><span>四状态与路由定义完成</span></div><div class="progress-item done"><b>模块与成本整合</b><span>连续 OOS 组合已完成</span></div><div class="progress-item done"><b>反抖动诊断</b><span>固定冷却候选降低状态往返</span></div><div class="progress-item current"><b>状态时序审计</b><span>Crisis 标签常滞后于初始冲击</span></div></div></section>
+      <section class="rail-block"><p class="eyebrow">NEXT RESEARCH</p><ul class="next-list"><li>预声明新的状态特征与时序实验，不改当前规则。</li><li>拆分状态切换换手与模块内部换手。</li><li>不以失败窗口或前瞻结果调参。</li></ul></section>
+    </aside></div>
+  </main>
+  <footer>Deepstock Research Library · ARC 结果截至 2026-08-25</footer>
+</body>
+</html>

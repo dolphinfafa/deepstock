@@ -26,6 +26,15 @@ Each stage must preserve the assumptions and input data needed to reproduce its
 output. Strategy evaluation must address look-ahead bias, survivorship bias,
 data leakage, transaction costs, slippage, liquidity, and corporate actions.
 
+The independent SPY mean-reversion baseline is implemented in
+`src/deepstock/mean_reversion.py`. It is long-only SPY/SHY research using a
+fixed 20-session Z-score entry, a 200-session trend filter, next-session
+execution, and 5 bps modeled costs. The fixed 2021-08-23 OOS period returned
+15.00% versus SPY at 84.79%; seven of its 22 fixed Walk-Forward windows were
+negative. It is therefore `research_only_no_orders` and has no Paper, live, or
+ARC routing authority. Its fixed specification and research gate are recorded
+in `mean-reversion-strategy.md`.
+
 ## Interfaces and Data Storage
 
 No project API, database schema, or persistence layer exists yet. Document
@@ -264,6 +273,27 @@ with a provenance manifest; the plan generator then produces a deterministic
 record. These utilities have no `ibapi` import and cannot submit orders. The
 acceptance criteria and daily procedure are in
 `defensive-etf-observation.md`.
+
+An AHL-inspired global futures trend program is planned, but has no historical
+futures dataset or backtest result. It is not a replication claim for Man AHL:
+the proprietary model, instruments, execution, portfolio construction, and
+risk controls are not public. Before any engine is run, a licensed daily
+settlement dataset with individual contracts, documented continuous-series and
+roll treatment, contract metadata, and coverage manifest is required. ETF
+proxies and IBKR historical snapshots are not substitutes. The written
+pre-registration is in `ahl-global-futures-trend.md`; it is research-only, has
+no IBKR order authority, and cannot replace ARC's Bull route without its own
+fixed OOS and Walk-Forward validation.
+
+Strategy selection now has an order-free shadow-governance layer. Its registry
+contains every current strategy, but only the frozen Defensive ETF strategy may
+submit an observation snapshot; all other strategies remain research-only. A
+fixed policy evaluates data freshness, costs, rolling OOS evidence,
+Walk-Forward consistency, turnover, drawdown, and completed shadow sessions.
+It writes one append-only recommendation per strategy and as-of date, cannot
+authorize paper/live execution, and requires a separate human review even when
+it returns `eligible_for_paper_review`. The operating contract is in
+`strategy-governance.md`.
 
 ## Key Decisions
 

@@ -61,6 +61,31 @@ controller and fixed 10%/10-session turnover controls. Its 22-window
 Walk-Forward failed one turnover window. The 5/10 controller also failed its
 fixed turnover gate. Both remain research-only.
 
+## Controller Diagnostic: 2026-08-25
+
+The controller was audited without changing the active rule. The current 3/5
+controller made 161 state switches (7.41 per 252 sessions), including 96
+`bull`/`range` switches. A predeclared 5-confirmation/10-hold/20-session
+re-entry-cooldown diagnostic candidate reduced this to 98 switches (4.51 per
+252 sessions), 55 `bull`/`range` switches, and a 55-session average state
+duration. This is a diagnostic candidate only; it is not selected for ARC.
+
+Forward returns expose a separate timing weakness: the controlled `crisis`
+state had positive average SPY returns at 5, 20, and 60 sessions in all three
+fixed controller variants. Confirmation can reduce churn but can also label a
+market after its initial shock. The next permitted research is a predeclared
+state-feature and timing experiment; no OOS result may choose a controller.
+
+The first predeclared timing experiment used two-session risk-off confirmation
+that bypasses the hold and re-entry cooldown, with five-session recovery
+confirmation, ten-session minimum hold, and a 20-session re-entry cooldown.
+Using the same point-in-time Bull candidate, data, cost model, and 22-window
+Walk-Forward evaluation, it improved the continuous result to 177.26% total,
+4.33% annualized, Sharpe 0.53, and -18.22% maximum drawdown. Executed route
+switches fell from 153 to 96. However, two Walk-Forward windows exceeded the
+fixed turnover threshold, versus one for the prior controller. The candidate
+therefore remains unselected and research-only.
+
 ## Execution Boundary
 
 Current status is `research_only_no_orders` and `paper_authorized` is false. The

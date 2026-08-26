@@ -40,6 +40,10 @@ class ARCConfig:
     bull_breadth: float = 0.5
     confirmation_days: int = 3
     min_hold_days: int = 5
+    reentry_cooldown_days: int = 0
+    risk_off_confirmation_days: int | None = None
+    risk_off_bypasses_min_hold: bool = False
+    risk_off_bypasses_reentry_cooldown: bool = False
 
     def __post_init__(self) -> None:
         if self.benchmark not in self.risk_assets:
@@ -56,6 +60,59 @@ class ARCConfig:
             raise ValueError("Bull breadth must be in (0, 1].")
         if self.confirmation_days < 1 or self.min_hold_days < 1:
             raise ValueError("Confirmation and minimum hold days must be positive.")
+        if self.reentry_cooldown_days < 0:
+            raise ValueError("State reentry cooldown cannot be negative.")
+        if self.risk_off_confirmation_days is not None and self.risk_off_confirmation_days < 1:
+            raise ValueError("Risk-off confirmation days must be positive when set.")
+
+
+def apply_regime_hysteresis(raw_regime: pd.Series, config: ARCConfig) -> pd.Series:
+    """Apply fixed confirmation, minimum hold, and re-entry cooldown controls."""
+
+    controlled = pd.Series(index=raw_regime.index, dtype="object")
+    current = MarketRegime.RANGE.value
+    pending: str | None = None
+    pending_count = 0
+    held = 0
+    last_departed: dict[str, int] = {}
+    for session, (date, candidate) in enumerate(raw_regime.items()):
+        candidate = str(candidate)
+        risk_off = candidate in {MarketRegime.CRISIS.value, MarketRegime.DEFENSIVE.value}
+        confirmation_days = (
+            config.risk_off_confirmation_days
+            if risk_off and config.risk_off_confirmation_days is not None
+            else config.confirmation_days
+        )
+        can_bypass_cooldown = risk_off and config.risk_off_bypasses_reentry_cooldown
+        if candidate == current:
+            pending = None
+            pending_count = 0
+        elif (
+            candidate in last_departed
+            and session - last_departed[candidate] < config.reentry_cooldown_days
+            and not can_bypass_cooldown
+        ):
+            # Require a new uninterrupted confirmation after the cooldown.
+            pending = None
+            pending_count = 0
+        else:
+            if candidate == pending:
+                pending_count += 1
+            else:
+                pending = candidate
+                pending_count = 1
+            can_leave_current = held >= config.min_hold_days or (
+                risk_off and config.risk_off_bypasses_min_hold
+            )
+            if pending_count >= confirmation_days and can_leave_current:
+                last_departed[current] = session
+                current = candidate
+                pending = None
+                pending_count = 0
+                held = 0
+        controlled.at[date] = current
+        held += 1
+    return controlled
 
 
 def classify_market_regime(
@@ -100,29 +157,7 @@ def classify_market_regime(
     # Fixed hysteresis prevents one-day noise from repeatedly rerouting the
     # portfolio. The raw signal remains available for auditability.
     raw_regime = regime.copy()
-    controlled = pd.Series(index=regime.index, dtype="object")
-    current = MarketRegime.RANGE.value
-    pending: str | None = None
-    pending_count = 0
-    held = 0
-    for date, candidate in raw_regime.items():
-        if candidate == current:
-            pending = None
-            pending_count = 0
-        else:
-            if candidate == pending:
-                pending_count += 1
-            else:
-                pending = str(candidate)
-                pending_count = 1
-            if pending_count >= config.confirmation_days and held >= config.min_hold_days:
-                current = str(candidate)
-                pending = None
-                pending_count = 0
-                held = 0
-        controlled.at[date] = current
-        held += 1
-    regime = controlled
+    regime = apply_regime_hysteresis(raw_regime, config)
 
     routes = regime.map(
         {

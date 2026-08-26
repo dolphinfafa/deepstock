@@ -45,12 +45,33 @@ conda run -n deepstock python scripts/generate_defensive_etf_plan.py \
   --prices artifacts/research/norgate/defensive_etf_prices.csv
 conda run -n deepstock python scripts/record_paper_observation.py \
   --plan artifacts/paper/defensive-etf/latest.json
+conda run -n deepstock python scripts/run_defensive_etf_backtest.py \
+  --prices artifacts/research/norgate/defensive_etf_prices.csv \
+  --output-dir artifacts/research/strategy-governance/adaptive-defensive-latest
+conda run -n deepstock python scripts/run_adaptive_defensive_walkforward.py \
+  --prices artifacts/research/norgate/defensive_etf_prices.csv \
+  --output-dir artifacts/research/strategy-governance/adaptive-defensive-walkforward
+conda run -n deepstock python scripts/build_defensive_governance_snapshot.py \
+  --prices artifacts/research/norgate/defensive_etf_prices.csv \
+  --daily artifacts/research/strategy-governance/adaptive-defensive-latest/daily_results.csv \
+  --walkforward artifacts/research/strategy-governance/adaptive-defensive-walkforward/walkforward_results.csv \
+  --manifest artifacts/research/strategy-governance/adaptive-defensive-walkforward/manifest.json \
+  --plan artifacts/paper/defensive-etf/latest.json \
+  --observations artifacts/paper/defensive-etf/observations.jsonl \
+  --output artifacts/research/strategy-governance/adaptive-defensive-snapshot.json
+conda run -n deepstock python scripts/evaluate_strategy_registry.py \
+  --snapshots artifacts/research/strategy-governance/adaptive-defensive-snapshot.json \
+  --skip-duplicate
 ```
 
-The first command runs only on the Windows Norgate node. The latter two run on
-the host holding the downloaded file. Licensed Norgate data and all artifacts
-remain local and must not be committed. Do not rerun the record command for an
-unchanged plan: duplicate plan IDs are rejected by design.
+The first command runs only on the Windows Norgate node. The following commands
+run on the host holding the downloaded file. The final four commands use the
+same frozen Defensive ETF configuration to refresh the research report,
+Walk-Forward evidence, governance snapshot, and append-only decision ledger.
+The risk-review field defaults to false, so this process cannot promote the
+strategy. Licensed Norgate data and all artifacts remain local and must not be
+committed. Do not rerun the record command for an unchanged plan: duplicate
+plan IDs are rejected by design.
 
 ## Windows Scheduling
 
@@ -60,5 +81,6 @@ Scheduler job `Deepstock_Defensive_ETF_Observation` at 07:30 local time. It is
 configured to wake the computer from sleep and to run as soon as possible after
 a missed start. It stops on the first failure and appends diagnostics to
 `artifacts\\paper\\defensive-etf\\scheduler.log`. The task is an observation
-job only; it does not start TWS or submit orders. Windows power policy or a
-disconnected AC adapter may still prevent wake-up.
+job with an additional research-governance evaluation; it does not start TWS or
+submit orders. Windows power policy or a disconnected AC adapter may still
+prevent wake-up.

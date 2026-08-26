@@ -1,26 +1,57 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Deepstock ARC Research</title><link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deepstock 策略研究库</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="ahl.css">
 </head>
 <body>
-  <div class="shell">
-    <aside class="sidebar"><div class="brand"><span class="brand-mark">D</span><span>DEEPSTOCK</span></div><div class="eyebrow">RESEARCH CONSOLE</div>
-      <nav><a class="active" href="#overview">Overview</a><a href="#strategies">Strategies</a><a href="#walkforward">Walk-Forward</a><a href="#notes">Research Notes</a></nav>
-      <div class="side-foot"><span class="status-dot"></span><span>Research only</span><small>No orders enabled</small></div>
-    </aside>
-    <main class="main" id="overview">
-      <header class="topbar"><div><div class="crumb">DEEPSTOCK / RESEARCH LIBRARY</div><h1>策略研究库</h1><p class="sub">所有已尝试策略、最新回测结果与下一步研究方向 · 数据截至 2026-08-21</p></div><div class="status-badge"><span class="status-dot"></span>RESEARCH ONLY<span class="lock">LOCKED</span></div></header>
-      <section class="alert"><div class="alert-icon">!</div><div><strong>Paper trading is blocked</strong><p>完整 ARC 的 Walk-Forward 仍有换手超限窗口。所有结果仅用于研究，不构成交易指令。</p></div></section>
-      <section class="panel strategy-library" id="library"><div class="panel-head"><div><div class="section-label">RESEARCHED STRATEGIES</div><h2>策略列表</h2></div><span class="muted">点击策略查看详情</span></div><div class="strategy-list"><a href="#detail-arc" class="strategy-item"><span class="strategy-symbol arc-symbol">ARC</span><span class="strategy-copy"><strong>Deepstock ARC</strong><small>四状态路由 · Defensive / Grid / Bull</small></span><span class="strategy-result"><b>110.30%</b><small>总收益 · Sharpe 0.39</small></span><span class="strategy-state fail">WF 未通过</span><span class="chevron">→</span></a><a href="#detail-defensive" class="strategy-item"><span class="strategy-symbol etf-symbol">ETF</span><span class="strategy-copy"><strong>防御型 ETF</strong><small>低换手多资产配置 · SHY 兜底</small></span><span class="strategy-result"><b>39.30%</b><small>OOS 收益 · Sharpe 1.18</small></span><span class="strategy-state base">基线</span><span class="chevron">→</span></a><a href="#detail-turtle" class="strategy-item"><span class="strategy-symbol turtle-symbol">TUR</span><span class="strategy-copy"><strong>个股海龟 Turtle</strong><small>点时股票池 · ADV · 20/55 突破</small></span><span class="strategy-result"><b>60.59%</b><small>独立 OOS · Sharpe 0.60</small></span><span class="strategy-state fail">研究中</span><span class="chevron">→</span></a><a href="#detail-grid" class="strategy-item"><span class="strategy-symbol grid-symbol">GRID</span><span class="strategy-copy"><strong>Range Grid</strong><small>震荡状态 SPY 网格 · 40% 上限</small></span><span class="strategy-result"><b>54.98%</b><small>总收益 · Sharpe 1.09</small></span><span class="strategy-state fail">研究中</span><span class="chevron">→</span></a></div></section>
-      <section class="metric-grid"><article class="metric"><span>ARC total return</span><strong>110.30%</strong><small>3/5 + 10% band / 10d cooldown</small></article><article class="metric"><span>Annualized return</span><strong>3.14%</strong><small>2002-07-26 → 2026-08-21</small></article><article class="metric"><span>Sharpe ratio</span><strong>0.39</strong><small>5 bps modeled cost</small></article><article class="metric negative"><span>Maximum drawdown</span><strong>-26.34%</strong><small>risk layer active</small></article></section>
-      <section class="grid-two"><article class="panel route-panel"><div class="panel-head"><div><div class="section-label">ROUTE CONTRIBUTION</div><h2>Where ARC spent its time</h2></div><span class="muted">6,057 sessions</span></div><div class="route-list"><div class="route-row"><div class="route-name"><i class="swatch defensive"></i><span>Defensive ETF</span><small>1,774 sessions</small></div><div class="bar"><b style="width:38%"></b></div><strong>23.03%</strong></div><div class="route-row"><div class="route-name"><i class="swatch range"></i><span>Range Grid</span><small>878 sessions</small></div><div class="bar"><b style="width:19%"></b></div><strong>10.39%</strong></div><div class="route-row"><div class="route-name"><i class="swatch bull"></i><span>Bull Turtle</span><small>3,405 sessions</small></div><div class="bar"><b style="width:73%"></b></div><strong>60.74%</strong></div></div></article><article class="panel control-panel"><div class="section-label">CONTROLLER</div><h2>State controls</h2><div class="control-grid"><div><span>Confirmation</span><strong>3 days</strong></div><div><span>Minimum hold</span><strong>5 days</strong></div><div><span>Weight band</span><strong>10%</strong></div><div><span>Route cooldown</span><strong>10 days</strong></div></div><div class="switch-line"><span>State switches</span><strong>153</strong></div><div class="switch-line"><span>Switch cost</span><strong>3.18%</strong></div></article></section>
-      <section class="panel" id="strategies"><div class="panel-head"><div><div class="section-label">RESEARCH REGISTRY</div><h2>Current and future research</h2></div><span class="muted">One source of truth · updated 2026-08-22</span></div><div class="research-cards"><article class="research-card arc-card"><div class="card-top"><span class="card-icon">ARC</span><span class="pill research">Research only</span></div><h3>Adaptive Regime Controller</h3><p>四状态路由：Crisis / Defensive / Range / Bull。组合级风险层与切换成本已纳入。</p><div class="card-meta"><span>Latest <b>110.30% total</b></span><span>Next <b>Risk redesign</b></span></div></article><article class="research-card"><div class="card-top"><span class="card-icon etf">ETF</span><span class="pill baseline">Baseline</span></div><h3>Defensive ETF</h3><p>SPY、QQQ、IWM、TLT、IEF、GLD 与 SHY 的低换手防守配置。</p><div class="card-meta"><span>OOS <b>39.30%</b></span><span>Sharpe <b>1.18</b></span></div></article><article class="research-card"><div class="card-top"><span class="card-icon turtle">TUR</span><span class="pill research">Research only</span></div><h3>个股海龟 Turtle</h3><p>点时 S&amp;P 500、退市处理、ADV 过滤与六个固定突破候选。</p><div class="card-meta"><span>Top IS <b>55/20 · 25M</b></span><span>OOS <b>60.59%</b></span></div></article><article class="research-card"><div class="card-top"><span class="card-icon grid">GRID</span><span class="pill research">Research only</span></div><h3>Range Grid</h3><p>只在震荡状态运行的 bounded SPY 网格，含库存、异常波动与成本控制。</p><div class="card-meta"><span>Return <b>54.98%</b></span><span>Max DD <b>-7.14%</b></span></div></article><article class="research-card future"><div class="card-top"><span class="card-icon future-icon">NEXT</span><span class="pill planned">Planned</span></div><h3>风险层与执行摩擦</h3><p>继续验证冷却期、权重带宽、单日损失和恢复确认，不针对 OOS 窗口调参。</p><div class="card-meta"><span>Gate <b>WF acceptance</b></span><span>Orders <b>Disabled</b></span></div></article><article class="research-card future"><div class="card-top"><span class="card-icon future-icon">DATA</span><span class="pill planned">Planned</span></div><h3>数据与组合扩展</h3><p>后续纳入新的授权数据、行业点时标签和更多防守模块，保留可复现版本。</p><div class="card-meta"><span>Policy <b>Point-in-time</b></span><span>Orders <b>Disabled</b></span></div></article></div><div class="table-wrap"><table><thead><tr><th>Module</th><th>Rule</th><th>OOS return</th><th>Sharpe</th><th>Max drawdown</th><th>Status</th></tr></thead><tbody><tr><td><span class="module"><i class="swatch bull"></i>Bull Turtle</span></td><td>55 / 20 · 5 positions · 25M ADV</td><td class="up">39.06%</td><td>0.53</td><td class="down">-16.76%</td><td><span class="pill research">Research</span></td></tr><tr><td><span class="module"><i class="swatch range"></i>Range Grid</span></td><td>50 anchor · 4 levels · 40% max</td><td>—</td><td>1.09</td><td>-7.14%</td><td><span class="pill research">Research</span></td></tr><tr><td><span class="module"><i class="swatch defensive"></i>Defensive ETF</span></td><td>80 / 40 regime exposure</td><td class="up">39.30%</td><td>1.18</td><td>-11.50%</td><td><span class="pill baseline">Baseline</span></td></tr></tbody></table></div></section>
-      <section class="grid-two" id="walkforward"><article class="panel wf-panel"><div class="panel-head"><div><div class="section-label">WALK-FORWARD</div><h2>Acceptance status</h2></div><span class="fail-badge">NOT ACCEPTED</span></div><div class="wf-number"><strong>21</strong><span>of 22 windows passed</span></div><div class="wf-track"><span style="width:95%"></span></div><p class="muted">Window 22 exceeded the fixed turnover threshold at <strong>10.30</strong>. No OOS tuning was applied.</p></article><article class="panel comparison"><div class="section-label">CONTROL RULE COMPARISON</div><h2>3/5 vs 5/10</h2><div class="compare-row"><span>3d confirm / 5d hold</span><b>110.30%</b><em>1 failed window</em></div><div class="compare-row"><span>5d confirm / 10d hold</span><b>176.05%</b><em>3 failed windows</em></div><p class="muted">Lower switching frequency did not guarantee acceptance.</p></article></section>
-      <section class="panel notes" id="notes"><div class="section-label">RESEARCH NOTES</div><h2>Current conclusion</h2><div class="note-grid"><p>ARC 的主要问题是路由切换与 Bull/Range 模块的换手，而不是数据缺失或单一策略没有收益。统一风险层、点时股票池和交易成本均已纳入。</p><p>当前结果不支持 Paper。下一轮只能使用预先声明的风险规则重新验证，不能针对失败 OOS 窗口调参。</p></div></section>
-      <section class="detail-stack"><article class="panel strategy-detail" id="detail-arc"><div class="detail-heading"><span class="strategy-symbol arc-symbol">ARC</span><div><div class="section-label">STRATEGY DETAIL</div><h2>Deepstock ARC</h2></div><a href="#library">返回列表 ↑</a></div><div class="detail-columns"><div><h3>策略介绍</h3><p>以 SPY 趋势、波动率和市场宽度划分 Crisis、Defensive、Range、Bull 四种状态，分别路由到 ETF、防守、网格和个股海龟。</p></div><div><h3>最新研究结果</h3><p>3/5 控制器、10% 带宽和 10 日冷却：总收益 110.30%，Sharpe 0.39，最大回撤 -26.34%。Walk-Forward 仍有 1 个换手失败窗口。</p></div><div><h3>下一步优化</h3><p>拆分路由切换与模块内部换手，验证固定冷却和恢复确认；在通过验收前保持 Research-only。</p></div></div></article><article class="panel strategy-detail" id="detail-defensive"><div class="detail-heading"><span class="strategy-symbol etf-symbol">ETF</span><div><div class="section-label">STRATEGY DETAIL</div><h2>防御型 ETF</h2></div><a href="#library">返回列表 ↑</a></div><div class="detail-columns"><div><h3>策略介绍</h3><p>在 SPY、QQQ、IWM、TLT、IEF、GLD 中进行动量和波动率配置，SHY 作为安全资产。</p></div><div><h3>最新研究结果</h3><p>固定三状态 OOS 收益 39.30%，年化 6.88%，Sharpe 1.18，最大回撤 -11.50%，换手 5.64。</p></div><div><h3>下一步优化</h3><p>保持参数冻结，继续订单冻结观察和数据新鲜度检查，不用单一窗口替换配置。</p></div></div></article><article class="panel strategy-detail" id="detail-turtle"><div class="detail-heading"><span class="strategy-symbol turtle-symbol">TUR</span><div><div class="section-label">STRATEGY DETAIL</div><h2>个股海龟 Turtle</h2></div><a href="#library">返回列表 ↑</a></div><div class="detail-columns"><div><h3>策略介绍</h3><p>使用点时 S&amp;P 500 当前及历史成员、退市处理和历史会员区间；新仓位要求 ADV，20/55 突破并限制仓位。</p></div><div><h3>最新研究结果</h3><p>IS 排名第一的 55/20、5 仓位、25M ADV：独立 OOS 60.59%，Sharpe 0.60，最大回撤 -23.48%；ARC 路由 OOS 39.06%。</p></div><div><h3>下一步优化</h3><p>补齐行业点时数据和显式退市收益处理，保持六候选并列验证，禁止事后挑选。</p></div></div></article><article class="panel strategy-detail" id="detail-grid"><div class="detail-heading"><span class="strategy-symbol grid-symbol">GRID</span><div><div class="section-label">STRATEGY DETAIL</div><h2>Range Grid</h2></div><a href="#library">返回列表 ↑</a></div><div class="detail-columns"><div><h3>策略介绍</h3><p>只在 Range 状态运行，使用 50 日锚点、20 日波动率间距和四级库存，最大暴露 40%。</p></div><div><h3>最新研究结果</h3><p>总收益 54.98%，年化 2.04%，Sharpe 1.09，最大回撤 -7.14%，发生 4 次固定异常波动退出。</p></div><div><h3>下一步优化</h3><p>验证趋势增强后的停止速度、库存上限和单日异常波动规则；不追求提高交易频率。</p></div></div></article></section>
-      <footer><span>Deepstock Research Console</span><span>Last evaluated 2026-08-22 · execution disabled</span></footer>
-    </main>
-  </div>
-</body></html>
+  <header class="site-header">
+    <a class="brand" href="index.html"><span class="brand-mark">D</span>DEEPSTOCK</a>
+    <div class="header-meta"><span>策略研究库</span><span class="status">研究环境 · 不执行订单</span></div>
+  </header>
+  <main class="container">
+    <section class="intro">
+      <div class="intro-copy"><p class="eyebrow">DEEPSTOCK · RESEARCH REGISTRY</p><h1>策略研究库</h1><p>记录每个策略的设计假设、固定回测结果和当前研究阶段。所有展示结果均为研究用途，不构成交易建议或交易指令。</p></div>
+      <div class="research-score" aria-label="研究计划概览"><div><span>在研策略</span><b>06</b></div><div><span>影子观测</span><b>01</b></div><div><span>订单授权</span><b>00</b></div></div>
+    </section>
+
+    <section class="notice">
+      <strong>执行状态</strong>
+      <span>ARC、个股海龟、Range Grid、SPY 均值回归和全球期货趋势均为研究阶段。防御型 ETF 正在进行无订单影子观测，尚未进入模拟盘。</span>
+    </section>
+
+    <section class="registry" aria-labelledby="registry-title">
+      <div class="section-head"><div><p class="eyebrow">CURRENT PROGRAMS</p><h2 id="registry-title">已研究策略</h2></div><p><span class="live-dot"></span>最近更新：2026-08-25</p></div>
+      <div class="strategy-table" role="list">
+        <a class="strategy-row" href="arc.html" role="listitem">
+          <span class="code arc">ARC</span><span class="strategy-name"><strong>Adaptive Regime Controller</strong><small>四状态路由组合：Defensive ETF / Range Grid / Stock Turtle</small></span><span class="result"><b>110.30%</b><small>总收益 · Sharpe 0.39</small></span><span class="stage blocked">研究锁定</span><span class="arrow">&#8594;</span>
+        </a>
+        <a class="strategy-row" href="defensive-etf.html" role="listitem">
+          <span class="code etf">ETF</span><span class="strategy-name"><strong>防御型 ETF</strong><small>趋势与动量驱动的低换手多资产防守配置</small></span><span class="result"><b>39.30%</b><small>固定 OOS · Sharpe 1.18</small></span><span class="stage observing">影子观测</span><span class="arrow">&#8594;</span>
+        </a>
+        <a class="strategy-row" href="stock-turtle.html" role="listitem">
+          <span class="code turtle">TUR</span><span class="strategy-name"><strong>个股海龟</strong><small>点时 S&amp;P 500 股票池、突破入场与流动性限制</small></span><span class="result"><b>60.59%</b><small>固定 OOS · Sharpe 0.60</small></span><span class="stage active">稳健性研究</span><span class="arrow">&#8594;</span>
+        </a>
+        <a class="strategy-row" href="range-grid.html" role="listitem">
+          <span class="code grid">GRID</span><span class="strategy-name"><strong>Range Grid</strong><small>仅在震荡状态启用的 SPY 有界网格</small></span><span class="result"><b>54.98%</b><small>总收益 · Sharpe 1.09</small></span><span class="stage active">模块验证</span><span class="arrow">&#8594;</span>
+        </a>
+        <a class="strategy-row" href="spy-mean-reversion.html" role="listitem">
+          <span class="code mean">MR</span><span class="strategy-name"><strong>SPY 均值回归</strong><small>20 日 Z-score · 200 日趋势过滤 · SPY / SHY</small></span><span class="result"><b>15.00%</b><small>固定 OOS · Sharpe 0.50</small></span><span class="stage blocked">基线未通过</span><span class="arrow">&#8594;</span>
+        </a>
+        <a class="strategy-row" href="ahl-global-futures-trend.html" role="listitem">
+          <span class="code ahl">AHL</span><span class="strategy-name"><strong>AHL-inspired 全球期货趋势</strong><small>多资产期货趋势、波动率目标与资产类别风险上限</small></span><span class="result"><b>未回测</b><small>待合规连续期货数据</small></span><span class="stage planned">计划中</span><span class="arrow">&#8594;</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="principles">
+      <div><p class="eyebrow">RESEARCH STANDARD</p><h2>共同研究规则</h2></div>
+      <ul><li>固定样本外切分与 Walk-Forward 窗口，不以 OOS 表现反选参数。</li><li>统一纳入 5 bps 成本假设；涉及股票时使用点时成分与 ADV 约束。</li><li>每日影子评估只生成审核建议；近期回测优秀不会自动切换策略或授权订单。</li></ul>
+    </section>
+  </main>
+  <footer>Deepstock Research Library · 数据与结果截至 2026-08-25</footer>
+</body>
+</html>

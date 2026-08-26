@@ -1,0 +1,42 @@
+{
+  "registry_version": "2026-08-26",
+  "policy": "shadow-governance-v1-2026-08-26",
+  "strategies": [
+    {
+      "strategy_id": "adaptive_defensive_etf",
+      "display_name": "Defensive ETF",
+      "execution_status": "shadow_observation_no_orders",
+      "specification": ".agent/workflows/defensive-etf-observation.md"
+    },
+    {
+      "strategy_id": "arc",
+      "display_name": "Adaptive Regime Controller",
+      "execution_status": "research_only_no_orders",
+      "specification": ".agent/workflows/arc-strategy.md"
+    },
+    {
+      "strategy_id": "stock_turtle",
+      "display_name": "Stock Turtle",
+      "execution_status": "research_only_no_orders",
+      "specification": ".agent/workflows/stock-turtle-research.md"
+    },
+    {
+      "strategy_id": "range_grid",
+      "display_name": "Range Grid",
+      "execution_status": "research_only_no_orders",
+      "specification": ".agent/workflows/arc-strategy.md"
+    },
+    {
+      "strategy_id": "spy_mean_reversion",
+      "display_name": "SPY Mean Reversion",
+      "execution_status": "research_only_no_orders",
+      "specification": ".agent/workflows/mean-reversion-strategy.md"
+    },
+    {
+      "strategy_id": "ahl_global_futures_trend",
+      "display_name": "AHL-inspired Global Futures Trend",
+      "execution_status": "research_only_no_orders",
+      "specification": ".agent/workflows/ahl-global-futures-trend.md"
+    }
+  ]
+}
