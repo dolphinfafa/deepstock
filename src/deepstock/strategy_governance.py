@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any
 
 
-POLICY_ID = "shadow-governance-v1-2026-08-26"
-POLICY_EFFECTIVE_DATE = date(2026, 8, 26)
+POLICY_ID = "shadow-governance-v2-2026-08-31"
+POLICY_EFFECTIVE_DATE = date(2026, 8, 31)
 PAPER_REVIEW_STATUS = "eligible_for_paper_review"
 
 
@@ -25,7 +25,8 @@ class GovernancePolicy:
     minimum_rolling_oos_sharpe: float = 0.5
     maximum_rolling_oos_drawdown: float = -0.20
     maximum_annualized_turnover: float = 15.0
-    minimum_shadow_sessions: int = 40
+    minimum_shadow_sessions: int = 30
+    minimum_shadow_observation_calendar_days: int = 42
 
 
 REQUIRED_SNAPSHOT_FIELDS = frozenset(
@@ -45,6 +46,7 @@ REQUIRED_SNAPSHOT_FIELDS = frozenset(
         "rolling_oos_max_drawdown",
         "annualized_turnover",
         "shadow_sessions",
+        "shadow_observation_calendar_days",
     }
 )
 
@@ -87,7 +89,11 @@ def _validate_snapshot(snapshot: dict[str, Any], registry: dict[str, dict[str, A
         raise ValueError("Walk-Forward counts cannot be negative.")
     if snapshot["negative_walk_forward_windows"] > snapshot["walk_forward_windows"]:
         raise ValueError("Negative Walk-Forward windows cannot exceed all windows.")
-    if snapshot["rolling_oos_sessions"] < 0 or snapshot["shadow_sessions"] < 0:
+    if (
+        snapshot["rolling_oos_sessions"] < 0
+        or snapshot["shadow_sessions"] < 0
+        or snapshot["shadow_observation_calendar_days"] < 0
+    ):
         raise ValueError("Observation session counts cannot be negative.")
     if snapshot["annualized_turnover"] < 0:
         raise ValueError("Annualized turnover cannot be negative.")
@@ -123,6 +129,10 @@ def evaluate_snapshot(
         ),
         "annualized_turnover": snapshot["annualized_turnover"] <= policy.maximum_annualized_turnover,
         "shadow_sessions": snapshot["shadow_sessions"] >= policy.minimum_shadow_sessions,
+        "shadow_observation_calendar_days": (
+            snapshot["shadow_observation_calendar_days"]
+            >= policy.minimum_shadow_observation_calendar_days
+        ),
     }
     for check, passed in checks.items():
         if not passed:

@@ -1,6 +1,6 @@
 {
-  "registry_version": "2026-08-26",
-  "policy": "shadow-governance-v1-2026-08-26",
+  "registry_version": "2026-08-31",
+  "policy": "shadow-governance-v2-2026-08-31",
   "strategies": [
     {
       "strategy_id": "adaptive_defensive_etf",

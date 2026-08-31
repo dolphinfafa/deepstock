@@ -35,8 +35,8 @@ def registry_file(tmp_path):
 def passing_snapshot(strategy_id="defensive"):
     return {
         "strategy_id": strategy_id,
-        "as_of_date": "2026-08-26",
-        "data_date": "2026-08-25",
+        "as_of_date": "2026-10-11",
+        "data_date": "2026-10-10",
         "parameters_frozen": True,
         "oos_parameter_selection_prohibited": True,
         "costs_included": True,
@@ -48,7 +48,8 @@ def passing_snapshot(strategy_id="defensive"):
         "rolling_oos_sharpe": 0.5,
         "rolling_oos_max_drawdown": -0.20,
         "annualized_turnover": 15.0,
-        "shadow_sessions": 40,
+        "shadow_sessions": 30,
+        "shadow_observation_calendar_days": 42,
     }
 
 
@@ -64,6 +65,7 @@ def test_short_recent_result_cannot_promote_a_strategy(tmp_path) -> None:
     snapshot = passing_snapshot()
     snapshot["rolling_oos_sessions"] = 20
     snapshot["shadow_sessions"] = 20
+    snapshot["shadow_observation_calendar_days"] = 20
     snapshot["rolling_oos_sharpe"] = 2.0
 
     decision = evaluate_snapshot(snapshot, load_registry(registry_file(tmp_path)))
@@ -83,7 +85,7 @@ def test_research_only_strategy_cannot_be_promoted(tmp_path) -> None:
 def test_record_rejects_duplicate_strategy_date_and_execution_authorization(tmp_path) -> None:
     decision = evaluate_snapshot(passing_snapshot(), load_registry(registry_file(tmp_path)))
     records = tmp_path / "decisions.jsonl"
-    record_governance_decision(decision, records, recorded_at=datetime(2026, 8, 26, tzinfo=timezone.utc))
+    record_governance_decision(decision, records, recorded_at=datetime(2026, 10, 11, tzinfo=timezone.utc))
 
     with pytest.raises(ValueError, match="already exists"):
         record_governance_decision(decision, records)
@@ -140,7 +142,7 @@ def test_defensive_snapshot_uses_fixed_reports_and_defaults_risk_review_to_false
     paths["observations.jsonl"].write_text(json.dumps(observations) + "\n", encoding="utf-8")
 
     snapshot = build_snapshot(
-        paths["prices.csv"], paths["daily.csv"], paths["walkforward.csv"], paths["manifest.json"], paths["plan.json"], paths["observations.jsonl"], as_of_date="2026-08-26"
+        paths["prices.csv"], paths["daily.csv"], paths["walkforward.csv"], paths["manifest.json"], paths["plan.json"], paths["observations.jsonl"], as_of_date="2026-09-01"
     )
 
     assert snapshot["data_fresh"] is True
@@ -148,11 +150,38 @@ def test_defensive_snapshot_uses_fixed_reports_and_defaults_risk_review_to_false
     assert snapshot["oos_parameter_selection_prohibited"] is True
     assert snapshot["risk_review_passed"] is False
     assert snapshot["negative_walk_forward_windows"] == 1
+    assert snapshot["shadow_sessions"] == 0
+    assert snapshot["shadow_observation_calendar_days"] == 0
 
 
 def test_governance_rejects_a_decision_before_the_policy_effective_date(tmp_path) -> None:
     snapshot = passing_snapshot()
-    snapshot["as_of_date"] = "2026-08-25"
+    snapshot["as_of_date"] = "2026-08-30"
+    snapshot["data_date"] = "2026-08-29"
 
     with pytest.raises(ValueError, match="precedes"):
         evaluate_snapshot(snapshot, load_registry(registry_file(tmp_path)))
+
+
+def test_snapshot_counts_only_observations_under_the_current_policy(tmp_path) -> None:
+    # The setup matches the fixed-report schema; only post-policy records count.
+    dates = pd.date_range("2025-09-15", periods=252, freq="B")
+    prices = pd.DataFrame(
+        {"date": list(dates) * 2, "symbol": ["SPY"] * len(dates) + ["SHY"] * len(dates), "adjusted_close": [100 + index for index in range(len(dates))] * 2}
+    )
+    daily = pd.DataFrame({"date": dates, "portfolio_net_return": [0.001] * len(dates), "turnover": [0.01] * len(dates), "transaction_cost": [0.00001] * len(dates)})
+    paths = {name: tmp_path / name for name in ("prices.csv", "daily.csv", "walkforward.csv", "manifest.json", "plan.json", "observations.jsonl")}
+    prices.to_csv(paths["prices.csv"], index=False)
+    daily.to_csv(paths["daily.csv"], index=False)
+    pd.DataFrame({"total_return": [0.1]}).to_csv(paths["walkforward.csv"], index=False)
+    paths["manifest.json"].write_text(json.dumps({"selection_policy": "fixed; no rolling test result selected parameters"}), encoding="utf-8")
+    paths["plan.json"].write_text(json.dumps({"strategy": "adaptive_defensive_etf", "data_date": dates[-1].date().isoformat()}), encoding="utf-8")
+    paths["observations.jsonl"].write_text(
+        "\n".join(json.dumps(entry) for entry in ({"plan_id": "old", "data_date": "2026-08-28"}, {"plan_id": "new", "data_date": "2026-08-31"})) + "\n",
+        encoding="utf-8",
+    )
+
+    snapshot = build_snapshot(paths["prices.csv"], paths["daily.csv"], paths["walkforward.csv"], paths["manifest.json"], paths["plan.json"], paths["observations.jsonl"], as_of_date="2026-09-01")
+
+    assert snapshot["shadow_sessions"] == 1
+    assert snapshot["shadow_observation_calendar_days"] == 2

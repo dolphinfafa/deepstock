@@ -2,7 +2,7 @@
 
 ## Scope
 
-This is an eight-week, order-free observation protocol for the frozen adaptive
+This is a six-week, order-free observation protocol for the frozen adaptive
 defensive ETF configuration. It does not authorize IBKR order submission,
 paper or live. The plan generator has no broker dependency.
 
@@ -23,8 +23,9 @@ The strategy is evaluated as a defensive allocation, not as a benchmark-alpha
 claim. Before any future paper-order implementation, all conditions below must
 be reviewed explicitly:
 
-1. At least eight consecutive weekly observations with no stale-data run,
-   duplicate plan, missing symbol, or unhandled script failure.
+1. At least 30 completed trading-session observations over at least 42 calendar
+   days, with no stale-data run, duplicate-plan write, missing symbol, or
+   unhandled script failure.
 2. Every plan has a unique `plan_id`, a completed-session `data_date`, weights
    summing to one, and no risk-asset weight above 20%.
 3. Observed targets are reconciled against the same Norgate input file and any
@@ -33,6 +34,11 @@ be reviewed explicitly:
    SPY in strong equity markets and had a -9.81% rolling 2021-2022 window.
 5. Kill-switch, duplicate-plan, missing-data, and stale-data paths have each
    been exercised and recorded. No broker order test is included in this phase.
+
+The current governance policy is `shadow-governance-v2-2026-08-31`. Earlier
+observation records remain auditable but do not count toward this policy; the
+new observation clock begins with the first completed data date on or after
+2026-08-31.
 
 ## Daily Procedure
 

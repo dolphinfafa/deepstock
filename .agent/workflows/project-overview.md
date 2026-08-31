@@ -295,6 +295,13 @@ authorize paper/live execution, and requires a separate human review even when
 it returns `eligible_for_paper_review`. The operating contract is in
 `strategy-governance.md`.
 
+The policy was revised before use on 2026-08-31 to `shadow-governance-v2`: the
+order-free observation requirement is 30 completed trading sessions over at
+least 42 calendar days. This is a genuine six-week gate; the prior 40-session
+rule would have remained roughly eight calendar weeks. The new policy starts a
+fresh observation clock and does not inherit pre-2026-08-31 observation
+records.
+
 ## Key Decisions
 
 | Decision | Status | Rationale |

@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from deepstock.strategy_governance import POLICY_EFFECTIVE_DATE
 
 def _completed_price_date(prices_path: Path) -> str:
     raw = pd.read_csv(prices_path)
@@ -75,10 +76,23 @@ def build_snapshot(
     observations = []
     if observations_path.exists():
         observations = [json.loads(line) for line in observations_path.read_text(encoding="utf-8").splitlines() if line]
-    unique_plan_ids = {entry.get("plan_id") for entry in observations if entry.get("plan_id")}
+    effective_observations = [
+        entry
+        for entry in observations
+        if isinstance(entry.get("data_date"), str)
+        and pd.Timestamp(entry["data_date"]).date() >= POLICY_EFFECTIVE_DATE
+    ]
+    unique_plan_ids = {entry.get("plan_id") for entry in effective_observations if entry.get("plan_id")}
+    decision_date = date.fromisoformat(as_of_date or date.today().isoformat())
+    effective_dates = sorted(
+        {pd.Timestamp(entry["data_date"]).date() for entry in effective_observations if entry.get("plan_id")}
+    )
+    observation_calendar_days = (
+        (decision_date - effective_dates[0]).days + 1 if effective_dates else 0
+    )
     return {
         "strategy_id": "adaptive_defensive_etf",
-        "as_of_date": as_of_date or date.today().isoformat(),
+        "as_of_date": decision_date.isoformat(),
         "data_date": data_date,
         "parameters_frozen": "fixed" in selection_policy.lower(),
         "oos_parameter_selection_prohibited": "no rolling test result selected parameters" in selection_policy.lower(),
@@ -88,6 +102,7 @@ def build_snapshot(
         "walk_forward_windows": int(len(walkforward)),
         "negative_walk_forward_windows": int((walkforward["total_return"] < 0).sum()),
         "shadow_sessions": len(unique_plan_ids),
+        "shadow_observation_calendar_days": observation_calendar_days,
         **metrics,
     }
 

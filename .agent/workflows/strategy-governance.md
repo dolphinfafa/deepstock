@@ -20,11 +20,11 @@ authority is intentionally narrow:
 paper account, send an order, or modify a production allocation. A separate
 human decision and execution-risk review would still be required.
 
-## Frozen Policy v1
+## Frozen Policy v2
 
-Policy identifier: `shadow-governance-v1-2026-08-26`.
+Policy identifier: `shadow-governance-v2-2026-08-31`.
 
-The policy is effective from 2026-08-26. `as_of_date` is the local calendar
+The policy is effective from 2026-08-31. `as_of_date` is the local calendar
 date on which the decision is made; `data_date` is the last completed market
 session used by the report. The evaluator rejects a decision predating the
 policy, so a later run cannot fabricate a contemporaneous historical decision.
@@ -37,11 +37,14 @@ shadow-observation strategy, it must also meet all of these gates:
 - at least 252 rolling OOS sessions and rolling OOS Sharpe of 0.50 or above;
 - rolling OOS maximum drawdown no worse than -20%;
 - annualized turnover no higher than 15.0; and
-- at least 40 completed order-free shadow sessions.
+- at least 30 completed order-free shadow sessions; and
+- at least 42 calendar days since the first qualifying shadow observation.
 
-These values are frozen before using this layer for selection. Modifying any
-one requires a new policy identifier, a new research experiment, and a fresh
-observation history; it must not rewrite past decisions.
+The former v1 observation history does not count toward v2. The v2 clock begins
+with the first record whose `data_date` is on or after 2026-08-31. These values
+are frozen before using this layer for selection. Modifying any one requires a
+new policy identifier, a new research experiment, and a fresh observation
+history; it must not rewrite past decisions.
 
 ## Daily Procedure
 
@@ -68,8 +71,8 @@ contemporaneous decision that would have been available in real time.
 ```json
 {
   "strategy_id": "adaptive_defensive_etf",
-  "as_of_date": "2026-08-26",
-  "data_date": "2026-08-25",
+  "as_of_date": "2026-10-11",
+  "data_date": "2026-10-10",
   "parameters_frozen": true,
   "oos_parameter_selection_prohibited": true,
   "costs_included": true,
@@ -81,7 +84,8 @@ contemporaneous decision that would have been available in real time.
   "rolling_oos_sharpe": 0.50,
   "rolling_oos_max_drawdown": -0.20,
   "annualized_turnover": 15.0,
-  "shadow_sessions": 40
+  "shadow_sessions": 30,
+  "shadow_observation_calendar_days": 42
 }
 ```
 
