@@ -88,6 +88,23 @@ without user confirmation.
 
 ## 7. Project Configuration
 
+### Study Computer Synchronization
+
+`DESKTOP-S31222F` (the study computer) is a deployment and verification node,
+not an editing workspace. Never modify its checked-out project files directly.
+Use this sequence for every project change:
+
+1. Make and verify the change in this server workspace.
+2. Commit and push the verified change to GitHub.
+3. On the study computer, confirm a clean worktree and fast-forward it by
+   pulling the pushed commit.
+4. Run the required local validation there without modifying tracked project
+   files.
+
+Machine-local secrets and runtime state, such as the untracked `.env`, TWS
+settings, and licensed data artifacts, remain local to the study computer and
+are not copied into Git.
+
 ### Directory Structure
 
 ```text
