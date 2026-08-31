@@ -172,6 +172,9 @@ class PaperSgovSmokeTest(EWrapper, EClient):
         order.lmtPrice = SAFE_LIMIT_PRICE
         order.tif = "DAY"
         order.outsideRth = False
+        # Current TWS rejects the legacy defaults when they are serialized.
+        order.eTradeOnly = False
+        order.firmQuoteOnly = False
         order.transmit = True
 
         order_id = self.order_id
