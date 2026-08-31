@@ -31,6 +31,19 @@ The probe only requests server time, account summary, positions, and open
 orders. It refuses to start unless `IBKR_MODE=paper` and `IBKR_READ_ONLY=true`
 are set in the local `.env`.
 
+## SGOV Paper API Smoke Test
+
+`scripts/ibkr_paper_sgov_smoke_test.py` is an execution-path test, not a
+strategy. It can submit exactly one `SGOV` Paper buy order for one share at a
+deliberately non-marketable `$1.00` limit, then cancel it. It refuses live mode,
+requires `IBKR_READ_ONLY=false`, and requires two explicit command-line
+confirmations. It must only run on the local Paper TWS host:
+
+```bash
+conda run -n deepstock python scripts/ibkr_paper_sgov_smoke_test.py \
+  --submit --confirm PAPER-SGOV-SMOKE-TEST --json
+```
+
 ## Defensive ETF Backtest
 
 The initial research strategy uses adjusted daily closes for `SPY`, `QQQ`,
