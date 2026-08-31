@@ -205,7 +205,7 @@ class PaperSgovSmokeTest(EWrapper, EClient):
             raise RuntimeError(self.errors[0])
 
         if not self.cancelled.wait(cancel_after):
-            self.cancelOrder(order_id, "")
+            self.cancelOrder(order_id)
             if not self.cancelled.wait(self.timeout):
                 raise TimeoutError("Timed out waiting for cancellation confirmation.")
 
@@ -240,7 +240,7 @@ class PaperSgovSmokeTest(EWrapper, EClient):
 
         order_id = self.matching_order_ids[0]
         self.order_id = order_id
-        self.cancelOrder(order_id, "")
+        self.cancelOrder(order_id)
         if not self.cancelled.wait(self.timeout):
             raise TimeoutError("Timed out waiting for cancellation confirmation.")
         return {
