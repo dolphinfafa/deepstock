@@ -20,7 +20,9 @@ INFO_ERROR_CODES = {2104, 2106, 2107, 2108, 2158}
 EXPECTED_CANCEL_ERROR = 202
 REQUIRED_CONFIRMATION = "PAPER-SGOV-SMOKE-TEST"
 REQUIRED_CANCEL_CONFIRMATION = "PAPER-SGOV-SMOKE-CANCEL"
+REQUIRED_FILL_CONFIRMATION = "PAPER-SGOV-FILL-TEST"
 SAFE_LIMIT_PRICE = 1.00
+FILL_TEST_MAX_LIMIT_PRICE = 150.00
 
 
 def parse_args() -> argparse.Namespace:
@@ -33,8 +35,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--env-file", default=".env")
     parser.add_argument("--submit", action="store_true")
     parser.add_argument("--cancel-pending", action="store_true")
+    parser.add_argument("--submit-fill-test", action="store_true")
     parser.add_argument("--confirm", default="")
     parser.add_argument("--cancel-after", type=float, default=10.0)
+    parser.add_argument("--fill-timeout", type=float, default=120.0)
     parser.add_argument("--timeout", type=float, default=15.0)
     parser.add_argument("--json", action="store_true")
     return parser.parse_args()
@@ -86,6 +90,7 @@ class PaperSgovSmokeTest(EWrapper, EClient):
         self.ready = threading.Event()
         self.submitted = threading.Event()
         self.cancelled = threading.Event()
+        self.filled = threading.Event()
         self.open_orders_complete = threading.Event()
         self.network_thread: threading.Thread | None = None
         self.order_id: int | None = None
@@ -163,6 +168,8 @@ class PaperSgovSmokeTest(EWrapper, EClient):
             self.submitted.set()
         if status in {"Cancelled", "ApiCancelled", "Inactive"}:
             self.cancelled.set()
+        if status == "Filled":
+            self.filled.set()
 
     def connect_and_start(self, config: Config) -> None:
         self.connect(config.host, config.port, config.client_id)
@@ -254,6 +261,56 @@ class PaperSgovSmokeTest(EWrapper, EClient):
             "errors": self.errors,
         }
 
+    def run_fill_test(self, fill_timeout: float) -> dict[str, Any]:
+        if not self.ready.wait(self.timeout) or self.order_id is None:
+            raise TimeoutError("Timed out waiting for a valid API order ID.")
+        if self.errors:
+            raise RuntimeError(self.errors[0])
+
+        contract = Contract()
+        contract.symbol = "SGOV"
+        contract.secType = "STK"
+        contract.exchange = "SMART"
+        contract.primaryExchange = "ARCA"
+        contract.currency = "USD"
+
+        order = Order()
+        order.action = "BUY"
+        order.totalQuantity = 1
+        order.orderType = "LMT"
+        order.lmtPrice = FILL_TEST_MAX_LIMIT_PRICE
+        order.tif = "DAY"
+        order.outsideRth = False
+        order.eTradeOnly = False
+        order.firmQuoteOnly = False
+        order.transmit = True
+
+        order_id = self.order_id
+        self.placeOrder(order_id, contract, order)
+        if not self.submitted.wait(self.timeout):
+            raise TimeoutError(
+                "Order was not acknowledged as submitted. "
+                f"statuses={self.statuses!r}, errors={self.errors!r}"
+            )
+        if self.errors:
+            raise RuntimeError(self.errors[0])
+        if not self.filled.wait(fill_timeout):
+            self.cancelOrder(order_id)
+            if not self.cancelled.wait(self.timeout):
+                raise TimeoutError("Fill test did not fill and cancellation was unconfirmed.")
+            raise TimeoutError("Fill test did not fill before its automatic cancellation.")
+
+        return {
+            "symbol": "SGOV",
+            "action": "BUY",
+            "quantity": 1,
+            "max_limit_price": FILL_TEST_MAX_LIMIT_PRICE,
+            "order_id": order_id,
+            "statuses": self.statuses,
+            "messages": self.messages,
+            "errors": self.errors,
+        }
+
     def close(self) -> None:
         try:
             if self.isConnected():
@@ -265,13 +322,18 @@ class PaperSgovSmokeTest(EWrapper, EClient):
 
 def main() -> int:
     args = parse_args()
-    requested_actions = int(args.submit) + int(args.cancel_pending)
+    requested_actions = int(args.submit) + int(args.cancel_pending) + int(args.submit_fill_test)
     if requested_actions != 1:
-        print("Choose exactly one of --submit or --cancel-pending.", file=sys.stderr)
+        print(
+            "Choose exactly one of --submit, --cancel-pending, or --submit-fill-test.",
+            file=sys.stderr,
+        )
         return 2
-    expected_confirmation = (
-        REQUIRED_CONFIRMATION if args.submit else REQUIRED_CANCEL_CONFIRMATION
-    )
+    expected_confirmation = {
+        "submit": REQUIRED_CONFIRMATION,
+        "cancel": REQUIRED_CANCEL_CONFIRMATION,
+        "fill": REQUIRED_FILL_CONFIRMATION,
+    }["submit" if args.submit else "cancel" if args.cancel_pending else "fill"]
     if args.confirm != expected_confirmation:
         print(
             "Refusing action. Pass the required --confirm value for the selected action.",
@@ -280,6 +342,9 @@ def main() -> int:
         return 2
     if not 1 <= args.cancel_after <= 60:
         print("Configuration error: --cancel-after must be between 1 and 60 seconds.", file=sys.stderr)
+        return 2
+    if not 15 <= args.fill_timeout <= 300:
+        print("Configuration error: --fill-timeout must be between 15 and 300 seconds.", file=sys.stderr)
         return 2
 
     try:
@@ -290,6 +355,8 @@ def main() -> int:
             test.run_test(args.cancel_after)
             if args.submit
             else test.cancel_matching_order()
+            if args.cancel_pending
+            else test.run_fill_test(args.fill_timeout)
         )
     except Exception as exc:  # noqa: BLE001
         print(f"Paper smoke test failed: {exc}", file=sys.stderr)

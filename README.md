@@ -88,3 +88,12 @@ conda run -n deepstock python scripts/run_arc_grid_backtest.py \
 
 These commands are research-only. They include modeled costs and never submit
 orders.
+
+The one-share fill test is also Paper-only. It uses a regular-hours `SGOV`
+limit order capped at `$150`; it cancels automatically after two minutes if no
+fill occurs:
+
+```bash
+conda run -n deepstock python scripts/ibkr_paper_sgov_smoke_test.py \
+  --submit-fill-test --confirm PAPER-SGOV-FILL-TEST --json
+```
