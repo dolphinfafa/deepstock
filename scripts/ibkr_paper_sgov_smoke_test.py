@@ -109,8 +109,21 @@ class PaperSgovSmokeTest(EWrapper, EClient):
             self.cancelled.set()
         else:
             self.errors.append(message)
+            if reqId == self.order_id:
+                self.submitted.set()
             if errorCode in {502, 504, 1100, 1300}:
                 self.ready.set()
+
+    def openOrder(  # type: ignore[override]
+        self,
+        orderId: int,
+        contract: Contract,
+        order: Order,
+        orderState: Any,
+    ) -> None:
+        if orderId == self.order_id:
+            self.statuses.append(f"openOrder:{orderState.status}")
+            self.submitted.set()
 
     def orderStatus(  # type: ignore[override]
         self,
@@ -129,7 +142,7 @@ class PaperSgovSmokeTest(EWrapper, EClient):
         if orderId != self.order_id:
             return
         self.statuses.append(status)
-        if status in {"PreSubmitted", "Submitted"}:
+        if status in {"ApiPending", "PendingSubmit", "PreSubmitted", "Submitted"}:
             self.submitted.set()
         if status in {"Cancelled", "ApiCancelled", "Inactive"}:
             self.cancelled.set()
@@ -164,7 +177,12 @@ class PaperSgovSmokeTest(EWrapper, EClient):
         order_id = self.order_id
         self.placeOrder(order_id, contract, order)
         if not self.submitted.wait(self.timeout):
-            raise TimeoutError("Order was not acknowledged as submitted.")
+            raise TimeoutError(
+                "Order was not acknowledged as submitted. "
+                f"statuses={self.statuses!r}, errors={self.errors!r}"
+            )
+        if self.errors:
+            raise RuntimeError(self.errors[0])
 
         if not self.cancelled.wait(cancel_after):
             self.cancelOrder(order_id, "")
