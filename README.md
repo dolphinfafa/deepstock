@@ -44,6 +44,14 @@ conda run -n deepstock python scripts/ibkr_paper_sgov_smoke_test.py \
   --submit --confirm PAPER-SGOV-SMOKE-TEST --json
 ```
 
+If a prior smoke-test order remains pending, the same script can cancel only
+the exact `SGOV` one-share `$1.00` Paper order created by this test:
+
+```bash
+conda run -n deepstock python scripts/ibkr_paper_sgov_smoke_test.py \
+  --cancel-pending --confirm PAPER-SGOV-SMOKE-CANCEL --json
+```
+
 ## Defensive ETF Backtest
 
 The initial research strategy uses adjusted daily closes for `SPY`, `QQQ`,

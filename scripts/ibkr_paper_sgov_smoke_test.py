@@ -19,6 +19,7 @@ from ibapi.wrapper import EWrapper
 INFO_ERROR_CODES = {2104, 2106, 2107, 2108, 2158}
 EXPECTED_CANCEL_ERROR = 202
 REQUIRED_CONFIRMATION = "PAPER-SGOV-SMOKE-TEST"
+REQUIRED_CANCEL_CONFIRMATION = "PAPER-SGOV-SMOKE-CANCEL"
 SAFE_LIMIT_PRICE = 1.00
 
 
@@ -31,6 +32,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--env-file", default=".env")
     parser.add_argument("--submit", action="store_true")
+    parser.add_argument("--cancel-pending", action="store_true")
     parser.add_argument("--confirm", default="")
     parser.add_argument("--cancel-after", type=float, default=10.0)
     parser.add_argument("--timeout", type=float, default=15.0)
@@ -84,9 +86,11 @@ class PaperSgovSmokeTest(EWrapper, EClient):
         self.ready = threading.Event()
         self.submitted = threading.Event()
         self.cancelled = threading.Event()
+        self.open_orders_complete = threading.Event()
         self.network_thread: threading.Thread | None = None
         self.order_id: int | None = None
         self.statuses: list[str] = []
+        self.matching_order_ids: list[int] = []
         self.messages: list[str] = []
         self.errors: list[str] = []
 
@@ -124,6 +128,19 @@ class PaperSgovSmokeTest(EWrapper, EClient):
         if orderId == self.order_id:
             self.statuses.append(f"openOrder:{orderState.status}")
             self.submitted.set()
+        if (
+            contract.symbol == "SGOV"
+            and contract.secType == "STK"
+            and order.action == "BUY"
+            and float(order.totalQuantity) == 1
+            and order.orderType == "LMT"
+            and abs(float(order.lmtPrice) - SAFE_LIMIT_PRICE) < 0.0001
+            and order.tif == "DAY"
+        ):
+            self.matching_order_ids.append(orderId)
+
+    def openOrderEnd(self) -> None:  # type: ignore[override]
+        self.open_orders_complete.set()
 
     def orderStatus(  # type: ignore[override]
         self,
@@ -206,6 +223,37 @@ class PaperSgovSmokeTest(EWrapper, EClient):
             "errors": self.errors,
         }
 
+    def cancel_matching_order(self) -> dict[str, Any]:
+        if not self.ready.wait(self.timeout):
+            raise TimeoutError("Timed out waiting for API connection readiness.")
+        if self.errors:
+            raise RuntimeError(self.errors[0])
+
+        self.reqOpenOrders()
+        if not self.open_orders_complete.wait(self.timeout):
+            raise TimeoutError("Timed out listing this API client's open orders.")
+        if len(self.matching_order_ids) != 1:
+            raise RuntimeError(
+                "Refusing cancellation: expected exactly one matching SGOV smoke-test "
+                f"order, found {len(self.matching_order_ids)}."
+            )
+
+        order_id = self.matching_order_ids[0]
+        self.order_id = order_id
+        self.cancelOrder(order_id, "")
+        if not self.cancelled.wait(self.timeout):
+            raise TimeoutError("Timed out waiting for cancellation confirmation.")
+        return {
+            "symbol": "SGOV",
+            "action": "BUY",
+            "quantity": 1,
+            "limit_price": SAFE_LIMIT_PRICE,
+            "cancelled_order_id": order_id,
+            "statuses": self.statuses,
+            "messages": self.messages,
+            "errors": self.errors,
+        }
+
     def close(self) -> None:
         try:
             if self.isConnected():
@@ -217,9 +265,16 @@ class PaperSgovSmokeTest(EWrapper, EClient):
 
 def main() -> int:
     args = parse_args()
-    if not args.submit or args.confirm != REQUIRED_CONFIRMATION:
+    requested_actions = int(args.submit) + int(args.cancel_pending)
+    if requested_actions != 1:
+        print("Choose exactly one of --submit or --cancel-pending.", file=sys.stderr)
+        return 2
+    expected_confirmation = (
+        REQUIRED_CONFIRMATION if args.submit else REQUIRED_CANCEL_CONFIRMATION
+    )
+    if args.confirm != expected_confirmation:
         print(
-            "Refusing to submit. Pass --submit --confirm " + REQUIRED_CONFIRMATION,
+            "Refusing action. Pass the required --confirm value for the selected action.",
             file=sys.stderr,
         )
         return 2
@@ -231,7 +286,11 @@ def main() -> int:
         config = Config.from_env(Path(args.env_file).resolve())
         test = PaperSgovSmokeTest(timeout=args.timeout)
         test.connect_and_start(config)
-        result = test.run_test(args.cancel_after)
+        result = (
+            test.run_test(args.cancel_after)
+            if args.submit
+            else test.cancel_matching_order()
+        )
     except Exception as exc:  # noqa: BLE001
         print(f"Paper smoke test failed: {exc}", file=sys.stderr)
         return 1
