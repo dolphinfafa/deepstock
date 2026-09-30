@@ -41,6 +41,11 @@ downloader preserves these fields for indicator signals, but its current
 subscription coverage is only a recent approximately five-year interval and
 does not satisfy ARC's long-history controller gate.
 
+The Windows-only Norgate OHLC exporter writes the same adjusted OHLC schema
+using `TOTALRETURN` adjustment, matching the licensed close series used by the
+other ARC modules. Its raw CSV and manifest remain ignored, local research
+artifacts and must not be committed or redistributed.
+
 ## Stock Turtle Input
 
 The stock version of the Turtle research script accepts the same long CSV

@@ -101,6 +101,23 @@ conda run -n deepstock python scripts/run_arc_adx_backtest.py \
   --spy-ohlc artifacts/data/massive_spy_ohlc.csv
 ```
 
+For the long-history gate, first export licensed total-return OHLC locally on
+the Windows Norgate node, then transfer the ignored CSV and manifest to the
+server research workspace and rerun the same fixed diagnostic without changing
+the ADX parameters:
+
+```bash
+conda run -n deepstock python scripts/download_norgate_daily_ohlc.py \
+  --symbol SPY \
+  --output artifacts/research/norgate/spy_daily_ohlc.csv
+
+conda run -n deepstock python scripts/run_arc_adx_backtest.py \
+  --universe-dir artifacts/research/norgate/stock-universe-sp500-liquidity \
+  --etf-prices artifacts/research/norgate/etf_prices.csv \
+  --spy-ohlc artifacts/research/norgate/spy_daily_ohlc.csv \
+  --output-dir artifacts/robustness/arc-adx-full-history-2026-09-30
+```
+
 These commands are research-only. They include modeled costs and never submit
 orders.
 
