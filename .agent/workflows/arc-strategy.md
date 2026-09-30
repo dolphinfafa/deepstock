@@ -124,6 +124,13 @@ least six windows. The candidate therefore cannot be selected. Full-history
 OHLC from the licensed Norgate node is required before deciding whether ADX is
 useful as a secondary feature rather than the primary ARC state controller.
 
+The Windows-only Norgate exporter and source-manifest validation were prepared
+on 2026-09-30. The exporter writes licensed `TOTALRETURN` open, high, low, and
+close locally; the comparison script now rejects missing or mismatched coverage
+metadata and records the provider in its research manifest. The study computer
+was offline when the export was attempted, so the full-history run remains
+pending and the five-year decision above is unchanged.
+
 ## Execution Boundary
 
 Current status is `research_only_no_orders` and `paper_authorized` is false. The

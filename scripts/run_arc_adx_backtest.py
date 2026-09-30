@@ -28,7 +28,28 @@ from deepstock.regime import (
     regime_statistics,
 )
 from deepstock.turtle import run_turtle_backtest
-from run_point_in_time_turtle import load_point_in_time_inputs
+
+try:
+    from scripts.run_point_in_time_turtle import load_point_in_time_inputs
+except ModuleNotFoundError:  # Direct execution adds scripts/, not the repo root.
+    from run_point_in_time_turtle import load_point_in_time_inputs
+
+
+def load_ohlc_manifest(path: Path) -> dict[str, object]:
+    """Load a non-secret source manifest and enforce its minimum audit fields."""
+
+    if not path.exists():
+        raise ValueError(f"OHLC source manifest does not exist: {path}")
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    required = {"provider", "adjustment", "actual_from", "actual_to"}
+    missing = required.difference(manifest)
+    if missing:
+        raise ValueError(f"OHLC source manifest missing fields: {sorted(missing)}")
+    if "row_count" not in manifest and "rows" not in manifest:
+        raise ValueError("OHLC source manifest missing fields: ['row_count or rows']")
+    count = manifest["row_count"] if "row_count" in manifest else manifest["rows"]
+    manifest["row_count"] = int(count)
+    return manifest
 
 
 def load_spy_ohlc(path: Path) -> pd.DataFrame:
@@ -96,6 +117,10 @@ def main() -> int:
     parser.add_argument("--universe-dir", required=True)
     parser.add_argument("--etf-prices", required=True)
     parser.add_argument("--spy-ohlc", required=True)
+    parser.add_argument(
+        "--spy-ohlc-manifest",
+        help="Defaults to the OHLC CSV path with .manifest.json suffix.",
+    )
     parser.add_argument("--bull-candidate", default="strict_liquidity_55_20_5")
     parser.add_argument("--output-dir", default="artifacts/robustness/arc-adx-2026-09-30")
     args = parser.parse_args()
@@ -113,7 +138,20 @@ def main() -> int:
     prices, eligibility, turnover, _ = load_point_in_time_inputs(
         Path(args.universe_dir), Path(args.etf_prices)
     )
-    ohlc = load_spy_ohlc(Path(args.spy_ohlc))
+    ohlc_path = Path(args.spy_ohlc)
+    ohlc_manifest_path = (
+        Path(args.spy_ohlc_manifest)
+        if args.spy_ohlc_manifest
+        else ohlc_path.with_suffix(".manifest.json")
+    )
+    ohlc_manifest = load_ohlc_manifest(ohlc_manifest_path)
+    ohlc = load_spy_ohlc(ohlc_path)
+    if str(ohlc.index[0].date()) != str(ohlc_manifest["actual_from"]):
+        raise ValueError("OHLC CSV start does not match its source manifest.")
+    if str(ohlc.index[-1].date()) != str(ohlc_manifest["actual_to"]):
+        raise ValueError("OHLC CSV end does not match its source manifest.")
+    if len(ohlc) != int(ohlc_manifest["row_count"]):
+        raise ValueError("OHLC CSV row count does not match its source manifest.")
     etf_symbols = (*current_config.risk_assets, "SHY")
     etf = prices.loc[:, list(etf_symbols)].dropna()
 
@@ -227,6 +265,8 @@ def main() -> int:
 
     comparison = pd.DataFrame(comparison_rows)
     comparison.to_csv(output / "controller_comparison.csv", index=False)
+    minimum_walkforward_windows = 6
+    available_walkforward_windows = int(comparison["walkforward_windows"].min())
     manifest = {
         "research_status": ARC_EXECUTION_STATUS,
         "paper_authorized": False,
@@ -243,8 +283,26 @@ def main() -> int:
         "actual_from": evaluation_dates[0].date().isoformat(),
         "actual_to": evaluation_dates[-1].date().isoformat(),
         "sessions": len(evaluation_dates),
-        "minimum_walkforward_windows": 6,
-        "coverage_warning": "Massive OHLC subscription supplied only a recent approximately five-year sample; this is a limited diagnostic, not a controller selection result.",
+        "ohlc_source": {
+            key: ohlc_manifest.get(key)
+            for key in (
+                "provider",
+                "adjustment",
+                "actual_from",
+                "actual_to",
+                "row_count",
+                "retrieved_at_utc",
+            )
+        },
+        "minimum_walkforward_windows": minimum_walkforward_windows,
+        "available_walkforward_windows": available_walkforward_windows,
+        "coverage_gate_passed": available_walkforward_windows
+        >= minimum_walkforward_windows,
+        "coverage_warning": (
+            None
+            if available_walkforward_windows >= minimum_walkforward_windows
+            else "OHLC coverage produces fewer than six fixed Walk-Forward windows; this remains a limited diagnostic, not a controller selection result."
+        ),
         "bull_candidate": args.bull_candidate,
     }
     (output / "manifest.json").write_text(

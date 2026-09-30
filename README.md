@@ -98,7 +98,8 @@ conda run -n deepstock python scripts/download_massive_daily_ohlc.py \
 conda run -n deepstock python scripts/run_arc_adx_backtest.py \
   --universe-dir artifacts/research/norgate/stock-universe-sp500-liquidity \
   --etf-prices artifacts/research/norgate/etf_prices.csv \
-  --spy-ohlc artifacts/data/massive_spy_ohlc.csv
+  --spy-ohlc artifacts/data/massive_spy_ohlc.csv \
+  --spy-ohlc-manifest artifacts/data/massive_spy_ohlc.manifest.json
 ```
 
 For the long-history gate, first export licensed total-return OHLC locally on
