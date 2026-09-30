@@ -304,6 +304,12 @@ records.
 
 ## Key Decisions
 
+The strategy research library at `https://dev-cn-01.yios.cn/deepstock/` is
+served from the tracked `dashboard/` directory. A user-level systemd unit,
+`deepstock-dashboard.service`, binds the static server to
+`127.0.0.1:15001` and restarts it on failure; NGINX is the only public entry
+point.
+
 | Decision | Status | Rationale |
 | --- | --- | --- |
 | Target market | US equities | User-defined scope |
