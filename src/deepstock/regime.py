@@ -66,7 +66,41 @@ class ARCConfig:
             raise ValueError("Risk-off confirmation days must be positive when set.")
 
 
-def apply_regime_hysteresis(raw_regime: pd.Series, config: ARCConfig) -> pd.Series:
+@dataclass(frozen=True)
+class ADXARCConfig:
+    """Predeclared ADX regime candidate based on the supplied heuristic zones."""
+
+    adx_days: int = 14
+    range_threshold: float = 20.0
+    trend_threshold: float = 25.0
+    strong_trend_threshold: float = 30.0
+    super_trend_threshold: float = 40.0
+    confirmation_days: int = 3
+    min_hold_days: int = 5
+    reentry_cooldown_days: int = 0
+    risk_off_confirmation_days: int | None = None
+    risk_off_bypasses_min_hold: bool = False
+    risk_off_bypasses_reentry_cooldown: bool = False
+
+    def __post_init__(self) -> None:
+        if self.adx_days < 2:
+            raise ValueError("ADX lookback must be at least two sessions.")
+        if not (
+            0 < self.range_threshold < self.trend_threshold
+            < self.strong_trend_threshold < self.super_trend_threshold
+        ):
+            raise ValueError("ADX thresholds must satisfy 0 < range < trend < strong < super.")
+        if self.confirmation_days < 1 or self.min_hold_days < 1:
+            raise ValueError("Confirmation and minimum hold days must be positive.")
+        if self.reentry_cooldown_days < 0:
+            raise ValueError("State reentry cooldown cannot be negative.")
+        if self.risk_off_confirmation_days is not None and self.risk_off_confirmation_days < 1:
+            raise ValueError("Risk-off confirmation days must be positive when set.")
+
+
+def apply_regime_hysteresis(
+    raw_regime: pd.Series, config: ARCConfig | ADXARCConfig
+) -> pd.Series:
     """Apply fixed confirmation, minimum hold, and re-entry cooldown controls."""
 
     controlled = pd.Series(index=raw_regime.index, dtype="object")
@@ -113,6 +147,129 @@ def apply_regime_hysteresis(raw_regime: pd.Series, config: ARCConfig) -> pd.Seri
         controlled.at[date] = current
         held += 1
     return controlled
+
+
+def _wilder_average(values: pd.Series, days: int) -> pd.Series:
+    """Return Wilder's recursively smoothed average with an explicit seed."""
+
+    result = pd.Series(np.nan, index=values.index, dtype=float)
+    valid_positions = np.flatnonzero(values.notna().to_numpy())
+    if len(valid_positions) < days:
+        return result
+    seed_position = int(valid_positions[days - 1])
+    seed_values = values.iloc[valid_positions[:days]].astype(float)
+    result.iloc[seed_position] = float(seed_values.mean())
+    previous = result.iloc[seed_position]
+    for position in range(seed_position + 1, len(values)):
+        value = values.iloc[position]
+        if pd.isna(value):
+            continue
+        previous = (previous * (days - 1) + float(value)) / days
+        result.iloc[position] = previous
+    return result
+
+
+def calculate_adx(ohlc: pd.DataFrame, days: int = 14) -> pd.DataFrame:
+    """Calculate standard Wilder ADX and directional indicators from OHLC."""
+
+    required = {"high", "low", "close"}
+    missing = required.difference(ohlc.columns)
+    if missing:
+        raise ValueError(f"ADX OHLC data missing columns: {sorted(missing)}")
+    if not isinstance(ohlc.index, pd.DatetimeIndex):
+        raise ValueError("ADX OHLC data must use a DatetimeIndex.")
+    if ohlc.index.has_duplicates or not ohlc.index.is_monotonic_increasing:
+        raise ValueError("ADX dates must be unique and sorted ascending.")
+    selected = ohlc.loc[:, ["high", "low", "close"]].astype(float)
+    if selected.empty or selected.isna().any().any() or (selected <= 0).any().any():
+        raise ValueError("ADX OHLC data must be non-empty, positive, and complete.")
+    if (selected["high"] < selected[["low", "close"]].max(axis=1)).any():
+        raise ValueError("ADX high prices must not be below low or close prices.")
+    if (selected["low"] > selected[["high", "close"]].min(axis=1)).any():
+        raise ValueError("ADX low prices must not be above high or close prices.")
+
+    previous_close = selected["close"].shift(1)
+    true_range = pd.concat(
+        [
+            selected["high"] - selected["low"],
+            (selected["high"] - previous_close).abs(),
+            (selected["low"] - previous_close).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
+    upward = selected["high"].diff()
+    downward = -selected["low"].diff()
+    plus_dm = upward.where((upward > downward) & (upward > 0), 0.0)
+    minus_dm = downward.where((downward > upward) & (downward > 0), 0.0)
+
+    average_true_range = _wilder_average(true_range, days)
+    plus_di = 100 * _wilder_average(plus_dm, days) / average_true_range.replace(0, np.nan)
+    minus_di = 100 * _wilder_average(minus_dm, days) / average_true_range.replace(0, np.nan)
+    directional_sum = plus_di + minus_di
+    dx = 100 * (plus_di - minus_di).abs() / directional_sum.replace(0, np.nan)
+    adx = _wilder_average(dx, days)
+    return pd.DataFrame(
+        {
+            "true_range": true_range,
+            "average_true_range": average_true_range,
+            "plus_di": plus_di,
+            "minus_di": minus_di,
+            "dx": dx,
+            "adx": adx,
+        },
+        index=selected.index,
+    )
+
+
+def classify_adx_market_regime(
+    ohlc: pd.DataFrame, config: ADXARCConfig | None = None
+) -> pd.DataFrame:
+    """Classify an audit-only ARC candidate using fixed ADX/DMI rules.
+
+    ADX determines trend strength, while +DI and -DI determine direction. The
+    signal is formed at the close and must be executed no earlier than the next
+    session.
+    """
+
+    config = config or ADXARCConfig()
+    indicators = calculate_adx(ohlc, config.adx_days)
+    adx = indicators["adx"]
+    plus_di = indicators["plus_di"]
+    minus_di = indicators["minus_di"]
+
+    zone = pd.Series("warmup", index=ohlc.index, dtype="object")
+    zone.loc[adx.lt(config.range_threshold)] = "range"
+    zone.loc[adx.ge(config.range_threshold) & adx.lt(config.trend_threshold)] = "chaos"
+    zone.loc[adx.ge(config.trend_threshold) & adx.lt(config.strong_trend_threshold)] = "weak_trend"
+    zone.loc[adx.ge(config.strong_trend_threshold) & adx.lt(config.super_trend_threshold)] = "strong_trend"
+    zone.loc[adx.ge(config.super_trend_threshold)] = "super_trend"
+
+    raw_regime = pd.Series(MarketRegime.RANGE.value, index=ohlc.index, dtype="object")
+    trending = adx.ge(config.trend_threshold)
+    bullish = trending & plus_di.gt(minus_di)
+    bearish = trending & minus_di.ge(plus_di)
+    raw_regime.loc[bullish] = MarketRegime.BULL.value
+    raw_regime.loc[bearish] = MarketRegime.DEFENSIVE.value
+    raw_regime.loc[bearish & adx.ge(config.super_trend_threshold)] = MarketRegime.CRISIS.value
+    regime = apply_regime_hysteresis(raw_regime, config)
+    routes = regime.map(
+        {
+            MarketRegime.CRISIS.value: StrategyRoute.DEFENSIVE_ETF.value,
+            MarketRegime.DEFENSIVE.value: StrategyRoute.DEFENSIVE_ETF.value,
+            MarketRegime.RANGE.value: StrategyRoute.GRID_RESEARCH.value,
+            MarketRegime.BULL.value: StrategyRoute.STOCK_TURTLE_RESEARCH.value,
+        }
+    )
+    return pd.DataFrame(
+        {
+            "regime": regime,
+            "raw_regime": raw_regime,
+            "strategy_route": routes,
+            "adx_zone": zone,
+            **{column: indicators[column] for column in indicators.columns},
+        },
+        index=ohlc.index,
+    )
 
 
 def classify_market_regime(

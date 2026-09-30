@@ -4,14 +4,39 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from deepstock.grid import GridConfig, run_grid_backtest
 from deepstock.regime import (
+    ADXARCConfig,
     ARCConfig,
     MarketRegime,
     StrategyRoute,
     apply_regime_hysteresis,
+    calculate_adx,
+    classify_adx_market_regime,
     classify_market_regime,
 )
-from deepstock.grid import GridConfig, run_grid_backtest
+
+
+def make_trending_ohlc(days: int = 120, descending: bool = False) -> pd.DataFrame:
+    dates = pd.bdate_range("2024-01-02", periods=days)
+    close = np.linspace(200, 100, days) if descending else np.linspace(100, 200, days)
+    return pd.DataFrame({"high": close + 1, "low": close - 1, "close": close}, index=dates)
+
+
+def test_adx_uses_directional_indicators_for_trend_direction() -> None:
+    config = ADXARCConfig(confirmation_days=1, min_hold_days=1)
+    rising = classify_adx_market_regime(make_trending_ohlc(), config)
+    falling = classify_adx_market_regime(make_trending_ohlc(descending=True), config)
+
+    assert rising.iloc[-1]["adx"] > 40
+    assert rising.iloc[-1]["regime"] == MarketRegime.BULL
+    assert falling.iloc[-1]["adx"] > 40
+    assert falling.iloc[-1]["regime"] == MarketRegime.CRISIS
+
+
+def test_adx_rejects_close_only_input() -> None:
+    with pytest.raises(ValueError, match="missing columns"):
+        calculate_adx(make_trending_ohlc().drop(columns=["high", "low"]))
 
 
 def make_regime_prices(days: int = 600) -> pd.DataFrame:

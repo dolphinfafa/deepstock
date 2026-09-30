@@ -5,9 +5,36 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 
 from deepstock.massive import (
+    download_split_adjusted_daily_ohlc,
     download_split_adjusted_daily_prices,
     download_total_return_daily_prices,
 )
+
+
+def test_downloads_adjusted_daily_ohlc() -> None:
+    bars = download_split_adjusted_daily_ohlc(
+        ["SPY"],
+        "2024-01-02",
+        "2024-01-02",
+        "secret",
+        lambda _: {
+            "status": "OK",
+            "results": [
+                {"t": 1704171600000, "o": 470.0, "h": 473.0, "l": 469.0, "c": 472.65}
+            ],
+        },
+    )
+
+    assert bars.to_dict("records") == [
+        {
+            "date": "2024-01-02",
+            "symbol": "SPY",
+            "adjusted_open": 470.0,
+            "adjusted_high": 473.0,
+            "adjusted_low": 469.0,
+            "adjusted_close": 472.65,
+        }
+    ]
 
 
 def test_downloads_adjusted_bars_with_pagination() -> None:

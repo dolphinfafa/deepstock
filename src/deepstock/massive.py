@@ -124,6 +124,52 @@ def download_split_adjusted_daily_prices(
     return frame.sort_values(["date", "symbol"], ignore_index=True)
 
 
+def download_split_adjusted_daily_ohlc(
+    symbols: Iterable[str], start: str, end: str, api_key: str, fetcher: JsonFetcher | None = None
+) -> pd.DataFrame:
+    """Download split-adjusted daily OHLC bars for indicator research."""
+
+    if not api_key:
+        raise ValueError("A Massive API key is required.")
+    fetch = fetcher or _fetch_json
+    rows: list[dict[str, Any]] = []
+
+    for symbol in symbols:
+        normalized = symbol.strip().upper()
+        if not normalized:
+            raise ValueError("Symbols cannot be empty.")
+        for bar in _fetch_pages(_initial_price_url(normalized, start, end, api_key), api_key, fetch):
+            fields = {"open": "o", "high": "h", "low": "l", "close": "c"}
+            values = {field: float(bar[key]) for field, key in fields.items()}
+            if (
+                min(values.values()) <= 0
+                or values["high"]
+                < max(values["open"], values["low"], values["close"])
+                or values["low"]
+                > min(values["open"], values["high"], values["close"])
+            ):
+                raise ValueError(f"Massive returned an invalid adjusted OHLC bar for {normalized}.")
+            timestamp = pd.to_datetime(int(bar["t"]), unit="ms", utc=True)
+            rows.append(
+                {
+                    "date": timestamp.tz_convert("America/New_York").date().isoformat(),
+                    "symbol": normalized,
+                    "adjusted_open": values["open"],
+                    "adjusted_high": values["high"],
+                    "adjusted_low": values["low"],
+                    "adjusted_close": values["close"],
+                }
+            )
+
+    columns = ["date", "symbol", "adjusted_open", "adjusted_high", "adjusted_low", "adjusted_close"]
+    frame = pd.DataFrame(rows, columns=columns)
+    if frame.empty:
+        raise ValueError("Massive returned no daily OHLC bars for the requested range.")
+    if frame.duplicated(["date", "symbol"]).any():
+        raise ValueError("Massive returned duplicate daily OHLC bars.")
+    return frame.sort_values(["date", "symbol"], ignore_index=True)
+
+
 def download_total_return_daily_prices(
     symbols: Iterable[str], start: str, end: str, api_key: str, fetcher: JsonFetcher | None = None
 ) -> pd.DataFrame:

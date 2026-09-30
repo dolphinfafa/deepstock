@@ -86,6 +86,21 @@ conda run -n deepstock python scripts/run_arc_grid_backtest.py \
   --prices data/adjusted_daily_prices.csv
 ```
 
+The fixed ADX/DMI controller diagnostic requires genuine high, low, and close
+bars. Download the locally licensed Massive coverage, then compare it with the
+current controller on identical routes and dates:
+
+```bash
+conda run -n deepstock python scripts/download_massive_daily_ohlc.py \
+  --from 2004-11-18 --to 2026-09-29 --symbols SPY \
+  --output artifacts/data/massive_spy_ohlc.csv
+
+conda run -n deepstock python scripts/run_arc_adx_backtest.py \
+  --universe-dir artifacts/research/norgate/stock-universe-sp500-liquidity \
+  --etf-prices artifacts/research/norgate/etf_prices.csv \
+  --spy-ohlc artifacts/data/massive_spy_ohlc.csv
+```
+
 These commands are research-only. They include modeled costs and never submit
 orders.
 

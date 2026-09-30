@@ -35,6 +35,12 @@ Always compare the requested and actual date ranges in the manifest. Subscriptio
 history limits can return less data than the requested range; do not describe a
 period as tested unless it appears in `actual_from` through `actual_to`.
 
+Standard ADX research additionally requires split-adjusted daily high, low,
+and close. A close-only series must not be presented as ADX. The Massive OHLC
+downloader preserves these fields for indicator signals, but its current
+subscription coverage is only a recent approximately five-year interval and
+does not satisfy ARC's long-history controller gate.
+
 ## Stock Turtle Input
 
 The stock version of the Turtle research script accepts the same long CSV

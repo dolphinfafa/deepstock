@@ -302,6 +302,16 @@ rule would have remained roughly eight calendar weeks. The new policy starts a
 fresh observation clock and does not inherit pre-2026-08-31 observation
 records.
 
+A fixed ADX-based ARC controller diagnostic was completed on 2026-09-30. It
+used standard 14-session Wilder ADX/DMI, the article's 20/25/30/40 strength
+zones, `+DI/-DI` direction, and the existing 3-session confirmation / 5-session
+minimum hold. On the Massive-limited 2021-11-05 through 2026-08-21 common
+sample, ADX ARC returned 14.66% with a -9.38% maximum drawdown versus the
+current ARC controller at 24.31% and -16.21%; SPY returned 74.30%. ADX increased
+controller state changes from 35 to 45 (execution route switches: 34 to 45)
+and produced only two Walk-Forward windows, below
+the six-window gate. It remains an unselected diagnostic candidate.
+
 ## Key Decisions
 
 The strategy research library at `https://dev-cn-01.yios.cn/deepstock/` is

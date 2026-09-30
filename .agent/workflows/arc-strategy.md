@@ -86,6 +86,44 @@ switches fell from 153 to 96. However, two Walk-Forward windows exceeded the
 fixed turnover threshold, versus one for the prior controller. The candidate
 therefore remains unselected and research-only.
 
+## ADX Controller Diagnostic: 2026-09-30
+
+The article thresholds were tested as one predeclared controller candidate,
+not treated as a complete trading rule. Standard 14-session Wilder ADX/DMI was
+calculated from SPY high, low, and close. The fixed mapping was:
+
+- ADX below 20: range;
+- ADX 20 to below 25: chaos, still routed to range;
+- ADX at least 25 with `+DI > -DI`: bull;
+- ADX at least 25 with `-DI >= +DI`: defensive; and
+- bearish ADX at least 40: crisis.
+
+The candidate used the existing fixed 3-session confirmation and 5-session
+minimum hold. It was compared with the current controller on identical dates,
+route modules, point-in-time Bull candidate, 5 bps costs, risk layer, 10%
+rebalance band, and 10-session route cooldown. Massive supplied only 1,254 SPY
+OHLC bars, so the common post-warm-up sample was limited to 1,202 sessions from
+2021-11-05 through 2026-08-21.
+
+| Controller | Total return | Sharpe | Max drawdown | Controller state changes | Execution route switches | Average state duration |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Current ARC 3/5 | 24.31% | 0.38 | -16.21% | 35 | 34 | 33.4 sessions |
+| ADX 14 with 3/5 | 14.66% | 0.35 | -9.38% | 45 | 45 | 26.1 sessions |
+
+ADX reduced drawdown but also reduced return, increased controller state changes,
+and classified 704 sessions as range versus only 294 as bull. Bull/range
+switches were nearly unchanged at 19 versus 20. The controlled ADX defensive
+state was followed by an average 20-session SPY return of +2.85%, versus +1.01%
+after its bull state, indicating that the bearish label often persisted into a
+rebound. Only two raw crisis sessions occurred and none survived the fixed
+confirmation rule.
+
+Both fixed Walk-Forward test windows for ADX were positive and passed the
+per-window loss, drawdown, and turnover checks, but the project requires at
+least six windows. The candidate therefore cannot be selected. Full-history
+OHLC from the licensed Norgate node is required before deciding whether ADX is
+useful as a secondary feature rather than the primary ARC state controller.
+
 ## Execution Boundary
 
 Current status is `research_only_no_orders` and `paper_authorized` is false. The
