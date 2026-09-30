@@ -309,8 +309,17 @@ minimum hold. On the Massive-limited 2021-11-05 through 2026-08-21 common
 sample, ADX ARC returned 14.66% with a -9.38% maximum drawdown versus the
 current ARC controller at 24.31% and -16.21%; SPY returned 74.30%. ADX increased
 controller state changes from 35 to 45 (execution route switches: 34 to 45)
-and produced only two Walk-Forward windows, below
-the six-window gate. It remains an unselected diagnostic candidate.
+and produced only two Walk-Forward windows, below the six-window gate.
+
+The licensed Norgate rerun then covered 2004-11-18 through 2026-08-21 with 19
+fixed Walk-Forward windows. ADX 3/5 returned 289.64%, Sharpe 0.86, and -11.41%
+maximum drawdown, but increased state changes to 205 and failed one turnover
+window. Reusing the previously predeclared 5-day confirmation, 10-day minimum
+hold, and 20-day reentry cooldown produced 263.59%, Sharpe 0.82, -12.58%
+drawdown, 152 state changes, 141 execution-route switches, and passed the fixed
+19-window thresholds. It remains an unselected research candidate because the
+result is OOS evidence, SPY returned 860.23%, state timing lag persists, and
+the wider ARC module/data gates are still unresolved.
 
 ## Key Decisions
 

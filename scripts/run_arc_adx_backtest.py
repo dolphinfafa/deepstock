@@ -91,6 +91,19 @@ def transition_summary(signals: pd.DataFrame) -> dict[str, object]:
         & states.isin(["bull", "range"])
     )
     statistics["bull_range_switches"] = int(bull_range.sum())
+    statistics["state_switches_per_252_sessions"] = float(
+        statistics["state_switches"] * 252 / len(states)
+    )
+    if "raw_regime" in signals:
+        raw_states = signals["raw_regime"].astype(str)
+        raw_changed = raw_states.ne(raw_states.shift())
+        raw_bull_range = (
+            raw_changed
+            & raw_states.shift().isin(["bull", "range"])
+            & raw_states.isin(["bull", "range"])
+        )
+        statistics["raw_state_switches"] = int(raw_changed.sum() - 1)
+        statistics["raw_bull_range_switches"] = int(raw_bull_range.sum())
     return statistics
 
 
@@ -135,6 +148,16 @@ def main() -> int:
         confirmation_days=3,
         min_hold_days=5,
     )
+    adx_anti_churn_config = ADXARCConfig(
+        adx_days=14,
+        range_threshold=20,
+        trend_threshold=25,
+        strong_trend_threshold=30,
+        super_trend_threshold=40,
+        confirmation_days=5,
+        min_hold_days=10,
+        reentry_cooldown_days=20,
+    )
     prices, eligibility, turnover, _ = load_point_in_time_inputs(
         Path(args.universe_dir), Path(args.etf_prices)
     )
@@ -159,6 +182,9 @@ def main() -> int:
         etf.loc[:, list(current_config.risk_assets)], current_config
     )
     adx_signals = classify_adx_market_regime(ohlc, adx_config)
+    adx_anti_churn_signals = classify_adx_market_regime(
+        ohlc, adx_anti_churn_config
+    )
     valid_adx_dates = adx_signals.index[adx_signals["adx"].notna()]
     evaluation_dates = prices.index.intersection(etf.index).intersection(valid_adx_dates)
     if len(evaluation_dates) < 756:
@@ -184,6 +210,7 @@ def main() -> int:
     controller_inputs = {
         "current_arc_3_confirm_5_hold": current_signals,
         "adx_14_3_confirm_5_hold": adx_signals,
+        "adx_14_5_confirm_10_hold_20_reentry": adx_anti_churn_signals,
     }
     for name, signals in controller_inputs.items():
         routes = signals["strategy_route"].reindex(prices.index).fillna(
@@ -248,12 +275,23 @@ def main() -> int:
                         "maximum_drawdown",
                         "total_turnover",
                         "total_transaction_cost",
+                        "state_switch_transaction_cost",
+                        "reentry_transaction_cost",
                         "benchmark_total_return",
                     )
                 },
+                "raw_controller_state_switches": state_statistics.get(
+                    "raw_state_switches"
+                ),
                 "controller_state_switches": state_statistics["state_switches"],
                 "execution_route_switches": result.summary["state_switches"],
+                "state_switches_per_252_sessions": state_statistics[
+                    "state_switches_per_252_sessions"
+                ],
                 "average_state_duration": state_statistics["average_hold_days"],
+                "raw_bull_range_switches": state_statistics.get(
+                    "raw_bull_range_switches"
+                ),
                 "bull_range_switches": state_statistics["bull_range_switches"],
                 "walkforward_windows": len(walk_forward),
                 "negative_walkforward_windows": int((walk_forward["total_return"] < 0).sum()),
@@ -277,8 +315,18 @@ def main() -> int:
             "days": 14,
             "zones": {"range": "<20", "chaos": "20-<25", "weak": "25-<30", "strong": "30-<40", "super": ">=40"},
             "routing": "ADX >=25 with +DI>-DI -> bull; ADX >=25 with -DI>=+DI -> defensive; bearish ADX >=40 -> crisis; otherwise range.",
-            "confirmation_days": 3,
-            "minimum_hold_days": 5,
+            "controller_variants": {
+                "baseline": {
+                    "confirmation_days": 3,
+                    "minimum_hold_days": 5,
+                    "reentry_cooldown_days": 0,
+                },
+                "predeclared_anti_churn": {
+                    "confirmation_days": 5,
+                    "minimum_hold_days": 10,
+                    "reentry_cooldown_days": 20,
+                },
+            },
         },
         "actual_from": evaluation_dates[0].date().isoformat(),
         "actual_to": evaluation_dates[-1].date().isoformat(),

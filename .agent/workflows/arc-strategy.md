@@ -126,10 +126,34 @@ useful as a secondary feature rather than the primary ARC state controller.
 
 The Windows-only Norgate exporter and source-manifest validation were prepared
 on 2026-09-30. The exporter writes licensed `TOTALRETURN` open, high, low, and
-close locally; the comparison script now rejects missing or mismatched coverage
-metadata and records the provider in its research manifest. The study computer
-was offline when the export was attempted, so the full-history run remains
-pending and the five-year decision above is unchanged.
+close locally; the comparison script rejects missing or mismatched coverage
+metadata and records the provider in its research manifest.
+
+### Licensed Full-History Result
+
+The study computer subsequently came online and exported 8,474 SPY sessions
+from 1993-01-29 through 2026-09-29. The common ARC evaluation range was 5,473
+sessions from 2004-11-18 through 2026-08-21, producing 19 fixed Walk-Forward
+windows. Results on identical routes, risk controls, and costs were:
+
+| Controller | Total return | Sharpe | Max drawdown | State changes | Route switches | Bull/range switches | WF result |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Current ARC 3/5 | 268.19% | 0.56 | -25.15% | 161 | 152 | 96 | Failed: 5 turnover windows |
+| ADX 14 with 3/5 | 289.64% | 0.86 | -11.41% | 205 | 190 | 86 | Failed: 1 turnover window |
+| ADX 14 with predeclared 5/10/20 anti-churn | 263.59% | 0.82 | -12.58% | 152 | 141 | 65 | Passed 19-window thresholds |
+
+The fixed 5/10/20 rule was already used in the project's controller research;
+it was not chosen by searching these ADX results. It reduced the ADX raw 271
+state changes to 152, reduced Bull/range switches from 105 to 65, and increased
+average state duration to 35.8 sessions. Two windows remained negative, with
+the worst at -10.05%, but neither crossed the predeclared severe-loss threshold.
+
+This is a retained research candidate, not a selected production controller.
+Selecting it because it passed this OOS report would violate the no-OOS-
+selection policy. It also remains far below SPY's 860.23% total return, and the
+controlled defensive state was followed by +2.16% average 20-session SPY
+return versus +0.72% after bull, so timing lag remains visible. Independent
+holdout or prospective shadow validation is required before any rule change.
 
 ## Execution Boundary
 

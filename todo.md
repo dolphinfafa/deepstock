@@ -1,9 +1,9 @@
 # TODO
 
-- Export licensed full-history SPY high/low/close from Norgate and rerun the
-  fixed ADX 14 ARC diagnostic without changing the 20/25/30/40 zones. The
-  Massive-limited five-year result reduced drawdown but increased state
-  switches and materially reduced return, so it must not replace ARC.
+- Preserve the fixed ADX 14 + 5/10/20 anti-churn controller as an unselected
+  research candidate. Validate it only on a new independent holdout or a
+  prospective shadow period; do not choose it from the completed OOS report or
+  search alternative ADX thresholds and confirmation lengths.
 - Verify the TWS trusted-IP allowlist remains limited to the local execution
   node; do not expose or forward its API socket.
 - Review the completed fixed-split result: all 18 predeclared parameter sets
