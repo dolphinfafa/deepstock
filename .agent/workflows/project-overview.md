@@ -97,7 +97,10 @@ the laptop is the only paper TWS connection point.
 
 The active Windows data and execution node is `DESKTOP-ORNLESD` (the
 quantitative computer), reachable through SSH FRP port 20008. It runs Norgate
-Data Updater locally and is the intended TWS host. The project is cloned at
+Data Updater and TWS Paper locally. TWS Paper API connectivity is verified on
+`127.0.0.1:7497` with the order-disabled read-only probe; the probe returned
+server time, account summary, positions, and open-order completion without
+errors. The project is cloned at
 `D:\\workspace\\deepstock`; Miniconda is under `D:\\workspace\\miniconda3`,
 and the dedicated environment is `D:\\workspace\\conda-envs\\deepstock` with
 Windows Python 3.12.14, `norgatedata 1.0.77`, `ibapi 9.81.1.post1`, and the
