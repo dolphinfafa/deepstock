@@ -117,6 +117,28 @@ def test_registry_script_skips_duplicate_without_writing(tmp_path, monkeypatch) 
     assert len(records.read_text(encoding="utf-8").splitlines()) == 1
 
 
+def test_registry_script_accepts_one_snapshot_object(tmp_path, monkeypatch) -> None:
+    registry = registry_file(tmp_path)
+    snapshots = tmp_path / "snapshot.json"
+    records = tmp_path / "decisions.jsonl"
+    snapshots.write_text(json.dumps(passing_snapshot()), encoding="utf-8")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "evaluate_strategy_registry.py",
+            "--snapshots",
+            str(snapshots),
+            "--registry",
+            str(registry),
+            "--records",
+            str(records),
+        ],
+    )
+
+    assert evaluate_registry_main() == 0
+    assert len(records.read_text(encoding="utf-8").splitlines()) == 1
+
+
 def test_defensive_snapshot_uses_fixed_reports_and_defaults_risk_review_to_false(tmp_path) -> None:
     dates = pd.date_range("2025-08-01", periods=252, freq="B")
     prices = pd.DataFrame(

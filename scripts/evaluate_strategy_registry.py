@@ -12,16 +12,22 @@ from deepstock.strategy_governance import evaluate_snapshot, load_registry, reco
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--snapshots", required=True, help="JSON list or object with a snapshots list.")
+    parser.add_argument(
+        "--snapshots",
+        required=True,
+        help="One snapshot object, a JSON list, or an object with a snapshots list.",
+    )
     parser.add_argument("--registry", default="config/strategy_registry.json")
     parser.add_argument("--records", default="artifacts/research/strategy-governance/decisions.jsonl")
     parser.add_argument("--skip-duplicate", action="store_true")
     args = parser.parse_args()
 
     raw = json.loads(Path(args.snapshots).read_text(encoding="utf-8"))
-    snapshots = raw.get("snapshots") if isinstance(raw, dict) else raw
+    snapshots = raw.get("snapshots", [raw]) if isinstance(raw, dict) else raw
     if not isinstance(snapshots, list):
-        raise ValueError("Snapshots input must be a JSON list or contain a snapshots list.")
+        raise ValueError(
+            "Snapshots input must be one object, a JSON list, or contain a snapshots list."
+        )
     registry = load_registry(Path(args.registry))
     records: list[dict[str, object]] = []
     for snapshot in snapshots:
