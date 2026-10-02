@@ -28,7 +28,7 @@ def load_prices(path: Path, config: StrategyConfig) -> pd.DataFrame:
         raise ValueError(f"CSV missing columns: {sorted(missing)}")
     raw["date"] = pd.to_datetime(raw["date"], utc=False)
     prices = raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
-    return prices.loc[:, list(config.symbols)]
+    return prices.loc[:, list(config.symbols)].dropna()
 
 
 def main() -> int:

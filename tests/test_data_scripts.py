@@ -3,7 +3,9 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
+from deepstock.backtest import StrategyConfig
 from scripts.merge_ticker_alias import merge_alias
+from scripts.run_defensive_etf_backtest import load_prices
 
 
 def test_merge_ticker_alias_uses_alias_before_switch() -> None:
@@ -31,3 +33,30 @@ def test_merge_ticker_alias_rejects_duplicate_dates() -> None:
     alias = pd.DataFrame({"date": ["2022-06-08"], "symbol": ["FB"], "adjusted_close": [188.0]})
     with pytest.raises(ValueError, match="duplicate"):
         merge_alias(pd.concat([base, base]), alias, "META", "FB", "2022-06-09")
+
+
+def test_defensive_backtest_uses_common_complete_history(tmp_path) -> None:
+    config = StrategyConfig()
+    rows = []
+    for symbol in config.symbols:
+        rows.append(
+            {
+                "date": "2024-01-03",
+                "symbol": symbol,
+                "adjusted_close": 100.0,
+            }
+        )
+    rows.append(
+        {
+            "date": "2024-01-02",
+            "symbol": config.benchmark,
+            "adjusted_close": 99.0,
+        }
+    )
+    path = tmp_path / "prices.csv"
+    pd.DataFrame(rows).to_csv(path, index=False)
+
+    prices = load_prices(path, config)
+
+    assert prices.index.tolist() == [pd.Timestamp("2024-01-03")]
+    assert prices.columns.tolist() == list(config.symbols)
