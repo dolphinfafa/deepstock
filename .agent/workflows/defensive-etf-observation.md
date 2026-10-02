@@ -81,7 +81,7 @@ plan IDs are rejected by design.
 
 ## Windows Scheduling
 
-The Windows node uses China Standard Time. The wrapper
+The quantitative computer `DESKTOP-ORNLESD` uses China Standard Time. The wrapper
 `scripts\\run_defensive_etf_observation.cmd` is registered as the daily Task
 Scheduler job `Deepstock_Defensive_ETF_Observation` at 07:30 local time. It is
 configured to wake the computer from sleep and to run as soon as possible after
@@ -90,3 +90,9 @@ a missed start. It stops on the first failure and appends diagnostics to
 job with an additional research-governance evaluation; it does not start TWS or
 submit orders. Windows power policy or a disconnected AC adapter may still
 prevent wake-up.
+
+The wrapper resolves the project directory from its own location and runs
+`D:\\workspace\\conda-envs\\deepstock\\python.exe` on the quantitative
+computer. The former task on `DESKTOP-S31222F` is disabled. The historical
+one-time SGOV Paper fill-test task on that computer is also disabled and is not
+recreated because it has no future trigger.

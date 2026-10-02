@@ -95,15 +95,19 @@ local research data, emits deterministic target weights and a `plan_id`, and
 supports a kill switch. It has no broker dependency and never submits an order;
 the laptop is the only paper TWS connection point.
 
-A separate Windows data node is now reachable by verified SSH. It runs TWS
-Paper and Norgate Data Updater locally. The project is cloned at
-`F:\\workspace\\deepstock`; Conda environment `deepstock` uses the existing
-Miniconda installation (Windows Python 3.12.1) and contains `norgatedata
-1.0.77`, `ibapi 9.81.1.post1`, and the project dependencies. Windows pip could
-not complete a TLS handshake with PyPI, so wheels were downloaded on the
-server with normal certificate verification and installed offline on Windows;
-certificate verification was not disabled. Imports succeeded and the project
-test suite passed (`21 passed`, 2 pandas deprecation warnings).
+The active Windows data and execution node is `DESKTOP-ORNLESD` (the
+quantitative computer), reachable through SSH FRP port 20008. It runs Norgate
+Data Updater locally and is the intended TWS host. The project is cloned at
+`D:\\workspace\\deepstock`; Miniconda is under `D:\\workspace\\miniconda3`,
+and the dedicated environment is `D:\\workspace\\conda-envs\\deepstock` with
+Windows Python 3.12.14, `norgatedata 1.0.77`, `ibapi 9.81.1.post1`, and the
+project dependencies. Norgate API data retrieval and the full project test
+suite succeed on this node.
+
+The former Windows node `DESKTOP-S31222F` (the study computer, SSH FRP port
+20007) retains its local historical files but no longer runs Deepstock market
+tasks. Its Deepstock scheduled tasks are disabled, while its FRP startup task
+remains enabled.
 
 Its TWS API listener currently binds to all interfaces on port 7497; the user
 has configured the TWS trusted-IP allowlist to `127.0.0.1`. Keep this allowlist
