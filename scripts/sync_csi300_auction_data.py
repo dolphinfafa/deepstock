@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import fcntl
 import hashlib
 import json
 import os
@@ -12,6 +11,12 @@ import shutil
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+
+try:
+    import fcntl
+except ImportError:  # Windows uses msvcrt byte-range locking instead.
+    fcntl = None  # type: ignore[assignment]
+    import msvcrt
 
 
 SOURCE_DIRECTORIES = (
@@ -22,6 +27,25 @@ SOURCE_DIRECTORIES = (
     "short_term_forward",
 )
 FORWARD_DATABASE = Path("short_term_forward/forward.sqlite3")
+
+
+def _try_lock(handle) -> bool:  # type: ignore[no-untyped-def]
+    if fcntl is not None:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return True
+        except BlockingIOError:
+            return False
+    handle.seek(0, os.SEEK_END)
+    if handle.tell() == 0:
+        handle.write("0")
+        handle.flush()
+    handle.seek(0)
+    try:
+        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        return True
+    except OSError:
+        return False
 
 
 def _sha256(path: Path) -> str:
@@ -143,9 +167,7 @@ def main() -> int:
     lock_path = args.destination_root / ".csi300_auction_sync.lock"
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+", encoding="utf-8") as lock:
-        try:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
+        if not _try_lock(lock):
             print(json.dumps({"status": "skipped_locked"}, sort_keys=True))
             return 0
         report = synchronize(args.source_root, args.destination_root)
