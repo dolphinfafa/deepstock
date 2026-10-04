@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 import sqlite3
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -56,6 +57,18 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _replace_with_retry(source: Path, destination: Path) -> None:
+    """Replace atomically, allowing Windows SQLite handles time to release."""
+    for attempt in range(20):
+        try:
+            os.replace(source, destination)
+            return
+        except PermissionError:
+            if attempt == 19:
+                raise
+            time.sleep(0.1)
+
+
 def _copy_if_changed(source: Path, destination: Path) -> tuple[bool, int]:
     source_stat = source.stat()
     if destination.exists():
@@ -71,7 +84,7 @@ def _copy_if_changed(source: Path, destination: Path) -> tuple[bool, int]:
     shutil.copy2(source, temporary)
     if _sha256(source) != _sha256(temporary):
         raise RuntimeError(f"checksum mismatch while copying {source}")
-    os.replace(temporary, destination)
+    _replace_with_retry(temporary, destination)
     return True, source_stat.st_size
 
 
@@ -89,7 +102,7 @@ def _backup_sqlite(source: Path, destination: Path) -> int:
             if result is None or result[0] != "ok":
                 raise RuntimeError(f"SQLite backup failed quick_check: {result}")
     shutil.copystat(source, temporary)
-    os.replace(temporary, destination)
+    _replace_with_retry(temporary, destination)
     return destination.stat().st_size
 
 
