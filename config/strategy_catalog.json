@@ -1,0 +1,175 @@
+{
+  "schema_version": "1.0",
+  "strategies": [
+    {
+      "id": "adaptive_defensive_etf",
+      "display_name": "防御型 ETF",
+      "code": "ETF",
+      "market": "US",
+      "asset_class": "ETF",
+      "summary": "趋势与动量驱动的低换手多资产防守配置。",
+      "thesis_md": "在股票、债券、黄金和短债 ETF 之间按长期趋势与相对动量配置，弱势时期降低风险暴露并转向 SHY。策略目标是控制回撤和保持运行稳定，而不是在所有牛市阶段追平 SPY。",
+      "status": "影子观察",
+      "execution_status": "shadow_observation_no_orders",
+      "spec_path": ".agent/workflows/defensive-etf-observation.md",
+      "version": "defensive-fixed-20260831",
+      "metrics": {
+        "oos_total_return": {"value": 0.393, "unit": "ratio", "scope": "oos"},
+        "annualized_return": {"value": 0.0688, "unit": "ratio", "scope": "oos"},
+        "sharpe": {"value": 1.18, "unit": "number", "scope": "oos"},
+        "max_drawdown": {"value": -0.115, "unit": "ratio", "scope": "oos"},
+        "benchmark_return": {"value": 0.8479, "unit": "ratio", "scope": "oos", "benchmark": "SPY"}
+      },
+      "progress": [
+        {"stage": "research", "title": "固定 OOS 与 Walk-Forward", "detail": "完成固定参数验证和成本后评估。", "status": "done"},
+        {"stage": "shadow", "title": "每日影子观察", "detail": "继续累计会话并检查负窗口、Sharpe 与风险复核。", "status": "current"},
+        {"stage": "paper", "title": "Paper 准入", "detail": "当前未达到治理门槛。", "status": "blocked"}
+      ]
+    },
+    {
+      "id": "arc",
+      "display_name": "ARC / ADX 状态路由",
+      "code": "ARC",
+      "market": "US",
+      "asset_class": "Multi-asset",
+      "summary": "根据市场状态在防御 ETF、震荡模块和趋势模块之间路由。",
+      "thesis_md": "ARC 研究市场环境识别和模块分流。ADX 版本降低了回撤，但低 ADX 的缓慢上涨容易被误判为震荡，防御状态也会延续到反弹期。当前规则保留为研究候选，不因样本外结果直接替换控制器。",
+      "status": "Research-only",
+      "execution_status": "research_only_no_orders",
+      "spec_path": ".agent/workflows/arc-strategy.md",
+      "version": "adx14-confirm-5-hold-10-cooldown-20",
+      "metrics": {
+        "total_return": {"value": 2.6359, "unit": "ratio", "scope": "full"},
+        "sharpe": {"value": 0.82, "unit": "number", "scope": "full"},
+        "max_drawdown": {"value": -0.1258, "unit": "ratio", "scope": "full"},
+        "route_switches": {"value": 141, "unit": "count", "scope": "full"},
+        "benchmark_return": {"value": 8.6023, "unit": "ratio", "scope": "full", "benchmark": "SPY"}
+      },
+      "progress": [
+        {"stage": "controller", "title": "ADX 固定候选验证", "detail": "19 个固定窗口完成。", "status": "done"},
+        {"stage": "prospective", "title": "独立前瞻影子记录", "detail": "固定规则，至少观察 126 个交易日和 4 次有效切换。", "status": "current"},
+        {"stage": "execution", "title": "订单授权", "detail": "长期收益和状态延迟仍未通过。", "status": "blocked"}
+      ]
+    },
+    {
+      "id": "stock_turtle",
+      "display_name": "个股海龟",
+      "code": "TUR",
+      "market": "US",
+      "asset_class": "Equity",
+      "summary": "使用点时 S&P 500 股票池、突破入场和流动性过滤的趋势策略。",
+      "thesis_md": "策略只允许在历史成分有效期间开仓，以价格通道突破入场、较短通道退出，并通过 ATR、总暴露和单仓上限控制风险。当前仍缺少完整退市收益假设和点时行业分类。",
+      "status": "稳健性研究",
+      "execution_status": "research_only_no_orders",
+      "spec_path": ".agent/workflows/stock-turtle-research.md",
+      "version": "turtle-55-20-top5-adv25m",
+      "metrics": {
+        "oos_total_return": {"value": 0.6059, "unit": "ratio", "scope": "oos"},
+        "annualized_return": {"value": 0.0998, "unit": "ratio", "scope": "oos"},
+        "sharpe": {"value": 0.60, "unit": "number", "scope": "oos"},
+        "max_drawdown": {"value": -0.2348, "unit": "ratio", "scope": "oos"},
+        "benchmark_return": {"value": 0.8479, "unit": "ratio", "scope": "oos", "benchmark": "SPY"}
+      },
+      "progress": [
+        {"stage": "data", "title": "点时成员与流动性数据", "detail": "1,301 个请求代码，价格、成交量和成交额已导出。", "status": "done"},
+        {"stage": "robustness", "title": "六个固定候选", "detail": "样本内排名和 OOS 已分离。", "status": "done"},
+        {"stage": "data-gap", "title": "退市和历史行业约束", "detail": "补齐后再运行固定验证。", "status": "current"}
+      ]
+    },
+    {
+      "id": "range_grid",
+      "display_name": "Range Grid",
+      "code": "GRID",
+      "market": "US",
+      "asset_class": "ETF",
+      "summary": "只在震荡状态运行、以库存上限为核心的 SPY 网格防守模块。",
+      "thesis_md": "以 50 日价格锚点和 20 日波动率确定网格间距，最大风险库存 40%，异常波动触发退出。该模块定位为回撤控制工具。",
+      "status": "模块验证",
+      "execution_status": "research_only_no_orders",
+      "spec_path": ".agent/workflows/arc-strategy.md",
+      "version": "range-grid-fixed-v1",
+      "metrics": {
+        "total_return": {"value": 0.5498, "unit": "ratio", "scope": "full"},
+        "annualized_return": {"value": 0.0204, "unit": "ratio", "scope": "full"},
+        "sharpe": {"value": 1.09, "unit": "number", "scope": "full"},
+        "max_drawdown": {"value": -0.0714, "unit": "ratio", "scope": "full"},
+        "transaction_cost": {"value": 0.0481, "unit": "ratio", "scope": "full"}
+      },
+      "progress": [
+        {"stage": "validation", "title": "19 个固定窗口", "detail": "库存上限和异常退出已验证。", "status": "done"},
+        {"stage": "boundary", "title": "趋势恢复响应", "detail": "继续检查停止网格是否及时。", "status": "current"}
+      ]
+    },
+    {
+      "id": "spy_mean_reversion",
+      "display_name": "SPY 均值回归",
+      "code": "MR",
+      "market": "US",
+      "asset_class": "ETF",
+      "summary": "使用短期价格偏离和长期趋势过滤的 SPY/SHY 独立基线。",
+      "thesis_md": "当 SPY 位于长期趋势之上且短期 Z-score 极端偏低时进入，偏离恢复或趋势失效时退出。固定 OOS 和多窗口结果未显示稳定执行价值。",
+      "status": "基线未通过",
+      "execution_status": "research_only_no_orders",
+      "spec_path": ".agent/workflows/mean-reversion-strategy.md",
+      "version": "spy-z20-trend200-v1",
+      "metrics": {
+        "oos_total_return": {"value": 0.15, "unit": "ratio", "scope": "oos"},
+        "annualized_return": {"value": 0.0285, "unit": "ratio", "scope": "oos"},
+        "sharpe": {"value": 0.50, "unit": "number", "scope": "oos"},
+        "max_drawdown": {"value": -0.1272, "unit": "ratio", "scope": "oos"},
+        "negative_windows": {"value": 7, "unit": "count", "scope": "walk_forward"}
+      },
+      "progress": [
+        {"stage": "baseline", "title": "固定 OOS 和 Walk-Forward", "detail": "22 个窗口完成。", "status": "done"},
+        {"stage": "decision", "title": "保留否定性基线", "detail": "不使用现有 OOS 回调阈值。", "status": "blocked"}
+      ]
+    },
+    {
+      "id": "ahl_global_futures_trend",
+      "display_name": "AHL-inspired 全球期货趋势",
+      "code": "AHL",
+      "market": "Global",
+      "asset_class": "Futures",
+      "summary": "多资产期货趋势、波动率目标和资产类别风险上限研究。",
+      "thesis_md": "在股指、利率、商品和外汇期货之间分散配置，按 63/126/252 日趋势确定方向，以 10% 波动率目标和风险上限约束仓位。",
+      "status": "计划中",
+      "execution_status": "research_only_no_orders",
+      "spec_path": ".agent/workflows/ahl-global-futures-trend.md",
+      "version": "ahl-preregistered-v1",
+      "metrics": {
+        "market_count": {"value": 8, "unit": "count", "scope": "planned"},
+        "target_volatility": {"value": 0.10, "unit": "ratio", "scope": "planned"}
+      },
+      "progress": [
+        {"stage": "design", "title": "研究边界和候选预注册", "detail": "市场池、信号、风险和验证窗口已冻结。", "status": "done"},
+        {"stage": "data", "title": "连续期货数据", "detail": "等待合规逐合约价格、换月和成本数据。", "status": "blocked"}
+      ]
+    },
+    {
+      "id": "csi300_opening_auction",
+      "display_name": "沪深300集合竞价",
+      "code": "AUC",
+      "market": "CN",
+      "asset_class": "Equity",
+      "summary": "根据集合竞价结果对沪深300进行短期排序，并以前向模拟验证。",
+      "thesis_md": "使用点时沪深300成分、前一日及更早日线、当日集合竞价特征，在 09:30 前生成排名，以 09:31 第一连续竞价分钟 VWAP 模拟买入并在下一交易日收盘退出。",
+      "status": "前向模拟",
+      "execution_status": "research_only_no_orders",
+      "spec_path": ".agent/workflows/csi300-opening-auction.md",
+      "version": "auction_context_v1_frozen_20260829",
+      "metrics": {
+        "baseline_completed_cohorts": {"value": 20, "unit": "count", "scope": "forward"},
+        "baseline_cumulative_return": {"value": -0.04599, "unit": "ratio", "scope": "forward"},
+        "baseline_daily_win_rate": {"value": 0.30, "unit": "ratio", "scope": "forward"},
+        "baseline_daily_t_stat": {"value": -1.3749, "unit": "number", "scope": "forward"},
+        "minute_backfill_completed": {"value": 8, "unit": "count", "scope": "prospective"}
+      },
+      "progress": [
+        {"stage": "freeze", "title": "冻结策略和防泄漏检查", "detail": "2026-08-31 起作为前瞻区间。", "status": "done"},
+        {"stage": "backfill", "title": "9 月 09:31 标签补数", "detail": "当前 8/21，按每日两次额度继续。", "status": "current"},
+        {"stage": "forward", "title": "前向模拟稳健性", "detail": "20 批完成，目标至少 60 批。", "status": "current"},
+        {"stage": "execution", "title": "券商执行", "detail": "尚无 A 股券商通道。", "status": "blocked"}
+      ]
+    }
+  ]
+}

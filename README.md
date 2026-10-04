@@ -1,6 +1,43 @@
 # Deepstock
 
-Quantitative research and paper-trading tools for US equities.
+Multi-market quantitative research, governance, and fail-closed automated
+trading control plane.
+
+## Research Library
+
+The authenticated web application is deployed at
+`https://dev-cn-01.yios.cn/deepstock/`. It presents all registered strategies,
+their thesis, metrics, progress, runs, reports, notes, account state, orders,
+alerts, and data jobs. The initial local administrator is `admin/admin`.
+
+```bash
+conda run -n deepstock python scripts/init_deepstock_app.py
+cd frontend && npm install && npm run build
+conda run -n deepstock python -m uvicorn deepstock.web.app:app \
+  --host 127.0.0.1 --port 15001
+```
+
+The database and backups live under ignored `artifacts/app/`. Install periodic
+state ingestion and backup with:
+
+```bash
+conda run -n deepstock python scripts/install_deepstock_app_cron.py
+```
+
+## Execution Agent
+
+`scripts/ibkr_execution_agent.py` runs only beside the quantitative computer's
+local TWS. It is read-only by default. Paper or Live submission requires an
+explicit server plan plus all local and server risk gates; Live remains disabled
+until a strategy is separately marked eligible and authorized.
+
+On the quantitative computer, pin the sole account exposed by the intended TWS
+profile without printing the account identifier:
+
+```bash
+conda run -n deepstock python scripts/ibkr_execution_agent.py \
+  --bootstrap-account-guard --confirm PIN-SOLE-TWS-ACCOUNT
+```
 
 ## Python Environment
 

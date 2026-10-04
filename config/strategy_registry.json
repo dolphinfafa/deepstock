@@ -1,5 +1,5 @@
 {
-  "registry_version": "2026-08-31",
+  "registry_version": "2026-10-04",
   "policy": "shadow-governance-v2-2026-08-31",
   "strategies": [
     {
@@ -37,6 +37,12 @@
       "display_name": "AHL-inspired Global Futures Trend",
       "execution_status": "research_only_no_orders",
       "specification": ".agent/workflows/ahl-global-futures-trend.md"
+    },
+    {
+      "strategy_id": "csi300_opening_auction",
+      "display_name": "CSI 300 Opening Auction",
+      "execution_status": "research_only_no_orders",
+      "specification": ".agent/workflows/csi300-opening-auction.md"
     }
   ]
 }

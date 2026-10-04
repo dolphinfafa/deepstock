@@ -10,7 +10,11 @@ __pycache__/
 .coverage
 htmlcov/
 artifacts/
+/handoff/
 *.egg-info/
+frontend/node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
 
 # Local environments and editor files
 .conda/

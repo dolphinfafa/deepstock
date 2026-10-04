@@ -51,9 +51,8 @@ Confirm the interpreter before Python-related work.
 
 ## 4. Technology Stack
 
-No application framework, database, ORM, frontend, deployment system, or test
-framework has been selected. Do not add a dependency or select a technology
-without user confirmation.
+The application stack below was approved for the unified research and execution
+control plane. New major infrastructure still requires user confirmation.
 
 | Category | Technology | Version | Notes |
 | --- | --- | --- | --- |
@@ -62,12 +61,13 @@ without user confirmation.
 | Research | `numpy`, `pandas` | See `pyproject.toml` | Approved for deterministic backtesting |
 | Research data | Massive REST API | API account subscription | Adjusted daily ETF history only |
 | Research data | Norgate Data Platinum | Windows data node | Licensed long-history US equity/ETF research |
-| Framework | Unselected | - | Requires approval |
-| Database | Unselected | - | Requires approval |
-| ORM | Unselected | - | Requires approval |
-| Frontend | Unselected | - | Requires approval |
-| Deployment | Unselected | - | Requires approval |
-| Testing | Unselected | - | Requires approval |
+| API framework | FastAPI | 0.142+ | Authenticated research and execution control plane |
+| Database | SQLite | 3 | Business state, metrics, reports, audit, and execution control |
+| ORM/migrations | SQLAlchemy / Alembic | 2.1+ / 1.20+ | Schema changes only through migrations |
+| Frontend | Vue 3 / TypeScript / Vite | 3.5+ / 5.9+ / 7.3+ | Base path `/deepstock/` |
+| Visualization | ECharts | 6+ | Strategy metric profiles |
+| Deployment | Uvicorn + user systemd + NGINX | - | Binds only to `127.0.0.1:15001` |
+| Testing | pytest / Vue typecheck | 8+ | Backend, governance, agent, and frontend gates |
 
 ## 5. Encoding and Privacy
 
@@ -132,7 +132,14 @@ milestone/         Daily work records
 | `IBKR_PORT` | Configured API socket port | Set only after verifying the app setting |
 | `IBKR_CLIENT_ID` | API client identifier | Unique local integer |
 | `IBKR_READ_ONLY` | Blocks order submission | `true` |
+| `IBKR_ACCOUNT` | Locally selected TWS account | Kept only in `.env` |
+| `IBKR_EXPECTED_ACCOUNT_HASH` | Pins the allowed account | SHA-256 hash only |
 | `MASSIVE_API_KEY` | Massive research-data credential | Kept only in `.env` |
+| `DEEPSTOCK_DATABASE_URL` | Application database | `sqlite:///artifacts/app/deepstock.sqlite3` |
+| `DEEPSTOCK_NODE_TOKEN` | Windows execution-node authentication | Random local secret |
+| `DEEPSTOCK_LIVE_TRADING_ENABLED` | Initial live gate | `false` |
+| `DEEPSTOCK_GLOBAL_KILL_SWITCH` | Initial global kill switch | `true` |
+| `WECHAT_WEBHOOK_URL` | Severe-alert delivery | Kept only in `.env` |
 
 ### Common Commands
 
@@ -146,6 +153,15 @@ conda run -p /Users/yangzhe/workspace/deepstock/.conda/envs/deepstock \
 
 # Install project and approved development dependencies
 conda run -n deepstock python -m pip install -e '.[dev]'
+
+# Initialize/migrate the app database and import current research state
+conda run -n deepstock python scripts/init_deepstock_app.py
+
+# Build the Vue application
+cd frontend && npm install && npm run build
+
+# Run the fail-closed Windows execution node once (local TWS host only)
+conda run -n deepstock python scripts/ibkr_execution_agent.py --once
 
 # Run research tests
 conda run -n deepstock python -m pytest

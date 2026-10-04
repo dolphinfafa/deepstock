@@ -91,3 +91,31 @@ contemporaneous decision that would have been available in real time.
 
 This example only documents the schema and threshold edges. It is not a real
 strategy result and must never be entered into the decision ledger as evidence.
+
+## Execution Authorization Boundary
+
+Research eligibility and execution authorization are separate records. A
+strategy may receive a Paper authorization only after an explicit user action;
+Live additionally requires `live_eligible=true`, a configuration hash matching
+the current frozen version, enterprise-WeChat test success, Live infrastructure
+enabled, and the global kill switch disabled.
+
+Each authorization is bound to one strategy, one mode, one frozen configuration
+hash, a notional cap, and an expiry no more than 30 days away. Plans use a
+deterministic ID and deterministic per-order references. The Windows agent
+rechecks the account allowlist, plan date, mode, current server gates, local and
+server USD 1,000 caps, limit-order type, USD/SMART routing, and long-only
+position constraint before it can submit an order. Revoked, expired, stale, or
+configuration-mismatched plans cannot be claimed.
+
+No registered strategy currently has Live eligibility. A database schema or
+agent capability is not itself permission to trade.
+
+## Research Notes
+
+User notes are governed by `research-note-governance.md`. The agent records the
+original note and assesses causal logic, novelty, point-in-time data,
+backtestability, leakage, and overfitting. The website displays the assessment
+read-only. Only the user's separately recorded decision can place a note into a
+test or method backlog, and even an approved note cannot edit a frozen version
+or execution authorization.

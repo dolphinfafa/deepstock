@@ -2,20 +2,21 @@
 
 ## Scope
 
-Deepstock is a US-equities quantitative research and paper-trading project.
-The current phase is reproducible strategy research and backtest validation.
-Live trading is excluded until a separate execution and risk-control design is
-approved.
+Deepstock is a multi-market quantitative research and automated-trading control
+plane. Its first responsibility is reproducible research and strategy
+governance; execution is separately authorized. Paper and limited-live
+infrastructure exist, but every live path is fail-closed and no current
+strategy is live-eligible.
 
 ## Architecture and Data Flow
 
-The proposed initial architecture is documented in `automation-trading-plan.md`.
-It uses a broker adapter, adjusted daily data, persisted run state, a system
-scheduler, and an alert channel. These are proposals pending user approval. The
-intended workflow is:
+The implemented architecture uses a FastAPI control plane, SQLite/SQLAlchemy,
+Alembic migrations, a Vue 3 research library, scheduled artifact ingestion and
+backups, and a Windows-local IBKR execution agent. The workflow is:
 
 ```text
-Market data -> Research -> Backtest -> Paper trading -> Evaluation
+Market data -> Research -> Fixed validation -> Shadow -> Explicit authorization
+            -> Paper/limited live plan -> Windows-local execution -> Reconciliation
 ```
 
 The current deployment split is server-side research and laptop-side IBKR
@@ -37,9 +38,27 @@ in `mean-reversion-strategy.md`.
 
 ## Interfaces and Data Storage
 
-No project API, database schema, or persistence layer exists yet. Document
-request/response contracts, authentication, table design, indices, and data
-licenses here as they are introduced.
+The application database is the ignored
+`artifacts/app/deepstock.sqlite3`. Alembic owns its schema. It stores users and
+server-side sessions, strategy/version metadata, research runs and metrics,
+Markdown reports, progress, note assessments, data/job state, account/position
+snapshots, authorizations, deterministic plans, order status, alerts, settings,
+and audit logs. Large or licensed market data and backtest files remain in
+ignored `artifacts/`; database rows store their paths, hashes, metrics, and
+status rather than copying raw arrays.
+
+The API is served under `/deepstock/api` through NGINX. Browser authentication
+uses Argon2id password hashes, HttpOnly/Secure cookies, server-side 12-hour
+sessions, CSRF headers for writes, and a five-failure/15-minute login limiter.
+The execution node uses a separate bearer token. The Vue frontend provides the
+strategy library, detail pages, reports, execution center, alerts, system/data
+state, and read-only research-note review. Server-sent events prompt live UI
+refreshes.
+
+Research notes supplied through chat follow `research-note-governance.md`.
+Their original text and structured assessment are registered first; a separate
+user decision is required before a test or method change. Notes never mutate a
+frozen strategy version or authorize execution.
 
 The current executable integration surface is the local script
 `scripts/ibkr_read_only_check.py`. It connects only to a laptop-local TWS or IB
@@ -330,23 +349,26 @@ the wider ARC module/data gates are still unresolved.
 
 ## Key Decisions
 
-The strategy research library at `https://dev-cn-01.yios.cn/deepstock/` is
-served from the tracked `dashboard/` directory. A user-level systemd unit,
-`deepstock-dashboard.service`, binds the static server to
-`127.0.0.1:15001` and restarts it on failure; NGINX is the only public entry
-point.
+The strategy research library at `https://dev-cn-01.yios.cn/deepstock/` is a
+Vue 3 application served by FastAPI. The user-level
+`deepstock-dashboard.service` runs Uvicorn on `127.0.0.1:15001`; NGINX is the
+only public entry point. The app imports research/artifact state every five
+minutes and creates an online SQLite backup daily with 30-day retention.
 
 | Decision | Status | Rationale |
 | --- | --- | --- |
-| Target market | US equities | User-defined scope |
-| Execution mode | Paper trading only | Limits financial risk during initial development |
+| Target markets | US, global-futures research, and China A-share research | Strategy scopes remain independent |
+| Execution mode | Paper plus gated limited-live infrastructure | No strategy is currently live-eligible |
 | Python runtime | Conda `deepstock`, Python 3.12.13 | Established project environment |
 | Secrets | Local `.env`, Git ignored | Prevents credential disclosure |
-| Initial automation design | Proposed, pending approval | Broker adapter and paper-first workflow |
-| Initial strategy | Proposed, pending approval | Defensive, low-frequency ETF trend allocation |
-| Execution broker | IBKR selected for paper-integration planning | User account opened and funded; no API or live trading enabled |
-| Execution host | User laptop | TWS is installed there; server has no graphical environment |
-| IBKR validation path | Read-only probe script only | Approved scope excludes any order-submission capability |
+| Application stack | FastAPI, Vue 3, SQLite, SQLAlchemy, Alembic | Approved and implemented |
+| Execution broker | IBKR | Paper tested; Live remains locked |
+| Execution host | Quantitative computer `DESKTOP-ORNLESD` | Agent connects only to local TWS; server never exposes TWS |
+| IBKR validation path | Read-only probe, Paper smoke test, fail-closed execution agent | Deterministic references and reconciliation prevent duplicates |
+| Live risk ceiling | USD 1,000 total notional/exposure | Server and Windows agent both enforce the cap |
+| Live authorization | Per strategy/configuration, explicit, maximum 30 days | Password, typed confirmation, eligibility, alert test, and kill switch gates |
+| Alert channels | Web plus enterprise WeChat for severe alerts | WeChat test must pass before Live can be enabled |
+| Research-note policy | Assess, explain, then await user decision | Notes cannot silently change research or trading |
 | First research strategy | Defensive ETF trend allocation | Implemented as a reproducible, no-order backtest |
 | Historical research data | Massive adjusted daily bars | User subscription; key remains in local `.env` |
 | IBKR market data | Fee-waived account entitlement | Reserved for execution-time validation, not research history |
