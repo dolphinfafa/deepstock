@@ -10,6 +10,7 @@ import os
 import shutil
 import sqlite3
 import time
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -95,9 +96,15 @@ def _backup_sqlite(source: Path, destination: Path) -> int:
         temporary.unlink()
 
     source_uri = f"file:{source.resolve().as_posix()}?mode=ro"
-    with sqlite3.connect(source_uri, uri=True, timeout=30) as source_connection:
-        with sqlite3.connect(temporary, timeout=30) as destination_connection:
+    # sqlite3.Connection's context manager controls transactions but does not
+    # close the handle. Explicit closing is required before Windows can rename
+    # the completed backup.
+    with closing(
+        sqlite3.connect(source_uri, uri=True, timeout=30)
+    ) as source_connection:
+        with closing(sqlite3.connect(temporary, timeout=30)) as destination_connection:
             source_connection.backup(destination_connection)
+            destination_connection.commit()
             result = destination_connection.execute("PRAGMA quick_check").fetchone()
             if result is None or result[0] != "ok":
                 raise RuntimeError(f"SQLite backup failed quick_check: {result}")
