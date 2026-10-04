@@ -485,7 +485,7 @@ def validate_plan(
             raise ValueError("server global kill switch is enabled")
         if not control.get("live_trading_enabled", False):
             raise ValueError("server live trading is disabled")
-        if not control.get("wechat_test_passed", False):
+        if not control.get("email_test_passed", False):
             raise ValueError("server alert channel has not passed its test")
         if not config.live_execution_enabled:
             raise ValueError("local live execution is disabled")

@@ -139,7 +139,11 @@ milestone/         Daily work records
 | `DEEPSTOCK_NODE_TOKEN` | Windows execution-node authentication | Random local secret |
 | `DEEPSTOCK_LIVE_TRADING_ENABLED` | Initial live gate | `false` |
 | `DEEPSTOCK_GLOBAL_KILL_SWITCH` | Initial global kill switch | `true` |
-| `WECHAT_WEBHOOK_URL` | Severe-alert delivery | Kept only in `.env` |
+| `DEEPSTOCK_SMTP_HOST` / `DEEPSTOCK_SMTP_PORT` | SMTP server for severe alerts | Host plus provider port |
+| `DEEPSTOCK_SMTP_USERNAME` / `DEEPSTOCK_SMTP_PASSWORD` | SMTP authentication | Kept only in `.env` |
+| `DEEPSTOCK_SMTP_FROM` | Alert sender address | Provider-approved sender |
+| `DEEPSTOCK_SMTP_SECURITY` | SMTP transport security | `starttls`, `ssl`, or `plain` |
+| `DEEPSTOCK_ALERT_EMAIL_TO` | Alert recipients | Comma-separated addresses in `.env` |
 
 ### Common Commands
 

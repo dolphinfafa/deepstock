@@ -43,8 +43,25 @@ class Settings:
     live_trading_enabled: bool
     live_notional_cap_usd: float
     global_kill_switch: bool
-    wechat_webhook_url: str
+    smtp_host: str
+    smtp_port: int
+    smtp_username: str
+    smtp_password: str
+    smtp_from: str
+    smtp_security: str
+    alert_email_to: tuple[str, ...]
     frontend_dist: Path
+
+    @property
+    def email_configured(self) -> bool:
+        credentials_complete = bool(self.smtp_username) == bool(self.smtp_password)
+        return bool(
+            self.smtp_host
+            and self.smtp_port
+            and self.smtp_from
+            and self.alert_email_to
+            and credentials_complete
+        )
 
 
 def load_settings() -> Settings:
@@ -56,6 +73,14 @@ def load_settings() -> Settings:
         database_url = f"sqlite:///{PROJECT_ROOT / database_url.removeprefix('sqlite:///./')}"
     elif database_url == "sqlite:///artifacts/app/deepstock.sqlite3":
         database_url = f"sqlite:///{PROJECT_ROOT / 'artifacts/app/deepstock.sqlite3'}"
+    smtp_security = os.getenv("DEEPSTOCK_SMTP_SECURITY", "starttls").strip().lower()
+    if smtp_security not in {"starttls", "ssl", "plain"}:
+        raise ValueError("DEEPSTOCK_SMTP_SECURITY must be starttls, ssl, or plain")
+    recipients = tuple(
+        address.strip()
+        for address in os.getenv("DEEPSTOCK_ALERT_EMAIL_TO", "").replace(";", ",").split(",")
+        if address.strip()
+    )
     return Settings(
         project_root=PROJECT_ROOT,
         database_url=database_url,
@@ -76,7 +101,13 @@ def load_settings() -> Settings:
         global_kill_switch=_as_bool(
             os.getenv("DEEPSTOCK_GLOBAL_KILL_SWITCH"), True
         ),
-        wechat_webhook_url=os.getenv("WECHAT_WEBHOOK_URL", ""),
+        smtp_host=os.getenv("DEEPSTOCK_SMTP_HOST", ""),
+        smtp_port=int(os.getenv("DEEPSTOCK_SMTP_PORT", "587")),
+        smtp_username=os.getenv("DEEPSTOCK_SMTP_USERNAME", ""),
+        smtp_password=os.getenv("DEEPSTOCK_SMTP_PASSWORD", ""),
+        smtp_from=os.getenv("DEEPSTOCK_SMTP_FROM", ""),
+        smtp_security=smtp_security,
+        alert_email_to=recipients,
         frontend_dist=PROJECT_ROOT / "frontend" / "dist",
     )
 

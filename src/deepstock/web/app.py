@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
-from deepstock.web.alerts import create_alert, deliver_wechat
+from deepstock.web.alerts import create_alert, deliver_email
 from deepstock.web.config import settings
 from deepstock.web.database import SessionLocal, get_session
 from deepstock.web.ingestion import ingest_all
@@ -159,6 +159,13 @@ def _set_setting(session: Session, key: str, value: Any) -> None:
         session.add(SystemSetting(key=key, value=value))
     else:
         row.value = value
+
+
+def _email_gate_ready(session: Session) -> bool:
+    return bool(
+        _get_setting(session, "email_configured", False)
+        and _get_setting(session, "email_test_passed", False)
+    )
 
 
 def _audit(
@@ -411,8 +418,8 @@ def dashboard(
             "global_kill_switch": _get_setting(session, "global_kill_switch", True),
             "live_trading_enabled": _get_setting(session, "live_trading_enabled", False),
             "live_notional_cap_usd": _get_setting(session, "live_notional_cap_usd", 1000),
-            "wechat_configured": _get_setting(session, "wechat_configured", False),
-            "wechat_test_passed": _get_setting(session, "wechat_test_passed", False),
+            "email_configured": _get_setting(session, "email_configured", False),
+            "email_test_passed": _email_gate_ready(session),
         },
     }
 
@@ -668,8 +675,8 @@ def live_overview(
             "global_kill_switch": _get_setting(session, "global_kill_switch", True),
             "live_trading_enabled": _get_setting(session, "live_trading_enabled", False),
             "live_notional_cap_usd": _get_setting(session, "live_notional_cap_usd", 1000),
-            "wechat_configured": _get_setting(session, "wechat_configured", False),
-            "wechat_test_passed": _get_setting(session, "wechat_test_passed", False),
+            "email_configured": _get_setting(session, "email_configured", False),
+            "email_test_passed": _email_gate_ready(session),
         },
     }
 
@@ -689,7 +696,7 @@ def alert_list(
             "message": row.message,
             "strategy_id": row.strategy_id,
             "acknowledged": row.acknowledged,
-            "delivered_wechat": row.delivered_wechat,
+            "delivered_email": row.delivered_email,
             "created_at": _iso(row.created_at),
         }
         for row in rows
@@ -733,8 +740,8 @@ def update_execution_settings(
         expected = f"ENABLE LIVE TRADING {cap:.2f}"
         if payload.confirmation != expected:
             raise HTTPException(status_code=400, detail=f"confirmation must equal: {expected}")
-        if not _get_setting(session, "wechat_test_passed", False):
-            raise HTTPException(status_code=409, detail="enterprise-WeChat alert test has not passed")
+        if not _email_gate_ready(session):
+            raise HTTPException(status_code=409, detail="email alert test has not passed")
     if payload.live_trading_enabled is not None:
         _set_setting(session, "live_trading_enabled", payload.live_trading_enabled)
     if payload.global_kill_switch is not None:
@@ -757,38 +764,39 @@ def update_execution_settings(
     }
 
 
-@app.post("/api/execution/test-wechat")
-def test_wechat(
+@app.post("/api/execution/test-email")
+def test_email(
     session: Session = Depends(get_session),
     auth_session: AuthSession = Depends(_csrf_dependency),
 ) -> dict[str, Any]:
-    if not settings.wechat_webhook_url:
-        raise HTTPException(status_code=409, detail="WECHAT_WEBHOOK_URL is not configured")
+    if not settings.email_configured:
+        raise HTTPException(status_code=409, detail="email alert settings are incomplete")
     alert = Alert(
         severity="error",
         category="system_test",
-        title="企业微信告警测试",
-        message="Deepstock 企业微信告警通道测试成功后才允许开启有限实盘。",
+        title="邮件告警测试",
+        message="Deepstock 邮件告警通道测试成功后才允许开启有限实盘。",
     )
     session.add(alert)
     session.commit()
     try:
-        alert.delivered_wechat = deliver_wechat(alert)
+        alert.delivered_email = deliver_email(alert)
     except Exception as error:
-        alert.delivered_wechat = False
+        alert.delivered_email = False
+        _set_setting(session, "email_test_passed", False)
         session.commit()
-        raise HTTPException(status_code=502, detail=f"WeChat delivery failed: {error}") from error
-    _set_setting(session, "wechat_test_passed", alert.delivered_wechat)
+        raise HTTPException(status_code=502, detail=f"email delivery failed: {error}") from error
+    _set_setting(session, "email_test_passed", alert.delivered_email)
     _audit(
         session,
         auth_session.user.username,
-        "wechat_alert_tested",
+        "email_alert_tested",
         "system",
         None,
-        {"passed": alert.delivered_wechat},
+        {"passed": alert.delivered_email},
     )
     session.commit()
-    return {"status": "ok", "delivered": alert.delivered_wechat}
+    return {"status": "ok", "delivered": alert.delivered_email}
 
 
 @app.post("/api/execution/authorizations")
@@ -902,8 +910,8 @@ def _validate_plan(session: Session, payload: PlanRequest) -> tuple[Strategy, fl
             raise HTTPException(status_code=409, detail="global kill switch is enabled")
         if not _get_setting(session, "live_trading_enabled", False):
             raise HTTPException(status_code=409, detail="live trading is disabled")
-        if not _get_setting(session, "wechat_test_passed", False):
-            raise HTTPException(status_code=409, detail="enterprise-WeChat alert test has not passed")
+        if not _email_gate_ready(session):
+            raise HTTPException(status_code=409, detail="email alert test has not passed")
         cap = float(_get_setting(session, "live_notional_cap_usd", 1000))
         latest_live = session.scalar(
             select(AccountSnapshot)
@@ -981,7 +989,7 @@ def _stored_plan_is_current(session: Session, plan: ExecutionPlan) -> bool:
             strategy.live_eligible
             and not _get_setting(session, "global_kill_switch", True)
             and _get_setting(session, "live_trading_enabled", False)
-            and _get_setting(session, "wechat_test_passed", False)
+            and _email_gate_ready(session)
             and plan.total_notional_usd
             <= float(_get_setting(session, "live_notional_cap_usd", 1000))
         )
@@ -1096,7 +1104,7 @@ def agent_control(
         "global_kill_switch": _get_setting(session, "global_kill_switch", True),
         "live_trading_enabled": _get_setting(session, "live_trading_enabled", False),
         "live_notional_cap_usd": _get_setting(session, "live_notional_cap_usd", 1000),
-        "wechat_test_passed": _get_setting(session, "wechat_test_passed", False),
+        "email_test_passed": _email_gate_ready(session),
         "latest_account_hash": account.account_hash if account else None,
         "latest_account_at": _iso(account.captured_at) if account else None,
     }

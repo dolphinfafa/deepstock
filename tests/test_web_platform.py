@@ -333,7 +333,8 @@ def test_live_execution_is_fail_closed_and_capped(client: TestClient) -> None:
         for key, value in (
             ("live_trading_enabled", True),
             ("global_kill_switch", False),
-            ("wechat_test_passed", True),
+            ("email_configured", True),
+            ("email_test_passed", True),
         ):
             setting = session.get(SystemSetting, key)
             assert setting is not None
@@ -396,7 +397,8 @@ def test_live_execution_is_fail_closed_and_capped(client: TestClient) -> None:
         strategy.live_eligible = False
         session.get(SystemSetting, "live_trading_enabled").value = False
         session.get(SystemSetting, "global_kill_switch").value = True
-        session.get(SystemSetting, "wechat_test_passed").value = False
+        session.get(SystemSetting, "email_configured").value = False
+        session.get(SystemSetting, "email_test_passed").value = False
         session.commit()
 
 

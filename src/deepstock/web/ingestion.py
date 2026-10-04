@@ -54,12 +54,15 @@ def _seed_settings(session: Session) -> None:
         "global_kill_switch": settings.global_kill_switch,
         "live_trading_enabled": settings.live_trading_enabled,
         "live_notional_cap_usd": settings.live_notional_cap_usd,
-        "wechat_configured": bool(settings.wechat_webhook_url),
-        "wechat_test_passed": False,
+        "email_configured": settings.email_configured,
+        "email_test_passed": False,
     }
     for key, value in defaults.items():
         if session.get(SystemSetting, key) is None:
             session.add(SystemSetting(key=key, value=value))
+    configured = session.get(SystemSetting, "email_configured")
+    if configured is not None:
+        configured.value = settings.email_configured
 
 
 def ingest_catalog(session: Session, catalog_path: Path | None = None) -> dict[str, int]:

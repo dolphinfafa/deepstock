@@ -305,7 +305,7 @@ class Alert(Base):
         ForeignKey("strategies.id", ondelete="SET NULL"), index=True
     )
     acknowledged: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
-    delivered_wechat: Mapped[bool] = mapped_column(Boolean, default=False)
+    delivered_email: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

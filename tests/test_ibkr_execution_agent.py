@@ -66,7 +66,7 @@ def control(mode: str = "paper") -> dict:
         "mode": mode,
         "global_kill_switch": True,
         "live_trading_enabled": False,
-        "wechat_test_passed": False,
+        "email_test_passed": False,
         "live_notional_cap_usd": 1000,
         "latest_account_hash": None,
     }
@@ -101,7 +101,7 @@ def test_live_requires_all_local_and_server_gates(tmp_path: Path) -> None:
         live_execution_enabled=True,
         live_confirmation=LIVE_CONFIRMATION,
     )
-    live_control.update(live_trading_enabled=True, wechat_test_passed=True)
+    live_control.update(live_trading_enabled=True, email_test_passed=True)
     validate_plan(live_plan, enabled, live_control, enabled.account_hash(), {})
 
 

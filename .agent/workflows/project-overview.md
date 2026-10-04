@@ -367,7 +367,7 @@ minutes and creates an online SQLite backup daily with 30-day retention.
 | IBKR validation path | Read-only probe, Paper smoke test, fail-closed execution agent | Deterministic references and reconciliation prevent duplicates |
 | Live risk ceiling | USD 1,000 total notional/exposure | Server and Windows agent both enforce the cap |
 | Live authorization | Per strategy/configuration, explicit, maximum 30 days | Password, typed confirmation, eligibility, alert test, and kill switch gates |
-| Alert channels | Web plus enterprise WeChat for severe alerts | WeChat test must pass before Live can be enabled |
+| Alert channels | Web plus SMTP email for severe alerts | Email test must pass before Live can be enabled |
 | Research-note policy | Assess, explain, then await user decision | Notes cannot silently change research or trading |
 | First research strategy | Defensive ETF trend allocation | Implemented as a reproducible, no-order backtest |
 | Historical research data | Massive adjusted daily bars | User subscription; key remains in local `.env` |

@@ -97,7 +97,7 @@ strategy result and must never be entered into the decision ledger as evidence.
 Research eligibility and execution authorization are separate records. A
 strategy may receive a Paper authorization only after an explicit user action;
 Live additionally requires `live_eligible=true`, a configuration hash matching
-the current frozen version, enterprise-WeChat test success, Live infrastructure
+the current frozen version, email-alert test success, Live infrastructure
 enabled, and the global kill switch disabled.
 
 Each authorization is bound to one strategy, one mode, one frozen configuration
