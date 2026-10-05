@@ -51,8 +51,12 @@ no effect on research code, frozen configurations, or execution.
 
 ```bash
 conda run -n deepstock python scripts/register_research_note.py \
-  --text "..." --strategy-id arc --assessment assessment.json
+  --text "..." --scope global --assessment assessment.json --recommendation test
 
 conda run -n deepstock python scripts/decide_research_note.py NOTE_ID \
   --decision approved_for_test
 ```
+
+New-strategy notes are independent by default. Once approved, register their
+own strategy ID and link the note to that strategy; a controller integration
+is a separate decision, never an implicit consequence of note approval.

@@ -8,6 +8,20 @@ governance; execution is separately authorized. Paper and limited-live
 infrastructure exist, but every live path is fail-closed and no current
 strategy is live-eligible.
 
+Strategies are peers, not automatically ARC components. Market categories are
+`US`, `CN`, and `Both`; canonical implementations are under
+`src/deepstock/strategies/{us,cn,both}/`. Compatibility imports preserve existing
+scripts and schedules. The catalog, registry, database and authenticated UI use
+the same category; see `strategy-structure.md` for scope and classification.
+
+The independent `cn_etf_tail_momentum` study tests the supplied afternoon
+momentum note on A-share ETF `510300.SH` only. Its minute-based cash ledger
+enforces signal/entry separation, T+1, lots, capacity, fees and inventory
+overlap; all three paths and four cost cases are retained. The web ingester
+publishes the preregistered r6/next-open primary case, never the best candidate.
+Data-blocked runs contain no performance metrics. Short pilots show actual
+period returns, not headline annualisation, and cannot authorize orders.
+
 ## Architecture and Data Flow
 
 The implemented architecture uses a FastAPI control plane, SQLite/SQLAlchemy,

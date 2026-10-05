@@ -4,7 +4,9 @@
 
 ## Purpose
 
-Deepstock is a quantitative research and trading project focused on US equities.
+Deepstock is a multi-market, multi-strategy quantitative research and trading
+project. Strategies are peers; new research is independent by default, not
+automatically attached to ARC or another controller.
 The initial priority is reproducible research and paper trading; live trading is
 out of scope until separately designed, reviewed, and approved.
 

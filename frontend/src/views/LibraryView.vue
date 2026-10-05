@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { api } from '../api'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { markets, marketLabel } from '../markets'
 import StatusBadge from '../components/StatusBadge.vue'
 import { useLiveStore } from '../stores/live'
 
@@ -11,7 +12,20 @@ const query = ref('')
 const status = ref('all')
 const live = useLiveStore()
 const route = useRoute()
+const router = useRouter()
+const market = computed(() => markets.some((item) => item.value === route.query.market) ? String(route.query.market) : 'all')
 const archived = computed(() => route.name === 'frozen-library')
+
+function chooseMarket(value: string) {
+  const next = { ...route.query }
+  if (value === 'all') delete next.market
+  else next.market = value
+  router.replace({ query: next })
+}
+
+function marketCount(value: string) {
+  return (data.value?.strategies || []).filter((row: any) => value === 'all' || row.market === value).length
+}
 
 async function load() {
   try { data.value = archived.value ? { strategies: await api('/strategies?archived=true') } : await api('/dashboard'); error.value = '' }
@@ -19,13 +33,13 @@ async function load() {
 }
 
 const strategies = computed(() => (data.value?.strategies || []).filter((row: any) => {
-  const text = `${row.display_name} ${row.code} ${row.summary} ${row.market}`.toLowerCase()
-  return text.includes(query.value.toLowerCase()) && (status.value === 'all' || row.status.includes(status.value))
+  const text = `${row.display_name} ${row.code} ${row.summary} ${row.market} ${marketLabel(row.market)}`.toLowerCase()
+  return text.includes(query.value.toLowerCase()) && (status.value === 'all' || row.status.includes(status.value)) && (market.value === 'all' || row.market === market.value)
 }))
 
 function keyMetric(row: any) {
   const metrics = row.latest_run?.metrics || []
-  return metrics.find((item: any) => ['annualized_return', 'oos_total_return', 'total_return', 'baseline_cumulative_return'].includes(item.name)) || metrics[0]
+  return metrics.find((item: any) => item.value !== null && ['annualized_return', 'oos_total_return', 'total_return', 'baseline_cumulative_return'].includes(item.name)) || metrics[0]
 }
 
 function metricText(metric: any) {
@@ -54,6 +68,11 @@ watch(archived, load)
       <div><span>未处理告警</span><strong>{{ data.counts.unacknowledged_alerts }}</strong></div>
       <div class="risk-cell"><span>实盘总闸</span><strong>{{ data.execution.global_kill_switch ? '锁定' : '已解锁' }}</strong></div>
     </section>
+    <nav class="market-tabs" aria-label="策略市场分类">
+      <button type="button" :class="{ selected: market === 'all' }" :aria-pressed="market === 'all'" @click="chooseMarket('all')">全部 <span>{{ marketCount('all') }}</span></button>
+      <button v-for="item in markets" :key="item.value" type="button" :class="{ selected: market === item.value }" :aria-pressed="market === item.value" @click="chooseMarket(item.value)">{{ item.label }} <span>{{ marketCount(item.value) }}</span></button>
+    </nav>
+    <p v-if="market === 'Both'" class="market-help">Both 只收录明确研究美股与A股的策略，不表示任一市场已通过验证。</p>
     <section class="toolbar">
       <input v-model="query" class="search" placeholder="搜索策略、市场或研究主题…" />
       <select v-model="status"><option value="all">全部阶段</option><option>研究</option><option>观察</option><option>前向</option><option>未通过</option><option>冻结</option></select>
@@ -64,8 +83,9 @@ watch(archived, load)
         <h2>{{ row.display_name }}</h2>
         <p>{{ row.summary }}</p>
         <p v-if="archived">{{ row.archive_reason }}</p>
-        <div class="strategy-meta"><span>{{ row.market }}</span><span>{{ row.asset_class }}</span><span>{{ row.current_version }}</span></div>
-        <div class="strategy-result"><small>最新关键结果</small><strong>{{ metricText(keyMetric(row)) }}</strong></div>
+        <div class="strategy-meta"><span>{{ marketLabel(row.market) }}</span><span>{{ row.asset_class }}</span><span>{{ row.current_version }}</span></div>
+        <div class="strategy-result"><small>最新关键结果</small><strong>{{ row.latest_run?.status === 'paused_missing_data' ? '需要更多数据' : metricText(keyMetric(row)) }}</strong></div>
+        <p v-if="row.latest_run?.run_type?.startsWith('tail_momentum_')">{{ row.latest_run.summary }}</p>
         <div class="card-foot"><span>{{ row.latest_run?.data_end ? `数据截至 ${row.latest_run.data_end}` : row.latest_run?.as_of_date || '尚无运行日期' }}</span><span>查看完整研究 →</span></div>
       </RouterLink>
     </section>

@@ -1,5 +1,10 @@
 # Research Data Contract
 
+Each strategy is classified as `US`, `CN`, or `Both`. Market data contracts
+are strategy- and venue-specific: US adjusted daily closes cannot validate an
+A-share minute strategy, and a reusable indicator is not evidence of cross-market
+coverage. Shared data services remain independent of ARC.
+
 The defensive ETF backtest consumes a local CSV with these exact columns:
 
 ```text
@@ -89,3 +94,32 @@ then independently reconcile results with the documented continuous series.
 It must model both sides of every scheduled roll, commissions, bid-ask/slippage
 and exchange fees. Back-adjusted prices may create signals but are not by
 themselves a tradeable return series.
+
+## A-Share ETF Afternoon Momentum (CN Only)
+
+The independent `510300.SH` study requires ignored local files:
+
+- `minutes.csv.gz`: `timestamp,symbol,open,high,low,close,volume,amount`;
+  one-minute, end-labeled Asia/Shanghai timestamps, raw prices, share volume
+  and CNY amount. Keep opening-auction rows distinct from continuous minutes.
+- `calendar.csv`: sorted unique SSE session `date`, not generic weekdays.
+- `manifest.json`: real provider, `data_kind=market`, interval, timezone,
+  timestamp/adjustment/units, actual coverage, retrieval time, licence and
+  SHA-256 hashes for each input.
+- For audited total-return evidence, `dividends.csv` with `ex_date,pay_date,
+  cash_per_share`, hashed in the manifest and confirmed no splits. Otherwise
+  explicitly use `corporate_action_status=price_only_unverified` and label the
+  entire run as a price-only diagnostic.
+
+The default path is `artifacts/research/cn-etf-tail-momentum/data/`; optional
+five-session public probes use a distinct `pilot-data/` directory. Tushare
+`etf_mins` is separate from the CSI300 `stk_mins` quota, which this study must
+never consume. The public adapter converts Eastmoney lots to shares and checks
+minute VWAP against OHLC; cumulative average price is not execution VWAP.
+Missing bars, invalid units or hashes block research rather than triggering
+forward-filling, a daily-price substitute or synthetic performance.
+
+See `.agent/workflows/etf-tail-momentum.md` for frozen rules and costs. Results
+live under `artifacts/research/cn-etf-tail-momentum/latest/` and contain all
+twelve fixed candidate/cost combinations when valid input exists, or an honest
+data-blocked report when it does not. Never commit raw data or handoff material.

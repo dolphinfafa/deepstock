@@ -5,6 +5,13 @@ trading control plane.
 
 ## Research Library
 
+Strategies are independent peers, grouped into 美股 (`US`), A股 (`CN`) and
+`Both`. The homepage and frozen archive support market tabs; new research is
+not automatically added to ARC. Strategy implementations are organised under
+`src/deepstock/strategies/{us,cn,both}/`; shared infrastructure and compatible
+legacy imports keep existing schedules working. See
+[strategy structure](.agent/workflows/strategy-structure.md).
+
 The authenticated web application is deployed at
 `https://dev-cn-01.yios.cn/deepstock/`. It presents all registered strategies,
 their thesis, metrics, progress, runs, reports, notes, account state, orders,
@@ -103,6 +110,24 @@ conda run -n deepstock python scripts/run_defensive_etf_backtest.py \
 
 The backtest writes reproducible outputs to `artifacts/backtests/latest/` and
 never connects to TWS or submits an order.
+
+## A-Share ETF Afternoon Momentum
+
+The independent `510300.SH` T+1 candidate is A-share-only, with three fixed
+paths, four cost cases and matching-window benchmarks. A real one-minute
+dataset and exchange calendar are required; missing data produces a blocked
+report, not synthetic research returns. No broker orders are part of this study.
+It is currently paused by the user and marked “需要更多数据”; the commands
+below return the persisted pause without fetching data or running a backtest.
+
+```bash
+conda run -n deepstock python scripts/cn/download_etf_tail_minutes.py --probe-only \
+  --from 2025-08-18 --to 2025-08-19
+conda run -n deepstock python scripts/cn/run_etf_tail_momentum.py
+```
+
+See [fixed research specification](.agent/workflows/etf-tail-momentum.md) for
+data access, fill timing, T+1 accounting and the optional short public pilot.
 
 ## ARC Research Reports
 

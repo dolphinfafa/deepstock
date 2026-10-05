@@ -11,6 +11,24 @@
 
 ## 1. Operating Rules
 
+### Strategy Independence
+
+Deepstock is a multi-strategy research library, not an ARC-centered project.
+ARC is one peer strategy. New papers, factors and strategy notes default to
+independent candidates with their own data, configuration, evidence and gates.
+Do not propose or implement ARC routing by default. Combining strategies needs
+an explicit user decision and separate portfolio evidence. Respect explicit
+research freezes, including AHL.
+
+### Market Organisation
+
+Every strategy declares `US`, `CN`, or `Both` consistently in the catalog and
+registry. Implementations live in `src/deepstock/strategies/{us,cn,both}/`;
+shared governance, data and execution remain outside these market packages.
+Do not mark a strategy `Both` merely because its indicators are portable.
+See `strategy-structure.md` before adding or reorganising a strategy. ETF
+afternoon momentum is A-share-only under the current user decision.
+
 ### Think Before Act
 
 Before changing a file, state a three-point plan in the working update.

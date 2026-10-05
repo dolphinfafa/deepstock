@@ -9,6 +9,8 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from deepstock.markets import StrategyMarket
+
 
 POLICY_ID = "shadow-governance-v2-2026-08-31"
 POLICY_EFFECTIVE_DATE = date(2026, 8, 31)
@@ -65,6 +67,8 @@ def load_registry(path: Path) -> dict[str, dict[str, Any]]:
             raise ValueError("Every registry strategy needs a nonempty strategy_id.")
         if strategy_id in registry:
             raise ValueError(f"Duplicate registry strategy_id={strategy_id}.")
+        if "market" in strategy:
+            StrategyMarket(strategy["market"])
         registry[strategy_id] = strategy
     return registry
 

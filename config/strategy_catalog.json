@@ -125,13 +125,36 @@
       ]
     },
     {
+      "id": "cn_etf_tail_momentum",
+      "as_of_date": "2026-10-06",
+      "display_name": "A股ETF尾盘动量 T+1",
+      "code": "TAIL",
+      "market": "CN",
+      "asset_class": "ETF",
+      "summary": "独立A股ETF尾盘动量与隔夜择时研究。已暂停：需要更多一分钟历史数据，暂无合格真实行情回测。",
+      "thesis_md": "研究假设是：13:30—14:00的正收益可能对随后下午及隔夜收益具有弱条件预测。固定主路径在信号完成后延迟一分钟，以14:01—14:02分钟VWAP模拟买入，次日09:30—09:31分钟VWAP退出；同时完整报告次日收盘退出、14:30双确认两个对照。资本10万元、100份整手、不杠杆、1%分钟参与率；主模型往返名义10bp并含最低佣金。与各自相同持有窗口、成本和资金限制的基准比较，不把公开视频数据视为独立OOS，不声称复制论文收益。",
+      "status": "需要更多数据",
+      "research_status": "paused_missing_data",
+      "pause_reason": "2026-10-06 用户要求暂停；当前无更多数据。待补齐510300.SH一分钟长历史、交易日历和公司行动后，经用户明确恢复再回测。",
+      "data_requirements": ["510300.SH原始一分钟OHLCV及成交额", "对应的SSE交易日历", "分红除权与支付日期、份额变更记录", "数据来源、实际覆盖及使用权限"],
+      "execution_status": "research_only_no_orders",
+      "spec_path": ".agent/workflows/etf-tail-momentum.md",
+      "version": "tail-momentum-t1-v1-20261006",
+      "metrics": {},
+      "progress": [
+        {"stage": "preregistration", "title": "独立策略立项与规则固定", "detail": "2026-10-06 用户批准单独测试；一条主路径、两条对照与全部成本模型均报告，不事后择优。", "status": "done"},
+        {"stage": "implementation", "title": "T+1回测与成交账本", "detail": "信号/成交分离，现金与整手约束、部分成交、延迟退出、分红到账和匹配基准。", "status": "done"},
+        {"stage": "data", "title": "需要更多数据 · 研究已暂停", "detail": "用户暂时没有更多数据。Tushare etf_mins权限不足，公开接口未取得可核验完整输入；不继续下载或回测，等待数据及明确恢复指令。", "status": "paused"}
+      ]
+    },
+    {
       "id": "ahl_global_futures_trend",
       "is_archived": true,
       "archived_at": "2026-10-05T15:00:00+00:00",
       "archive_reason": "按用户决定暂停研究，保留预注册设计与数据要求，待明确恢复后继续。",
       "display_name": "AHL-inspired 全球期货趋势",
       "code": "AHL",
-      "market": "Global",
+      "market": "US",
       "asset_class": "Futures",
       "summary": "多资产期货趋势、波动率目标和资产类别风险上限研究。",
       "thesis_md": "在股指、利率、商品和外汇期货之间分散配置，按 63/126/252 日趋势确定方向，以 10% 波动率目标和风险上限约束仓位。",

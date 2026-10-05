@@ -7,6 +7,7 @@ from datetime import date, timedelta
 from pathlib import Path
 import shutil
 import importlib
+import json
 from dataclasses import replace
 
 
@@ -111,33 +112,34 @@ def _authorize_paper(client: TestClient, headers: dict[str, str], csrf: str) -> 
 
 
 def test_catalog_ingestion_is_idempotent() -> None:
+    catalog = json.loads((settings.project_root / "config/strategy_catalog.json").read_text())["strategies"]
     with SessionLocal() as session:
         first = ingest_all(session)
         second = ingest_all(session)
         assert first["catalog"] == second["catalog"] == {
-            "strategies": 7,
-            "metrics": 32,
+            "strategies": len(catalog),
+            "metrics": sum(len(s["metrics"]) for s in catalog),
         }
-        assert session.scalar(select(func.count(Strategy.id))) == 7
+        assert session.scalar(select(func.count(Strategy.id))) == len(catalog)
         assert session.scalar(select(func.count(Metric.id))) >= 32
         assert session.scalar(select(func.count(ResearchReport.id))) >= 7
-        assert session.scalar(select(func.count(ProgressEvent.id)).where(ProgressEvent.source == "catalog")) == 20
+        assert session.scalar(select(func.count(ProgressEvent.id)).where(ProgressEvent.source == "catalog")) == sum(len(s["progress"]) for s in catalog)
 
 
 def test_frozen_strategy_is_separate_and_cannot_be_authorized(client: TestClient) -> None:
     headers, csrf = _login(client)
     active = client.get("/api/strategies", headers=headers).json()
     frozen = client.get("/api/strategies?archived=true", headers=headers).json()
-    assert len(active) == 6
+    assert len(active) == 7
     assert len(frozen) == 1
     ahl = frozen[0]
     assert ahl["is_archived"] is True
     assert all(row["id"] != ahl["id"] for row in active)
     assert client.get(f"/api/strategies/{ahl['id']}", headers=headers).status_code == 200
     dashboard = client.get("/api/dashboard", headers=headers).json()
-    assert dashboard["counts"]["strategies"] == 6
+    assert dashboard["counts"]["strategies"] == 7
     assert dashboard["counts"]["archived"] == 1
-    assert len(dashboard["strategies"]) == 6
+    assert len(dashboard["strategies"]) == 7
     expires = date.today() + timedelta(days=5)
     response = client.post("/api/execution/authorizations", headers={**headers, "X-CSRF-Token": csrf}, json={
         "strategy_id": ahl["id"], "mode": "paper", "notional_cap_usd": 100,
@@ -154,6 +156,62 @@ def test_frozen_strategy_is_separate_and_cannot_be_authorized(client: TestClient
     with SessionLocal() as session:
         version = session.scalar(select(StrategyVersion).where(StrategyVersion.strategy_id == ahl["id"]))
         assert version.active is False
+
+
+def test_strategy_markets_filter_exact_categories_and_preserve_freeze(client: TestClient) -> None:
+    headers, _ = _login(client)
+    us = client.get("/api/strategies?market=US", headers=headers).json()
+    cn = client.get("/api/strategies?market=CN", headers=headers).json()
+    both = client.get("/api/strategies?market=Both", headers=headers).json()
+    assert len(us) == 5 and all(row["market"] == "US" for row in us)
+    assert {row["id"] for row in cn} == {"cn_etf_tail_momentum", "csi300_opening_auction"}
+    assert all(row["market"] == "CN" for row in cn)
+    assert both == []
+    frozen = client.get("/api/strategies?market=US&archived=true", headers=headers).json()
+    assert [row["id"] for row in frozen] == ["ahl_global_futures_trend"]
+    assert frozen[0]["execution_status"] == "frozen_research_no_orders"
+    assert client.get("/api/strategies?market=Global", headers=headers).status_code == 422
+    assert client.get("/api/strategies?market=CN").status_code == 401
+
+
+def test_tail_ingestion_publishes_preregistered_case_not_best_and_handles_blocked_data(tmp_path, monkeypatch):
+    from test_tail_momentum import write_unit_inputs
+    from scripts.run_cn_etf_tail_momentum import run_research
+    from deepstock.web.ingestion import ingest_tail_momentum
+    from deepstock.web.models import ResearchRun
+    module = importlib.import_module("deepstock.web.ingestion")
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config/strategy_registry.json").write_text(json.dumps({"strategies": [
+        {"strategy_id": "cn_etf_tail_momentum", "execution_status": "research_only_no_orders"}
+    ]}))  # Isolated active unit fixture; production stays paused.
+    monkeypatch.setattr(module, "settings", replace(settings, project_root=tmp_path))
+    data = tmp_path / "fixture-data"
+    write_unit_inputs(data)
+    output = tmp_path / "artifacts/research/cn-etf-tail-momentum/latest"
+    report = run_research(data, output)
+    # Deliberately make a control seem much better. The published primary is fixed.
+    report["cases"][-1]["summary"]["total_return"] = 999
+    (output / "research.json").write_text(json.dumps(report))
+    with SessionLocal() as session:
+        result = ingest_tail_momentum(session)
+        assert ingest_tail_momentum(session)["run_id"] == result["run_id"]
+        run = session.get(ResearchRun, result["run_id"])
+        assert run.run_type == "tail_momentum_pilot"
+        assert len(run.details["cases"]) == 12
+        metrics = session.scalars(select(Metric).where(Metric.run_id == run.id)).all()
+        total = next(m for m in metrics if m.name == "total_return")
+        assert total.value == report["cases"][0]["summary"]["total_return"]
+        assert total.scope == "short_sample_pilot"
+        assert all(m.name not in {"annualized_return", "sharpe_ratio"} for m in metrics)
+        report["cases"].pop()
+        (output / "research.json").write_text(json.dumps(report))
+        with pytest.raises(ValueError, match="twelve"):
+            ingest_tail_momentum(session)
+        run_research(tmp_path / "missing", output)
+        blocked = ingest_tail_momentum(session)
+        assert blocked["status"] == "blocked_data"
+        assert session.scalars(select(Metric).where(Metric.run_id == blocked["run_id"])).all() == []
+        assert session.get(Strategy, "cn_etf_tail_momentum").live_eligible is False
 
 
 def test_node_observation_publication_is_authenticated_validated_and_replay_safe(client, tmp_path, monkeypatch):

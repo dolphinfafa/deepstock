@@ -1,45 +1,61 @@
 {
-  "registry_version": "2026-10-04",
+  "registry_version": "2026-10-06",
   "policy": "shadow-governance-v2-2026-08-31",
   "strategies": [
     {
       "strategy_id": "adaptive_defensive_etf",
+      "market": "US",
       "display_name": "Defensive ETF",
       "execution_status": "shadow_observation_no_orders",
       "specification": ".agent/workflows/defensive-etf-observation.md"
     },
     {
       "strategy_id": "arc",
+      "market": "US",
       "display_name": "Adaptive Regime Controller",
       "execution_status": "research_only_no_orders",
       "specification": ".agent/workflows/arc-strategy.md"
     },
     {
       "strategy_id": "stock_turtle",
+      "market": "US",
       "display_name": "Stock Turtle",
       "execution_status": "research_only_no_orders",
       "specification": ".agent/workflows/stock-turtle-research.md"
     },
     {
       "strategy_id": "range_grid",
+      "market": "US",
       "display_name": "Range Grid",
       "execution_status": "research_only_no_orders",
       "specification": ".agent/workflows/arc-strategy.md"
     },
     {
       "strategy_id": "spy_mean_reversion",
+      "market": "US",
       "display_name": "SPY Mean Reversion",
       "execution_status": "research_only_no_orders",
       "specification": ".agent/workflows/mean-reversion-strategy.md"
     },
     {
+      "strategy_id": "cn_etf_tail_momentum",
+      "market": "CN",
+      "research_status": "paused_missing_data",
+      "pause_reason": "用户要求暂停并标记需要更多数据；取得合格分钟历史后仍需用户明确恢复。",
+      "display_name": "CN ETF Afternoon Momentum T+1",
+      "execution_status": "research_only_no_orders",
+      "specification": ".agent/workflows/etf-tail-momentum.md"
+    },
+    {
       "strategy_id": "ahl_global_futures_trend",
+      "market": "US",
       "display_name": "AHL-inspired Global Futures Trend",
       "execution_status": "frozen_research_no_orders",
       "specification": ".agent/workflows/ahl-global-futures-trend.md"
     },
     {
       "strategy_id": "csi300_opening_auction",
+      "market": "CN",
       "display_name": "CSI 300 Opening Auction",
       "execution_status": "research_only_no_orders",
       "specification": ".agent/workflows/csi300-opening-auction.md"

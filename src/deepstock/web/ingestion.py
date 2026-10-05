@@ -10,6 +10,8 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from deepstock.web.config import settings
+from deepstock.markets import StrategyMarket
+from deepstock.research_control import research_pause
 from deepstock.observation_reporting import validate_bundle
 from deepstock.strategy_governance import evaluate_snapshot, load_registry
 from deepstock.web.models import (
@@ -70,6 +72,9 @@ def _seed_settings(session: Session) -> None:
 def ingest_catalog(session: Session, catalog_path: Path | None = None) -> dict[str, int]:
     path = catalog_path or settings.project_root / "config/strategy_catalog.json"
     catalog = _load_json(path)
+    # Validate the entire catalogue before any write, not halfway through ingestion.
+    for item in catalog["strategies"]:
+        StrategyMarket(item["market"])
     strategy_count = 0
     metric_count = 0
     for item in catalog["strategies"]:
@@ -138,14 +143,16 @@ def ingest_catalog(session: Session, catalog_path: Path | None = None) -> dict[s
             {
                 "id": run_id,
                 "strategy_id": item["id"],
-                "run_type": "latest_research",
-                "status": "complete" if item["metrics"] else "planned",
-                "as_of_date": "2026-10-04",
+                "run_type": "data_requirement" if item.get("research_status") == "paused_missing_data" else "latest_research",
+                "status": item.get("research_status") or ("complete" if item["metrics"] else "planned"),
+                "as_of_date": item.get("as_of_date", "2026-10-04"),
                 "config_hash": config_hash,
                 "summary": item["summary"],
                 "artifact_path": item["spec_path"],
                 "source_hash": config_hash,
-                "details": {"catalog_version": catalog["schema_version"]},
+                "details": {"catalog_version": catalog["schema_version"],
+                            "research_status": item.get("research_status"), "pause_reason": item.get("pause_reason"),
+                            "data_requirements": item.get("data_requirements", [])},
             },
         )
         session.flush()
@@ -206,7 +213,7 @@ def ingest_catalog(session: Session, catalog_path: Path | None = None) -> dict[s
                     "run_id": run.id,
                     "title": f"{item['display_name']} 研究规范",
                     "report_type": "strategy_specification",
-                    "as_of_date": "2026-10-04",
+                    "as_of_date": item.get("as_of_date", "2026-10-04"),
                     "format": "markdown",
                     "content": content,
                     "artifact_path": item["spec_path"],
@@ -515,9 +522,94 @@ def ingest_defensive_bundle(session: Session, bundle: dict[str, Any]) -> dict[st
     return {"status": "ok", "data_date": data_date, "shadow_sessions": snapshot["shadow_sessions"], "run_id": run.id}
 
 
+def ingest_tail_momentum(session: Session) -> dict[str, Any]:
+    """Publish the preregistered primary case, not the best-performing candidate."""
+    paused = research_pause("cn_etf_tail_momentum", settings.project_root)
+    if paused:
+        return paused  # Keep prior evidence; never generate/import new research while paused.
+    relative = Path("artifacts/research/cn-etf-tail-momentum/latest/research.json")
+    path = settings.project_root / relative
+    if not path.exists():
+        return {"status": "missing"}
+    report = _load_json(path)
+    strategy_id = "cn_etf_tail_momentum"
+    if report.get("strategy_id") != strategy_id or report.get("execution_status") != "research_only_no_orders":
+        raise ValueError("Independent tail-momentum report identity/status mismatch")
+    if report.get("status") not in {"complete", "blocked_data"}:
+        raise ValueError("Unsupported tail-momentum report status")
+    captured = datetime.fromisoformat(report["recorded_at_utc"])
+    source_hash = _hash_bytes(path.read_bytes())
+    run_id = f"tail-{report['as_of_date']}-{source_hash[:12]}"
+    blocked = report["status"] == "blocked_data"
+    pilot = report.get("evidence_stage") == "short_sample_pilot_not_validated"
+    message = (f"数据阻塞：{report['reason']}" if blocked else
+               f"{report['data_start']} — {report['data_end']}，{report['sessions']}个交易日；固定主路径/10bp成本，不选择最好候选。"
+               + ("仅为短样本诊断，不代表策略已验证。" if pilot else "历史诊断，不是前瞻交易证据。"))
+    primary = None
+    if not blocked:
+        expected = {(p, c) for p in ("r6_next_open", "r6_next_close", "r6_r7_next_open")
+                    for c in ("primary_10bp", "stress_6bp", "stress_20bp", "video_1bp_idealized")}
+        if len(report["cases"]) != 12 or {(c["path"], c["cost_case"]) for c in report["cases"]} != expected:
+            raise ValueError("All twelve fixed tail-momentum cases must be retained")
+        primary = next(c for c in report["cases"] if c["path"] == "r6_next_open" and c["cost_case"] == "primary_10bp")
+    _upsert(session, ResearchRun, run_id, {
+        "id": run_id, "strategy_id": strategy_id,
+        "run_type": "tail_momentum_data_blocked" if blocked else "tail_momentum_pilot" if pilot else "tail_momentum_diagnostic",
+        "status": report["status"], "as_of_date": report["as_of_date"],
+        "data_start": report.get("data_start"), "data_end": report.get("data_end"),
+        "config_hash": report["config_hash"], "source_hash": source_hash,
+        "summary": message, "artifact_path": str(relative), "finished_at": captured, "details": report,
+    })
+    session.flush()
+    # Never inherit catalogue/video performance when market input is blocked.
+    session.execute(delete(Metric).where(Metric.run_id == run_id))
+    if primary:
+        s = primary["summary"]
+        scope = "short_sample_pilot" if pilot else "historical_diagnostic"
+        for name in ("total_return", "maximum_drawdown", "average_exposure"):
+            _upsert_metric(session, run_id, name, s[name], scope=scope, unit="ratio")
+        _upsert_metric(session, run_id, "matched_window_return", primary["matched_benchmark"]["total_return"], scope=scope, unit="ratio")
+        for name in ("commission_cny", "slippage_cny"):
+            _upsert_metric(session, run_id, name, s[name], scope=scope, unit="CNY")
+        for name, value in {"trading_days": report["sessions"], "completed_trades": s["completed_trades"],
+                            "walk_forward_windows": len(primary["walk_forward"]), "unclosed_shares": s["unclosed_shares"]}.items():
+            _upsert_metric(session, run_id, name, value, scope=scope, unit="count")
+        # Short samples are shown as actual period returns, not exaggerated annualisation.
+        if not pilot:
+            for name in ("annualized_return", "sharpe_ratio"):
+                _upsert_metric(session, run_id, name, s[name], scope=scope, unit="ratio" if name == "annualized_return" else "number")
+    markdown = path.with_name("report.md")
+    content = markdown.read_text(encoding="utf-8")
+    _upsert(session, ResearchReport, run_id + "-report", {
+        "id": run_id + "-report", "strategy_id": strategy_id, "run_id": run_id,
+        "title": f"ETF尾盘动量 · {'数据阻塞' if blocked else '短样本初测' if pilot else '固定历史诊断'} · {report['as_of_date']}",
+        "report_type": "tail_momentum_research", "as_of_date": report["as_of_date"],
+        "format": "markdown", "content": content, "artifact_path": str(markdown.relative_to(settings.project_root)),
+        "content_hash": _hash_bytes(content.encode()),
+    })
+    strategy = session.get(Strategy, strategy_id)
+    if strategy is not None:
+        strategy.status = "研究数据阻塞" if blocked else "短样本初测 · 待长历史" if pilot else "固定历史诊断"
+        strategy.live_eligible = False
+    _upsert(session, ProgressEvent, "tail-latest-research", {
+        "id": "tail-latest-research", "strategy_id": strategy_id, "stage": "backtest",
+        "title": "独立策略最新研究", "detail": message, "status": "blocked" if blocked else "current",
+        "source": "tail-momentum-research", "occurred_at": captured,
+    })
+    _upsert(session, DataSourceStatus, "cn-etf-tail-minutes", {
+        "id": "cn-etf-tail-minutes", "provider": report.get("input_manifest", {}).get("provider", report.get("access", {}).get("provider", "ETF minute data")),
+        "node": "deepstock-server", "status": "blocked" if blocked else "pilot_price_only" if pilot else "historical_diagnostic",
+        "data_date": report.get("data_end"), "checked_at": captured,
+        "details": report.get("input_manifest", report.get("access", {})),
+    })
+    session.commit()
+    return {"status": report["status"], "run_id": run_id, "sessions": report.get("sessions", 0)}
+
+
 def ingest_all(session: Session) -> dict[str, Any]:
     return {
         "catalog": ingest_catalog(session),
         "auction": ingest_auction_forward(session),
         "defensive": ingest_defensive_observation(session),
+        "tail_momentum": ingest_tail_momentum(session),
     }

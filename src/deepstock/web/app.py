@@ -18,6 +18,8 @@ from pydantic import AwareDatetime, BaseModel, Field
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
+from deepstock.markets import StrategyMarket
+
 from deepstock.web.alerts import create_alert, deliver_email
 from deepstock.web.config import settings
 from deepstock.web.database import SessionLocal, get_session
@@ -445,10 +447,14 @@ def dashboard(
 @app.get("/api/strategies")
 def strategies(
     archived: bool = False,
+    market: StrategyMarket | None = None,
     session: Session = Depends(get_session),
     _auth: AuthSession = Depends(_auth_dependency),
 ) -> list[dict[str, Any]]:
-    rows = session.scalars(select(Strategy).where(Strategy.is_archived.is_(archived)).order_by(Strategy.display_name)).all()
+    query = select(Strategy).where(Strategy.is_archived.is_(archived))
+    if market is not None:
+        query = query.where(Strategy.market == market.value)
+    rows = session.scalars(query.order_by(Strategy.display_name)).all()
     return [_strategy_summary(session, row) for row in rows]
 
 
