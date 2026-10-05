@@ -121,7 +121,7 @@ def test_catalog_ingestion_is_idempotent() -> None:
         assert session.scalar(select(func.count(Strategy.id))) == 7
         assert session.scalar(select(func.count(Metric.id))) >= 32
         assert session.scalar(select(func.count(ResearchReport.id))) >= 7
-        assert session.scalar(select(func.count(ProgressEvent.id))) == 20
+        assert session.scalar(select(func.count(ProgressEvent.id)).where(ProgressEvent.source == "catalog")) == 20
 
 
 def test_frozen_strategy_is_separate_and_cannot_be_authorized(client: TestClient) -> None:

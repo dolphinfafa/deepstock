@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import json
 from types import SimpleNamespace
 
@@ -23,7 +23,7 @@ def test_provider_reservations_observe_daily_and_hourly_limits():
 
 def test_cron_is_idempotent_preserves_other_jobs_and_has_correct_environment():
     original = "# unrelated\n30 7 * * * keep-this-job\n"
-    block = backfill_block(Path("/srv/deepstock"), Path("/opt/envs/deepstock/bin/python"))
+    block = backfill_block(PurePosixPath("/srv/deepstock"), PurePosixPath("/opt/envs/deepstock/bin/python"))
     first = replace_block(original, BEGIN, END, block)
     assert replace_block(first, BEGIN, END, block) == first
     assert "keep-this-job" in first
@@ -60,7 +60,7 @@ def test_backfill_runs_only_one_window_and_never_fabricates_completion(tmp_path,
     assert len(calls) == 2
     assert calls[0][calls[0].index("--maximum-windows-per-run") + 1] == "1"
     assert calls[0][calls[0].index("--retries") + 1] == "0"
-    assert calls[0][0] == "/darwen/python"
+    assert calls[0][0] == str(Path("/darwen/python"))
     result = run_backfill(source, Path("/darwen/python"), destination)
     assert result["status"] == "waiting_for_quota"
     assert len(calls) == 2
