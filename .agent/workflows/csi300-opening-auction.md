@@ -211,3 +211,10 @@ complete frozen report when available and exposes remaining dates/quota status
 while waiting. Incomplete data is never substituted with auction/later prices
 or treated as a complete prospective test. API quota/entitlement failures are
 external blockers, not a reason to change parameters.
+
+Verified October 5: scheduler restored, one authorized request completed
+September 4 with 300/300 members (100% coverage), progress **9/21**. Twelve
+dates remain. The next two scheduled requests are October 6 at 11:30 and
+12:35 China time. At two successful dates per day, completion could occur
+around October 11, but coverage failures or entitlement changes can delay it.
+The complete frozen report remains absent, correctly, until all dates pass.

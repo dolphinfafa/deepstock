@@ -1,5 +1,9 @@
 # Global Futures Data Source Evaluation
 
+Research paused by user decision on 2026-10-05. AHL is in the frozen-strategy
+archive. This document is retained as an acceptance checklist, not an active
+supplier-acquisition task; explicit resumption is required before proceeding.
+
 ## Decision State
 
 `research_due_diligence_only`. No provider is licensed or selected. Do not
