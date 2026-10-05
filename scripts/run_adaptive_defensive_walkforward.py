@@ -10,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 
 from deepstock.backtest import StrategyConfig, run_backtest
+from deepstock.defensive import config_hash, frozen_defensive_config
 
 
 def segment_summary(result, dates: pd.DatetimeIndex) -> dict[str, object]:
@@ -50,14 +51,7 @@ def main() -> int:
 
     raw = pd.read_csv(args.prices)
     raw["date"] = pd.to_datetime(raw["date"])
-    base = StrategyConfig(
-        momentum_days=252,
-        moving_average_days=200,
-        top_k_assets=2,
-        market_filter_days=200,
-        exposure_above_filter=0.8,
-        exposure_below_filter=0.4,
-    )
+    base = frozen_defensive_config()
     prices = raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
     prices = prices.loc[:, list(base.symbols)].dropna()
     full = run_backtest(prices, base)
@@ -90,6 +84,7 @@ def main() -> int:
         "actual_from": prices.index[0].date().isoformat(),
         "actual_to": prices.index[-1].date().isoformat(),
         "config": base.__dict__,
+        "config_hash": config_hash(base),
         "train_days": args.train_days,
         "test_days": args.test_days,
         "step_days": args.step_days,

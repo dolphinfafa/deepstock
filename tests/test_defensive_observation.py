@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -32,6 +33,8 @@ def test_defensive_plan_is_deterministic_and_order_free() -> None:
     assert first["mode"] == "paper"
     assert first["status"] == "ready_for_review"
     assert first["plan_id"] == second["plan_id"]
+    historical_payload = {key: first[key] for key in ("strategy", "mode", "data_date", "config", "target_weights")}
+    assert first["plan_id"] == hashlib.sha256(json.dumps(historical_payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()[:16]
     assert sum(first["target_weights"].values()) == pytest.approx(1.0)
 
 

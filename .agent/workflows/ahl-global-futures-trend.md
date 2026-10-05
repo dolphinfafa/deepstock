@@ -2,7 +2,13 @@
 
 ## Status
 
-`planned_research_only_no_orders`. This is an independently designed,
+`frozen_research_no_orders` since 2026-10-05, by explicit user decision.
+Research, data acquisition, backtests and execution are paused until explicitly
+resumed. The homepage excludes AHL; the authenticated `/frozen-strategies` page
+retains its design, progress and reports. Archived strategies cannot receive
+new authorizations or plans, and previously authorized plans cannot be claimed.
+
+This is an independently designed,
 transparent trend-following research program inspired by public descriptions of
 managed futures. It does not claim to replicate Man AHL or any proprietary
 strategy. There is no valid futures historical dataset in the project, so no
@@ -64,7 +70,7 @@ window under its predefined loss gate, controlled turnover/margin, and a risk
 review. It cannot inherit authorization from ARC, Defensive ETF, or any stock
 strategy.
 
-## Next Required Decision
+## Requirements If Research Is Explicitly Resumed
 
 Run the documented supplier acceptance procedure in
 `futures-data-source-evaluation.md`, then select and license a provider capable

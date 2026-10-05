@@ -126,14 +126,17 @@
     },
     {
       "id": "ahl_global_futures_trend",
+      "is_archived": true,
+      "archived_at": "2026-10-05T15:00:00+00:00",
+      "archive_reason": "按用户决定暂停研究，保留预注册设计与数据要求，待明确恢复后继续。",
       "display_name": "AHL-inspired 全球期货趋势",
       "code": "AHL",
       "market": "Global",
       "asset_class": "Futures",
       "summary": "多资产期货趋势、波动率目标和资产类别风险上限研究。",
       "thesis_md": "在股指、利率、商品和外汇期货之间分散配置，按 63/126/252 日趋势确定方向，以 10% 波动率目标和风险上限约束仓位。",
-      "status": "计划中",
-      "execution_status": "research_only_no_orders",
+      "status": "已冻结",
+      "execution_status": "frozen_research_no_orders",
       "spec_path": ".agent/workflows/ahl-global-futures-trend.md",
       "version": "ahl-preregistered-v1",
       "metrics": {
@@ -142,7 +145,8 @@
       },
       "progress": [
         {"stage": "design", "title": "研究边界和候选预注册", "detail": "市场池、信号、风险和验证窗口已冻结。", "status": "done"},
-        {"stage": "data", "title": "连续期货数据", "detail": "等待合规逐合约价格、换月和成本数据。", "status": "blocked"}
+        {"stage": "data", "title": "连续期货数据", "detail": "研究暂停；恢复后再获取合规逐合约价格、换月和成本数据。", "status": "blocked"},
+        {"stage": "freeze", "title": "暂停研究并归档", "detail": "2026-10-05 按用户决定冻结，保留已有设计。", "status": "paused"}
       ]
     },
     {

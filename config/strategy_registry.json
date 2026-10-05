@@ -35,7 +35,7 @@
     {
       "strategy_id": "ahl_global_futures_trend",
       "display_name": "AHL-inspired Global Futures Trend",
-      "execution_status": "research_only_no_orders",
+      "execution_status": "frozen_research_no_orders",
       "specification": ".agent/workflows/ahl-global-futures-trend.md"
     },
     {

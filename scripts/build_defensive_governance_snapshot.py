@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from datetime import date
 from pathlib import Path
@@ -12,6 +13,7 @@ import numpy as np
 import pandas as pd
 
 from deepstock.strategy_governance import POLICY_EFFECTIVE_DATE
+from deepstock.defensive import require_frozen_config
 
 def _completed_price_date(prices_path: Path) -> str:
     raw = pd.read_csv(prices_path)
@@ -57,6 +59,7 @@ def build_snapshot(
     *,
     risk_review_passed: bool = False,
     as_of_date: str | None = None,
+    summary_path: Path | None = None,
 ) -> dict[str, object]:
     """Create a current snapshot without judging or authorizing the strategy."""
 
@@ -72,6 +75,15 @@ def build_snapshot(
     if "total_return" not in walkforward.columns:
         raise ValueError("Walk-Forward report must contain total_return.")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    summary = json.loads((summary_path or daily_path.parent / "summary.json").read_text(encoding="utf-8"))
+    hashes = [require_frozen_config(report.get("config", {})) for report in (plan, manifest, summary)]
+    if any(report.get("config_hash") != hashes[0] for report in (manifest, summary)):
+        raise ValueError("Configuration checksums are missing or differ")
+    if summary.get("daily_sha256") != hashlib.sha256(daily_path.read_bytes()).hexdigest():
+        raise ValueError("Daily report checksum does not match its configuration summary")
+    daily_dates = pd.read_csv(daily_path, usecols=["date"])["date"]
+    if summary.get("end") != data_date or manifest.get("actual_to") != data_date or str(daily_dates.iloc[-1])[:10] != data_date:
+        raise ValueError("Plan, daily report, and Walk-Forward evidence dates differ")
     selection_policy = str(manifest.get("selection_policy", ""))
     observations = []
     if observations_path.exists():
@@ -80,7 +92,7 @@ def build_snapshot(
         entry
         for entry in observations
         if isinstance(entry.get("data_date"), str)
-        and pd.Timestamp(entry["data_date"]).date() >= POLICY_EFFECTIVE_DATE
+        and POLICY_EFFECTIVE_DATE <= pd.Timestamp(entry["data_date"]).date() <= date.fromisoformat(data_date)
     ]
     unique_plan_ids = {entry.get("plan_id") for entry in effective_observations if entry.get("plan_id")}
     decision_date = date.fromisoformat(as_of_date or date.today().isoformat())
@@ -92,6 +104,8 @@ def build_snapshot(
     )
     return {
         "strategy_id": "adaptive_defensive_etf",
+        "config_hash": hashes[0],
+        "evidence_revision": "defensive-config-reconciliation-20261005",
         "as_of_date": decision_date.isoformat(),
         "data_date": data_date,
         "parameters_frozen": "fixed" in selection_policy.lower(),

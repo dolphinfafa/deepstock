@@ -75,6 +75,9 @@ class Strategy(Base):
     spec_path: Mapped[str] = mapped_column(String(500))
     current_version: Mapped[str] = mapped_column(String(120))
     live_eligible: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_archived: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    archive_reason: Mapped[str | None] = mapped_column(Text)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )

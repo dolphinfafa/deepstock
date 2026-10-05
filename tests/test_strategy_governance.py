@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+from dataclasses import asdict
 from datetime import datetime, timezone
 
 import pytest
@@ -14,6 +16,22 @@ from deepstock.strategy_governance import (
 )
 from scripts.evaluate_strategy_registry import main as evaluate_registry_main
 from scripts.build_defensive_governance_snapshot import build_snapshot
+from deepstock.defensive import config_hash, frozen_defensive_config
+
+
+def attach_fixed_evidence(paths):
+    config = asdict(frozen_defensive_config())
+    for name in ("manifest.json", "plan.json"):
+        report = json.loads(paths[name].read_text())
+        report.update(config=config, config_hash=config_hash(config))
+        if name == "manifest.json":
+            report["actual_to"] = json.loads(paths["plan.json"].read_text())["data_date"]
+        paths[name].write_text(json.dumps(report), encoding="utf-8")
+    (paths["daily.csv"].parent / "summary.json").write_text(json.dumps({
+        "config": config, "config_hash": config_hash(config),
+        "end": json.loads(paths["plan.json"].read_text())["data_date"],
+        "daily_sha256": hashlib.sha256(paths["daily.csv"].read_bytes()).hexdigest(),
+    }), encoding="utf-8")
 
 
 def registry_file(tmp_path):
@@ -162,6 +180,7 @@ def test_defensive_snapshot_uses_fixed_reports_and_defaults_risk_review_to_false
     paths["manifest.json"].write_text(json.dumps(manifest), encoding="utf-8")
     paths["plan.json"].write_text(json.dumps(plan), encoding="utf-8")
     paths["observations.jsonl"].write_text(json.dumps(observations) + "\n", encoding="utf-8")
+    attach_fixed_evidence(paths)
 
     snapshot = build_snapshot(
         paths["prices.csv"], paths["daily.csv"], paths["walkforward.csv"], paths["manifest.json"], paths["plan.json"], paths["observations.jsonl"], as_of_date="2026-09-01"
@@ -202,8 +221,20 @@ def test_snapshot_counts_only_observations_under_the_current_policy(tmp_path) ->
         "\n".join(json.dumps(entry) for entry in ({"plan_id": "old", "data_date": "2026-08-28"}, {"plan_id": "new", "data_date": "2026-08-31"})) + "\n",
         encoding="utf-8",
     )
+    attach_fixed_evidence(paths)
 
     snapshot = build_snapshot(paths["prices.csv"], paths["daily.csv"], paths["walkforward.csv"], paths["manifest.json"], paths["plan.json"], paths["observations.jsonl"], as_of_date="2026-09-01")
 
     assert snapshot["shadow_sessions"] == 1
     assert snapshot["shadow_observation_calendar_days"] == 2
+
+    plan = json.loads(paths["plan.json"].read_text())
+    plan["config"]["top_k_assets"] = None
+    paths["plan.json"].write_text(json.dumps(plan), encoding="utf-8")
+    with pytest.raises(ValueError, match="frozen"):
+        build_snapshot(*[paths[name] for name in ("prices.csv", "daily.csv", "walkforward.csv", "manifest.json", "plan.json", "observations.jsonl")])
+    plan["config"]["top_k_assets"] = 2
+    paths["plan.json"].write_text(json.dumps(plan), encoding="utf-8")
+    paths["daily.csv"].write_text(paths["daily.csv"].read_text() + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="checksum"):
+        build_snapshot(*[paths[name] for name in ("prices.csv", "daily.csv", "walkforward.csv", "manifest.json", "plan.json", "observations.jsonl")])

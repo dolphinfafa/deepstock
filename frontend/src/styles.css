@@ -55,7 +55,7 @@ button { cursor: pointer; }
 .eyebrow { color: var(--gold); font: 500 10px 'SFMono-Regular', Consolas, monospace; letter-spacing: .18em; }
 .asof { color: var(--muted); font: 400 10px/1.8 'SFMono-Regular', Consolas, monospace; text-align: right; }
 .asof strong { color: #e9edf0; font-size: 13px; }
-.summary-strip { display: grid; grid-template-columns: repeat(5, 1fr); background: var(--panel); border: 1px solid var(--line); margin-bottom: 22px; }
+.summary-strip { display: grid; grid-template-columns: repeat(6, 1fr); background: var(--panel); border: 1px solid var(--line); margin-bottom: 22px; }
 .summary-strip > div { padding: 20px 22px; border-right: 1px solid var(--line); }
 .summary-strip > div:last-child { border: 0; }
 .summary-strip span { display: block; color: var(--muted); font-size: 11px; margin-bottom: 8px; }

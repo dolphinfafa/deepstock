@@ -14,6 +14,7 @@ const router = createRouter({
   routes: [
     { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
     { path: '/', name: 'library', component: LibraryView },
+    { path: '/frozen-strategies', name: 'frozen-library', component: LibraryView },
     { path: '/strategies/:id', name: 'strategy', component: StrategyView },
     { path: '/reports', name: 'reports', component: ReportsView },
     { path: '/execution', name: 'execution', component: ExecutionView },

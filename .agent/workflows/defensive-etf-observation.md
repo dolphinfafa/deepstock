@@ -52,6 +52,7 @@ conda run -n deepstock python scripts/generate_defensive_etf_plan.py \
 conda run -n deepstock python scripts/record_paper_observation.py \
   --plan artifacts/paper/defensive-etf/latest.json
 conda run -n deepstock python scripts/run_defensive_etf_backtest.py \
+  --profile adaptive \
   --prices artifacts/research/norgate/defensive_etf_prices.csv \
   --output-dir artifacts/research/strategy-governance/adaptive-defensive-latest
 conda run -n deepstock python scripts/run_adaptive_defensive_walkforward.py \
@@ -68,6 +69,7 @@ conda run -n deepstock python scripts/build_defensive_governance_snapshot.py \
 conda run -n deepstock python scripts/evaluate_strategy_registry.py \
   --snapshots artifacts/research/strategy-governance/adaptive-defensive-snapshot.json \
   --skip-duplicate
+conda run -n deepstock python scripts/publish_defensive_observation.py
 ```
 
 The first command runs only on the Windows Norgate node. The following commands
@@ -96,3 +98,30 @@ The wrapper resolves the project directory from its own location and runs
 computer. The former task on `DESKTOP-S31222F` is disabled. The historical
 one-time SGOV Paper fill-test task on that computer is also disabled and is not
 recreated because it has no future trigger.
+
+## Configuration Reconciliation and Website Publishing (2026-10-05)
+
+The previous daily wrapper accidentally invoked the default baseline backtest
+(no Top-2 selection or market filter), while the plan and Walk-Forward used the
+frozen adaptive parameters. Previous rolling metrics are not valid adaptive
+evidence. The strategy rules themselves have not changed.
+
+`deepstock.defensive.frozen_defensive_config()` is now the shared configuration.
+The adaptive backtest, Walk-Forward, plan and snapshot must agree on its SHA-256
+hash and evidence date; the snapshot also verifies the daily CSV checksum.
+Mismatches fail the task instead of producing governance evidence.
+
+Use `scripts/reconcile_defensive_observation.py` once on the Windows node to
+archive previous evidence under the ignored reconciliation directory, recompute
+from the already downloaded Norgate file, and write a correction audit. It does
+not download prices, append an observation, reset the clock, change a rule, or
+overwrite the original decision ledger. Then run the publisher.
+
+The daily wrapper now POSTs a price-free aggregate bundle to
+`/api/agent/research/defensive-observation` using `DEEPSTOCK_NODE_TOKEN` and
+`DEEPSTOCK_PUBLIC_BASE_URL`. The server checks configuration, timestamps,
+observation counts and report dates, rejects replay/backwards evidence, and
+prefers that node bundle over stale server-local artifacts. Publishing failure
+fails the scheduled task. Raw Norgate prices and account data remain local.
+Current assessments are stored in the research report; historical decisions
+remain auditable, including the configuration correction.

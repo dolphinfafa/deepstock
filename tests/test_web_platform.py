@@ -5,6 +5,9 @@ import os
 import tempfile
 from datetime import date, timedelta
 from pathlib import Path
+import shutil
+import importlib
+from dataclasses import replace
 
 
 _TEST_DIR = Path(tempfile.mkdtemp(prefix="deepstock-web-tests-"))
@@ -118,7 +121,64 @@ def test_catalog_ingestion_is_idempotent() -> None:
         assert session.scalar(select(func.count(Strategy.id))) == 7
         assert session.scalar(select(func.count(Metric.id))) >= 32
         assert session.scalar(select(func.count(ResearchReport.id))) >= 7
-        assert session.scalar(select(func.count(ProgressEvent.id))) == 19
+        assert session.scalar(select(func.count(ProgressEvent.id))) == 20
+
+
+def test_frozen_strategy_is_separate_and_cannot_be_authorized(client: TestClient) -> None:
+    headers, csrf = _login(client)
+    active = client.get("/api/strategies", headers=headers).json()
+    frozen = client.get("/api/strategies?archived=true", headers=headers).json()
+    assert len(active) == 6
+    assert len(frozen) == 1
+    ahl = frozen[0]
+    assert ahl["is_archived"] is True
+    assert all(row["id"] != ahl["id"] for row in active)
+    assert client.get(f"/api/strategies/{ahl['id']}", headers=headers).status_code == 200
+    dashboard = client.get("/api/dashboard", headers=headers).json()
+    assert dashboard["counts"]["strategies"] == 6
+    assert dashboard["counts"]["archived"] == 1
+    assert len(dashboard["strategies"]) == 6
+    expires = date.today() + timedelta(days=5)
+    response = client.post("/api/execution/authorizations", headers={**headers, "X-CSRF-Token": csrf}, json={
+        "strategy_id": ahl["id"], "mode": "paper", "notional_cap_usd": 100,
+        "expires_on": expires.isoformat(), "password": "admin",
+        "confirmation": f"PAPER {ahl['id']} 100.00 {expires.isoformat()}",
+    })
+    assert response.status_code == 409
+    response = client.post("/api/execution/plans", headers={**headers, "X-CSRF-Token": csrf}, json={
+        "strategy_id": ahl["id"], "mode": "paper", "data_date": date.today().isoformat(),
+        "config_hash": _strategy_hash(ahl["id"]),
+        "orders": [{"symbol": "ES", "action": "BUY", "quantity": 1, "limit_price": 100}],
+    })
+    assert response.status_code == 409
+    with SessionLocal() as session:
+        version = session.scalar(select(StrategyVersion).where(StrategyVersion.strategy_id == ahl["id"]))
+        assert version.active is False
+
+
+def test_node_observation_publication_is_authenticated_validated_and_replay_safe(client, tmp_path, monkeypatch):
+    from test_observation_reporting import valid_bundle
+    source_root = settings.project_root
+    (tmp_path / "config").mkdir()
+    shutil.copy2(source_root / "config/strategy_registry.json", tmp_path / "config/strategy_registry.json")
+    isolated_settings = replace(settings, project_root=tmp_path)
+    monkeypatch.setattr(importlib.import_module("deepstock.web.app"), "settings", isolated_settings)
+    monkeypatch.setattr(importlib.import_module("deepstock.web.ingestion"), "settings", isolated_settings)
+    payload = valid_bundle()
+    endpoint = "/api/agent/research/defensive-observation"
+    assert client.post(endpoint, json=payload).status_code == 401
+    node_headers = {"Authorization": "Bearer test-node-token"}
+    response = client.post(endpoint, headers=node_headers, json=payload)
+    assert response.status_code == 200, response.text
+    assert response.json()["shadow_sessions"] == 2
+    assert (tmp_path / "artifacts/defensive_node/latest.json").exists()
+    assert client.post(endpoint, headers=node_headers, json=payload).status_code == 409
+    payload["snapshot"]["shadow_sessions"] = 99
+    assert client.post(endpoint, headers=node_headers, json=payload).status_code == 400
+    with SessionLocal() as session:
+        run = session.get(__import__("deepstock.web.models", fromlist=["ResearchRun"]).ResearchRun, response.json()["run_id"])
+        assert run.data_end == "2026-09-01"
+        assert run.details["assessment"]["paper_authorized"] is False
 
 
 def test_authentication_session_csrf_and_rate_limit(client: TestClient) -> None:

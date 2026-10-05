@@ -6,7 +6,7 @@
 - Policy version: `auction_context_v1_frozen_20260829`
 - Execution status: `research_only_no_orders`
 - Broker integration: none
-- Current data collection owner: the existing Darwen scheduler until a
+- Current data collection owner: the existing Darwen implementation until a
   separate Deepstock migration is tested and explicitly cut over
 - Deepstock artifact synchronization: local read-only ingestion from Darwen at
   12:50 and 23:58 daily, plus 18:20 on weekdays
@@ -132,7 +132,10 @@ signal, 09:31 fill, and D+1 settlement cycle succeeds on the target.
   modules.
 - The source guards for label timing, decision cutoff, strict 09:31 bars,
   prospective isolation, and `actionable` state are present.
-- The active scheduler remains only in Darwen. Deepstock has no duplicate
+- At the 2026-10-04 handoff, the active scheduler was recorded as Darwen. On
+  2026-10-05, both Darwen collection and minute-backfill cron blocks were found
+  missing from the actual user crontab. Do not infer execution from old docs.
+  Deepstock has no duplicate
   Tushare auction or forward collector. Deepstock runs a local artifact sync
   that makes a consistent SQLite backup and does not call a data provider.
 
@@ -165,9 +168,10 @@ post-hoc tuning.
 
 The implementation currently lives in an uncommitted Darwen worktree and
 depends on Darwen `Company`, `Security`, `MarketBar`, database configuration,
-Tushare client, FastAPI API, and Vue frontend. Deepstock currently has no ORM,
-database, API framework, or frontend framework selected. Do not copy the
-implementation into Deepstock until an adapter/dependency design is approved.
+Tushare client, FastAPI API, and Vue frontend. Deepstock now has a
+SQLite/SQLAlchemy research control plane, FastAPI API and Vue frontend, but not
+the Darwen market-data/model adapters. Do not copy its uncommitted implementation
+into Deepstock until an adapter/dependency design is approved.
 
 Until then:
 
@@ -183,3 +187,27 @@ Until then:
    before changing features or thresholds.
 7. If Level-2 data becomes available, build a separate fill-realism study
    before changing the current return labels.
+
+## Scheduler Recovery (2026-10-05)
+
+`scripts/install_csi300_research_cron.py` preserves unrelated cron tasks and
+backs up the old crontab. It restores the original Darwen forward schedule with
+the Darwen interpreter and sole SQLite writer. No tracked Darwen source is
+modified and no broker is involved.
+
+Historical backfill runs through Deepstock's tracked
+`scripts/run_csi300_minute_backfill.py` at 11:30 and 12:35 Asia/Shanghai every
+day. It invokes the original adapter for exactly one date, without retries,
+using `/opt/miniconda3/envs/darwen/bin/python`. A serial lock and durable
+reservation ledger enforce at most two requests per China calendar day and
+at least 3700 seconds between requests, including failures. Reported provider
+quota exhaustion suspends further calls that day. No other process should use
+the same restricted `stk_mins` entitlement outside this runner.
+
+The original independent completeness check runs after allowed requests and
+produces `execution_backtest_20260929_frozen` only once all 21 date windows are
+valid. Artifacts are synchronized immediately; the web ingester imports the
+complete frozen report when available and exposes remaining dates/quota status
+while waiting. Incomplete data is never substituted with auction/later prices
+or treated as a complete prospective test. API quota/entitlement failures are
+external blockers, not a reason to change parameters.

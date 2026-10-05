@@ -149,10 +149,10 @@ milestone/         Daily work records
 
 ```bash
 # Confirm the required Python runtime
-conda run -p /Users/yangzhe/workspace/deepstock/.conda/envs/deepstock python --version
+conda run -n deepstock python --version
 
 # Run the read-only IBKR connectivity probe
-conda run -p /Users/yangzhe/workspace/deepstock/.conda/envs/deepstock \
+conda run -n deepstock \
   python scripts/ibkr_read_only_check.py --json
 
 # Install project and approved development dependencies
@@ -176,4 +176,11 @@ conda run -n deepstock python scripts/download_massive_adjusted_prices.py \
 
 # Windows Norgate node only: export defensive ETF total-return prices
 conda run -n deepstock python scripts/download_norgate_defensive_etfs.py
+
+# Restore the single-writer auction schedule with quota-limited backfill
+conda run -n deepstock python -m scripts.install_csi300_research_cron --dry-run
+
+# Windows: reconcile existing defensive evidence without restarting observation
+conda run -n deepstock python scripts/reconcile_defensive_observation.py
+conda run -n deepstock python scripts/publish_defensive_observation.py
 ```

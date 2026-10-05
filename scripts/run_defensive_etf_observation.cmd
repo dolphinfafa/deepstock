@@ -31,7 +31,7 @@ if errorlevel 1 (
   echo [%date% %time%] observation recording failed>>%LOG%
   exit /b 1
 )
-"%PYTHON_EXE%" scripts\run_defensive_etf_backtest.py --prices artifacts\research\norgate\defensive_etf_prices.csv --output-dir artifacts\research\strategy-governance\adaptive-defensive-latest >>%LOG% 2>&1
+"%PYTHON_EXE%" scripts\run_defensive_etf_backtest.py --profile adaptive --prices artifacts\research\norgate\defensive_etf_prices.csv --output-dir artifacts\research\strategy-governance\adaptive-defensive-latest >>%LOG% 2>&1
 if errorlevel 1 (
   echo [%date% %time%] governance backtest failed>>%LOG%
   exit /b 1
@@ -49,6 +49,11 @@ if errorlevel 1 (
 "%PYTHON_EXE%" scripts\evaluate_strategy_registry.py --snapshots artifacts\research\strategy-governance\adaptive-defensive-snapshot.json --skip-duplicate >>%LOG% 2>&1
 if errorlevel 1 (
   echo [%date% %time%] governance evaluation failed>>%LOG%
+  exit /b 1
+)
+"%PYTHON_EXE%" scripts\publish_defensive_observation.py >>%LOG% 2>&1
+if errorlevel 1 (
+  echo [%date% %time%] observation publishing failed>>%LOG%
   exit /b 1
 )
 echo [%date% %time%] observation completed>>%LOG%

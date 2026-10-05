@@ -13,6 +13,7 @@ let source: EventSource | null = null
 
 const links = [
   { to: '/', label: '策略研究库', icon: '◫' },
+  { to: '/frozen-strategies', label: '冻结策略', icon: '□' },
   { to: '/reports', label: '研究报告', icon: '≡' },
   { to: '/execution', label: '执行中心', icon: '↗' },
   { to: '/alerts', label: '告警', icon: '!' },

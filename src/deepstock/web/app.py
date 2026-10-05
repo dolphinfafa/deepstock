@@ -4,6 +4,8 @@ import asyncio
 import hashlib
 import json
 import secrets
+import tempfile
+import threading
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -12,14 +14,15 @@ from typing import Any
 from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
 from deepstock.web.alerts import create_alert, deliver_email
 from deepstock.web.config import settings
 from deepstock.web.database import SessionLocal, get_session
-from deepstock.web.ingestion import ingest_all
+from deepstock.web.ingestion import ingest_all, ingest_defensive_bundle
+from deepstock.observation_reporting import validate_bundle
 from deepstock.web.models import (
     AccountSnapshot,
     Alert,
@@ -58,6 +61,15 @@ from deepstock.web.security import (
 class LoginRequest(BaseModel):
     username: str = Field(min_length=1, max_length=80)
     password: str = Field(min_length=1, max_length=200)
+
+
+class DefensiveResearchRequest(BaseModel):
+    captured_at_utc: AwareDatetime
+    plan: dict[str, Any]
+    summary: dict[str, Any]
+    walkforward_manifest: dict[str, Any]
+    snapshot: dict[str, Any]
+    observations: list[dict[str, str]] = Field(max_length=10000)
 
 
 class PasswordChangeRequest(BaseModel):
@@ -228,6 +240,9 @@ def _strategy_summary(session: Session, strategy: Strategy) -> dict[str, Any]:
         "execution_status": strategy.execution_status,
         "current_version": strategy.current_version,
         "live_eligible": strategy.live_eligible,
+        "is_archived": strategy.is_archived,
+        "archived_at": _iso(strategy.archived_at),
+        "archive_reason": strategy.archive_reason,
         "updated_at": _iso(strategy.updated_at),
         "latest_run": None
         if run is None
@@ -236,6 +251,7 @@ def _strategy_summary(session: Session, strategy: Strategy) -> dict[str, Any]:
             "run_type": run.run_type,
             "status": run.status,
             "as_of_date": run.as_of_date,
+            "data_end": run.data_end,
             "summary": run.summary,
             "metrics": _metric_payload(session, run.id),
         },
@@ -364,7 +380,7 @@ def dashboard(
     session: Session = Depends(get_session),
     _auth: AuthSession = Depends(_auth_dependency),
 ) -> dict[str, Any]:
-    strategies = session.scalars(select(Strategy).order_by(Strategy.display_name)).all()
+    strategies = session.scalars(select(Strategy).where(Strategy.is_archived.is_(False)).order_by(Strategy.display_name)).all()
     jobs = session.scalars(select(JobStatus).order_by(JobStatus.display_name)).all()
     alerts = session.scalars(
         select(Alert)
@@ -376,9 +392,11 @@ def dashboard(
         select(AccountSnapshot).order_by(desc(AccountSnapshot.captured_at)).limit(1)
     )
     return {
+        "generated_at": utcnow().isoformat(),
         "strategies": [_strategy_summary(session, strategy) for strategy in strategies],
         "counts": {
             "strategies": len(strategies),
+            "archived": session.scalar(select(func.count(Strategy.id)).where(Strategy.is_archived.is_(True))),
             "shadow": sum("shadow" in strategy.execution_status for strategy in strategies),
             "paper": sum("paper_active" == strategy.execution_status for strategy in strategies),
             "live": sum("live_active" == strategy.execution_status for strategy in strategies),
@@ -426,10 +444,11 @@ def dashboard(
 
 @app.get("/api/strategies")
 def strategies(
+    archived: bool = False,
     session: Session = Depends(get_session),
     _auth: AuthSession = Depends(_auth_dependency),
 ) -> list[dict[str, Any]]:
-    rows = session.scalars(select(Strategy).order_by(Strategy.display_name)).all()
+    rows = session.scalars(select(Strategy).where(Strategy.is_archived.is_(archived)).order_by(Strategy.display_name)).all()
     return [_strategy_summary(session, row) for row in rows]
 
 
@@ -812,6 +831,8 @@ def create_authorization(
     strategy = session.get(Strategy, payload.strategy_id)
     if strategy is None:
         raise HTTPException(status_code=404, detail="strategy not found")
+    if strategy.is_archived:
+        raise HTTPException(status_code=409, detail="strategy research is frozen")
     if payload.mode == "live" and not strategy.live_eligible:
         raise HTTPException(status_code=409, detail="strategy is not eligible for live review")
     today = date.today()
@@ -896,6 +917,8 @@ def _validate_plan(session: Session, payload: PlanRequest) -> tuple[Strategy, fl
     strategy = session.get(Strategy, payload.strategy_id)
     if strategy is None:
         raise HTTPException(status_code=404, detail="strategy not found")
+    if strategy.is_archived:
+        raise HTTPException(status_code=409, detail="strategy research is frozen")
     total_notional = 0.0
     for order in payload.orders:
         if order.action not in {"BUY", "SELL"}:
@@ -961,7 +984,7 @@ def _validate_plan(session: Session, payload: PlanRequest) -> tuple[Strategy, fl
 def _stored_plan_is_current(session: Session, plan: ExecutionPlan) -> bool:
     authorization = session.get(ExecutionAuthorization, plan.authorization_id)
     strategy = session.get(Strategy, plan.strategy_id)
-    if authorization is None or strategy is None:
+    if authorization is None or strategy is None or strategy.is_archived:
         return False
     expires = authorization.expires_at
     if expires.tzinfo is None:
@@ -1172,6 +1195,40 @@ def agent_snapshot(
     )
     session.commit()
     return {"id": snapshot.id, "status": "recorded"}
+
+
+_defensive_publish_lock = threading.Lock()
+
+
+@app.post("/api/agent/research/defensive-observation")
+def publish_defensive_research(
+    payload: DefensiveResearchRequest,
+    session: Session = Depends(get_session),
+    node: str = Depends(_node_dependency),
+) -> dict[str, Any]:
+    bundle = payload.model_dump(mode="json")
+    try:
+        validate_bundle(bundle)
+    except (ValueError, KeyError, TypeError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    path = settings.project_root / "artifacts/defensive_node/latest.json"
+    # Deployment runs one API worker. Serialize replay checks and replacement.
+    with _defensive_publish_lock:
+        if path.exists():
+            previous = json.loads(path.read_text(encoding="utf-8"))
+            if datetime.fromisoformat(previous["captured_at_utc"]) >= payload.captured_at_utc:
+                raise HTTPException(status_code=409, detail="a newer or identical observation is already published")
+            if previous["snapshot"]["data_date"] > bundle["snapshot"]["data_date"]:
+                raise HTTPException(status_code=409, detail="observation evidence cannot move backwards")
+        result = ingest_defensive_bundle(session, bundle)
+        _audit(session, node, "defensive_observation_published", "strategy", "adaptive_defensive_etf", {"data_date": result["data_date"]})
+        session.commit()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
+            json.dump(bundle, handle, ensure_ascii=False)
+            temporary = Path(handle.name)
+        temporary.replace(path)
+    return result
 
 
 @app.post("/api/agent/orders")

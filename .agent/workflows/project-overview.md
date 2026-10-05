@@ -51,9 +51,23 @@ The API is served under `/deepstock/api` through NGINX. Browser authentication
 uses Argon2id password hashes, HttpOnly/Secure cookies, server-side 12-hour
 sessions, CSRF headers for writes, and a five-failure/15-minute login limiter.
 The execution node uses a separate bearer token. The Vue frontend provides the
-strategy library, detail pages, reports, execution center, alerts, system/data
+active strategy library, separate frozen-strategy archive, detail pages,
+reports, execution center, alerts, system/data
 state, and read-only research-note review. Server-sent events prompt live UI
 refreshes.
+
+Archived strategies are retained in the database with freeze timestamp/reason
+but excluded from the homepage and default strategy API. The authenticated
+`/frozen-strategies` page uses `/api/strategies?archived=true`. Freeze status
+blocks new authorizations/plans and agent claims, not just frontend visibility.
+
+Windows publishes aggregate Defensive ETF research via the authenticated node
+endpoint `/api/agent/research/defensive-observation`; the server validates its
+frozen configuration, date/count consistency and timestamp replay protection.
+`artifacts/defensive_node/latest.json` supersedes stale server-local results;
+the database imports latest metrics, report, observation progress and jobs.
+Licensed price data is not uploaded. Historical decisions and corrected current
+assessments remain distinct; see `defensive-etf-observation.md`.
 
 Research notes supplied through chat follow `research-note-governance.md`.
 Their original text and structured assessment are registered first; a separate
@@ -292,7 +306,7 @@ one -9.81% test window. Full-period cost stress produced Sharpe 1.02 at 0 bps,
 1.00 at 5 bps, 0.98 at 10 bps, and 0.94 at 20 bps, with maximum drawdown from
 -11.56% to -12.12%. This is a robustness baseline, not a go-live result.
 
-An order-free eight-week observation workflow now exists for the frozen ETF
+An order-free six-week observation workflow now exists for the frozen ETF
 configuration. On the Windows Norgate node it exports total-return ETF data
 with a provenance manifest; the plan generator then produces a deterministic
 `plan_id` and target weights, while the observer appends one idempotent JSONL
@@ -300,7 +314,8 @@ record. These utilities have no `ibapi` import and cannot submit orders. The
 acceptance criteria and daily procedure are in
 `defensive-etf-observation.md`.
 
-An AHL-inspired global futures trend program is planned, but has no historical
+The AHL-inspired global futures trend program was paused by the user on
+2026-10-05 and moved to the frozen-strategy archive. It has no historical
 futures dataset or backtest result. It is not a replication claim for Man AHL:
 the proprietary model, instruments, execution, portfolio construction, and
 risk controls are not public. Before any engine is run, a licensed daily
@@ -309,7 +324,8 @@ roll treatment, contract metadata, and coverage manifest is required. ETF
 proxies and IBKR historical snapshots are not substitutes. The written
 pre-registration is in `ahl-global-futures-trend.md`; it is research-only, has
 no IBKR order authority, and cannot replace ARC's Bull route without its own
-fixed OOS and Walk-Forward validation.
+fixed OOS and Walk-Forward validation. Its design remains available, but no
+supplier acquisition or engine work should proceed without explicit resumption.
 
 Strategy selection now has an order-free shadow-governance layer. Its registry
 contains every current strategy, but only the frozen Defensive ETF strategy may

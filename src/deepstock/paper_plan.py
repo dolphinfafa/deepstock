@@ -11,6 +11,7 @@ from typing import Any
 import pandas as pd
 
 from deepstock.backtest import StrategyConfig, run_backtest
+from deepstock.defensive import config_hash, frozen_defensive_config
 from deepstock.turtle import TurtleConfig, run_turtle_backtest
 
 
@@ -58,14 +59,7 @@ def create_defensive_etf_plan(
 
     if prices.empty:
         raise ValueError("Prices cannot be empty.")
-    config = config or StrategyConfig(
-        momentum_days=252,
-        moving_average_days=200,
-        top_k_assets=2,
-        market_filter_days=200,
-        exposure_above_filter=0.8,
-        exposure_below_filter=0.4,
-    )
+    config = config or frozen_defensive_config()
     result = run_backtest(prices, config)
     latest = result.target_weights.iloc[-1]
     generated = generated_at or datetime.now(timezone.utc)
@@ -81,6 +75,7 @@ def create_defensive_etf_plan(
     ).hexdigest()[:16]
     return {
         "plan_id": plan_id,
+        "config_hash": config_hash(config),
         "generated_at_utc": generated.astimezone(timezone.utc).isoformat(),
         "mode": "paper",
         "status": "blocked" if kill_switch else "ready_for_review",

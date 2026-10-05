@@ -32,13 +32,15 @@ watch(() => live.revision, load)
 
 <template>
   <div class="page-wrap" v-if="strategy">
-    <RouterLink class="back-link" to="/">← 返回策略研究库</RouterLink>
+    <RouterLink class="back-link" :to="strategy.is_archived ? '/frozen-strategies' : '/'">← {{ strategy.is_archived ? '返回冻结策略' : '返回策略研究库' }}</RouterLink>
     <header class="page-header strategy-heading">
       <span class="strategy-code large-code">{{ strategy.code }}</span>
       <div><div class="eyebrow">{{ strategy.market }} · {{ strategy.asset_class }}</div><h1>{{ strategy.display_name }}</h1><p>{{ strategy.summary }}</p></div>
       <div class="heading-status"><StatusBadge :status="strategy.status" /><small>{{ strategy.execution_status }}</small></div>
     </header>
     <div class="version-line"><span>当前版本</span><code>{{ strategy.current_version }}</code><span>更新于 {{ strategy.updated_at?.slice(0, 10) }}</span></div>
+    <div v-if="strategy.is_archived" class="panel compact-panel"><strong>研究已冻结 · {{ strategy.archived_at?.slice(0, 10) }}</strong><p>{{ strategy.archive_reason }}</p></div>
+    <p v-if="strategy.latest_run?.data_end">最新数据截至 {{ strategy.latest_run.data_end }} · 评估日期 {{ strategy.latest_run.as_of_date }}</p>
     <section class="detail-grid">
       <article class="panel thesis-panel"><div class="section-title"><div><small>THESIS</small><h2>策略思想</h2></div></div><MarkdownBlock :content="strategy.thesis_md" /></article>
       <article class="panel"><div class="section-title"><div><small>LATEST EVIDENCE</small><h2>最新指标</h2></div></div><div class="metric-list"><div v-for="metric in metrics" :key="`${metric.scope}-${metric.name}`"><span>{{ metric.name.replaceAll('_', ' ') }}</span><strong :class="{ loss: metric.value < 0 }">{{ displayMetric(metric) }}</strong><small>{{ metric.scope }}<template v-if="metric.benchmark"> · {{ metric.benchmark }}</template></small></div></div></article>
