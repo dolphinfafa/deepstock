@@ -18,11 +18,12 @@ class CapturedTushare:
         def fetch(*args, **kwargs):
             if os.getenv("DEEPSTOCK_AUCTION_OFFLINE") == "true":
                 raise RuntimeError("Offline auction study cannot call providers")
-            if endpoint == "stk_mins":
+            # Tushare exposes both pro.stk_mins(...) and
+            # pro.query("stk_mins", ...); neither may bypass the shared quota.
+            actual_endpoint = (args[0] if args else kwargs.get("api_name", endpoint)) if endpoint == "query" else endpoint
+            if actual_endpoint == "stk_mins":
                 from .quota import consume_minute_request
                 consume_minute_request()
-            # The inherited rt_min adapter calls pro.query("rt_min", ...).
-            actual_endpoint = args[0] if endpoint == "query" and args else endpoint
             frame = getattr(self.client, endpoint)(*args, **kwargs)
             if frame is None or frame.empty:
                 return frame
@@ -30,7 +31,7 @@ class CapturedTushare:
             path = ROOT / f"artifacts/providers/tushare/{actual_endpoint}/{now.strftime('%Y%m%dT%H%M%S')}-{uuid.uuid4().hex}.csv.gz"
             path.parent.mkdir(parents=True, exist_ok=True)
             frame.to_csv(path, index=False, compression="gzip")
-            result = DataStore().import_file(path, {"market": "CN", "provider": "Tushare", "endpoint": endpoint,
+            result = DataStore().import_file(path, {"market": "CN", "provider": "Tushare", "endpoint": actual_endpoint,
                                                    "origin": "provider_response", "retrieved_at_utc": now.isoformat(),
                                                    "timezone": "Asia/Shanghai", "adjustment": "none"})
             if result["status"] != "ready":
