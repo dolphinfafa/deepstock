@@ -61,6 +61,9 @@ in both markets, and the original principal remains the display. Authenticated
 details show all eight new cases and link exit/reentry/cost-path diagnostics.
 Direct-cost cash ratios are not compounded return losses or hypothetical
 zero-cost returns. No new regime switching, order schedule or Paper authority.
+The eight v2 comparisons completed with no performance change: same-episode
+successful reentries were already absent. Preserve that null finding; the
+baseline remains displayed, alongside diagnostics and all historical blocks.
 
 The implemented architecture uses a FastAPI control plane, SQLite/SQLAlchemy,
 Alembic migrations, a Vue 3 research library, scheduled artifact ingestion and

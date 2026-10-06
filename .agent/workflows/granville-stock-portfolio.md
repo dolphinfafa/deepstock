@@ -181,3 +181,37 @@ Later experiments (not stacked in v2): risk-normalized sizing, verified
 historical sector/correlation constraints, low-frequency market filtering, and
 longer point-in-time history/verified terminal accounting. Preserve US/CN
 separation, freezes, observation writers and all order gates.
+
+### v2 result — retain the negative finding
+
+Run code `8ba2b27`, clean on both nodes; Python3.12.13 server / 3.12.14 Windows.
+All eight new cases completed. Baseline daily and trade fields independently
+match their original SHA-verified base/stress ledgers. Original24 cases and
+the two WBA trend-only blocks remain, not reclassified as successful.
+Publication: `artifacts/research/granville-stock-optimizations/20261006-entry-episodes-v2/`.
+
+There were zero repeated successful same-episode buys in both markets/costs.
+US suppresses one otherwise unused candidate-session; CN suppresses none.
+Consequently all return, turnover, exposure and fill results are unchanged:
+US base CAGR12.32%, MDD-17.89%, annual turnover31.74; CN base CAGR-6.38%,
+MDD-28.36%, turnover30.00. Stress cumulative remains US4.66%, CN-12.48%.
+The proposed episode restriction is redundant on this seen sample, not an
+improvement and not proof that every broader form of rapid reentry is harmless.
+
+Completed-position diagnostics, fees/slippage included and dividend tax not
+allocated: CN time-exit222 positions net realized +CNY119,597, stop56 -83,379,
+signal80 -45,412. US time223 +USD142,439, stop34 -61,590, signal92 -58,585.
+This conditional grouping is NOT a counterfactual for holding those winners
+longer or disabling stops. It motivates studying failed entries and risk
+concentration as well as exits, not automatically extending all holds.
+
+US stress-minus-base cumulative -17.6023pp cash-identity decomposes to extra
+direct cost7.7868pp and changed-path marked gross PnL-9.8155pp. CN -2.0043pp
+decomposes to extra direct cost4.9393pp and changed-path gross PnL+2.9350pp.
+These are initial-capital cash ratios at actual fills, not gross strategy CAGR
+or evidence that a zero-fee strategy could realize the added-back costs.
+
+Both nodes passed244 tests and frontend production build passed. No winner
+promotion, new observer task, Paper or live permission. Future one-dimension
+experiments need their own fixed spec; do not silently tune v2 after this null
+result. Remaining terminal/history/industry/settlement gates are unchanged.
