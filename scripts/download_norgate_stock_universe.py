@@ -7,6 +7,9 @@ import argparse
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from deepstock.data.capture import capture_response, provider_versions
+from deepstock.data.store import DataStore
+from deepstock.data.inventory import metadata_for
 
 import pandas as pd
 
@@ -89,6 +92,7 @@ def main() -> int:
                     start_date=args.start,
                     end_date=args.end,
                 )
+                capture_response("Norgate", symbol, pd.DataFrame(price_series), "US", restricted=True)
                 constituent_series = norgatedata.index_constituent_timeseries(
                     symbol, args.index_name, start_date=args.start, end_date=args.end
                 )
@@ -116,10 +120,13 @@ def main() -> int:
         )
         membership_path.write_text(json.dumps(membership, indent=2, sort_keys=True), encoding="utf-8")
         chunks.append({"chunk": chunk_id, "symbols": chunk_symbols, "status": "downloaded"})
+        DataStore().import_file(prices_path, metadata_for(prices_path))
+        DataStore().import_file(membership_path, metadata_for(membership_path))
         print(json.dumps(chunks[-1], sort_keys=True))
 
     manifest = {
         "provider": "Norgate Data",
+        "origin": "derived_provider_export", "upstream_versions": provider_versions(),
         "retrieved_at_utc": datetime.now(timezone.utc).isoformat(),
         "watchlist": args.watchlist,
         "index_name": args.index_name,

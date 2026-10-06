@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restore the sole Darwen research writer and quota-limited minute backfill."""
+"""Install independent Deepstock auction observation and quota-limited backfill."""
 from __future__ import annotations
 
 import argparse
@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from scripts.run_csi300_minute_backfill import SOURCE_PYTHON, SOURCE_ROOT
+from scripts.install_short_term_forward_cron import cron_block
 
 
 BEGIN = "# BEGIN DEEPSTOCK CSI300 MINUTE BACKFILL"
@@ -52,10 +53,10 @@ def main() -> None:
     if current.returncode and "no crontab" not in current.stderr.lower():
         raise RuntimeError(current.stderr)
     # Reuse the existing forward schedule, interpreter and sole SQLite writer.
-    forward = subprocess.run([str(SOURCE_PYTHON), "-c",
-        "from scripts.install_short_term_forward_cron import cron_block; print(cron_block())"],
-        cwd=SOURCE_ROOT, text=True, capture_output=True, check=True).stdout.strip()
-    updated = replace_block(current.stdout, "# BEGIN DARWEN SHORT TERM FORWARD", "# END DARWEN SHORT TERM FORWARD", forward)
+    forward = cron_block(root, Path(sys.executable))
+    updated = replace_block(current.stdout, "# BEGIN DARWEN SHORT TERM FORWARD", "# END DARWEN SHORT TERM FORWARD", None)
+    updated = replace_block(updated, "# BEGIN DEEPSTOCK SHORT TERM FORWARD", "# END DEEPSTOCK SHORT TERM FORWARD", forward)
+    updated = replace_block(updated, "# BEGIN DEEPSTOCK CSI300 AUCTION SYNC", "# END DEEPSTOCK CSI300 AUCTION SYNC", None)
     # Remove the inherited backfill block to avoid duplicate quota consumers.
     updated = replace_block(updated, "# BEGIN DARWEN AUCTION MINUTE BACKFILL", "# END DARWEN AUCTION MINUTE BACKFILL", None)
     updated = replace_block(updated, BEGIN, END, backfill_block(root, Path(sys.executable)))
@@ -67,7 +68,7 @@ def main() -> None:
     if not backup.exists():
         backup.write_text(current.stdout, encoding="utf-8")
     subprocess.run(["crontab", "-"], input=updated, text=True, check=True)
-    print("installed: original single-writer forward schedule and quota-limited backfill")
+    print("installed: Deepstock-only single-writer observation and quota-limited backfill")
 
 
 if __name__ == "__main__":

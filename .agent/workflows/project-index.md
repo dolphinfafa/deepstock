@@ -31,6 +31,12 @@ afternoon momentum is A-share-only under the current user decision.
 
 ### Think Before Act
 
+Read `data-layers.md` before download/cleaner/loader work. Raw evidence is
+immutable; cleaning owns normalisation/audit and research entrances validate
+registered versions. Never invent unknown executable prices/activity or
+silently drop missing sessions. New research results pin all input versions.
+CSI300 collection/backtesting now belongs to Deepstock, not Darwen.
+
 Before changing a file, state a three-point plan in the working update.
 
 ### Verification First

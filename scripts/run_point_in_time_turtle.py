@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 
 from deepstock.regime import ARCConfig, classify_market_regime
 from deepstock.bull import fixed_bull_candidates
@@ -21,22 +22,22 @@ def load_point_in_time_inputs(
     membership_files = sorted(universe_dir.glob("membership-*.json"))
     if not price_files or not membership_files:
         raise ValueError("Point-in-time universe chunks are missing.")
-    prices_long = pd.concat((pd.read_csv(path) for path in price_files), ignore_index=True)
+    prices_long = pd.concat((read_clean_csv(path) for path in price_files), ignore_index=True)
     if "turnover" not in prices_long.columns:
         raise ValueError("Norgate chunks must contain turnover for the liquidity-controlled run.")
-    etf = pd.read_csv(etf_prices_path)
+    etf = read_clean_csv(etf_prices_path)
     etf_symbols = [*ARCConfig().risk_assets, "SHY"]
     etf = etf.loc[etf["symbol"].isin(etf_symbols)]
     prices_long = pd.concat((prices_long, etf), ignore_index=True)
     prices_long["date"] = pd.to_datetime(prices_long["date"])
     prices = prices_long.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
-    prices = prices.dropna(subset=["SPY", "SHY"])
+    prices = complete_panel(prices, subset=["SPY", "SHY"])
     risk_symbols = sorted(set(prices.columns).difference(set(etf_symbols)))
     turnover = prices_long.pivot(index="date", columns="symbol", values="turnover").sort_index()
     turnover = turnover.reindex(index=prices.index, columns=risk_symbols)
     eligibility = pd.DataFrame(False, index=prices.index, columns=risk_symbols)
     for path in membership_files:
-        mapping = json.loads(path.read_text(encoding="utf-8"))
+        mapping = read_clean_json(path)
         for symbol, intervals in mapping.items():
             if symbol not in eligibility.columns:
                 continue
@@ -44,7 +45,7 @@ def load_point_in_time_inputs(
                 start = pd.Timestamp(interval["start"])
                 end = pd.Timestamp(interval["end"])
                 eligibility.loc[(eligibility.index >= start) & (eligibility.index <= end), symbol] = True
-    regime_prices = prices.loc[:, list(ARCConfig().risk_assets)].dropna()
+    regime_prices = complete_panel(prices.loc[:, list(ARCConfig().risk_assets)])
     regime_signals = classify_market_regime(regime_prices)
     routes = regime_signals["strategy_route"].reindex(prices.index).fillna("defensive_etf")
     return prices, eligibility, turnover, routes
@@ -95,6 +96,7 @@ def main() -> int:
             strategy_routes=routes,
         )
         if args.save_artifacts:
+            standalone.daily.to_csv(output / f"{candidate.name}_standalone_daily.csv", index_label="date")
             routed.daily.to_csv(output / f"{candidate.name}_arc_routed_daily.csv", index_label="date")
             routed.target_weights.to_csv(output / f"{candidate.name}_arc_routed_targets.csv", index_label="date")
             routed.executed_weights.to_csv(output / f"{candidate.name}_arc_routed_executed.csv", index_label="date")
@@ -127,9 +129,9 @@ def main() -> int:
         "liquidity_policy": "Baseline candidates require prior 20-session average turnover >= USD 10,000,000; strict candidates require USD 25,000,000; existing positions are held until their normal exit.",
         "arc_route_policy": "Stock Turtle positions are allowed only during the ARC stock_turtle_research route; other routes force SHY on the next session.",
     }
-    (output / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+    (output / "manifest.json").write_text(report_json(manifest, indent=2, sort_keys=True), encoding="utf-8")
     print(table.to_csv(index=False))
-    print(json.dumps(manifest, indent=2, sort_keys=True))
+    print(report_json(manifest, indent=2, sort_keys=True))
     return 0
 
 

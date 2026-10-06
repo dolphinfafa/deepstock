@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 
 from deepstock.mean_reversion import (
     MeanReversionConfig,
@@ -52,11 +53,11 @@ def main() -> int:
     parser.add_argument("--step-days", type=int, default=252)
     args = parser.parse_args()
 
-    raw = pd.read_csv(args.prices)
+    raw = read_clean_csv(args.prices)
     raw["date"] = pd.to_datetime(raw["date"])
     prices = raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
     config = MeanReversionConfig()
-    prices = prices.loc[:, list(config.symbols)].dropna()
+    prices = complete_panel(prices.loc[:, list(config.symbols)])
     if pd.Timestamp(args.split_date) not in prices.index:
         raise ValueError("The fixed split date must be present in the input data.")
 
@@ -84,10 +85,10 @@ def main() -> int:
         "selection_policy": "All parameters and validation windows were fixed before inspecting out-of-sample results.",
         "execution_status": "research_only_no_orders",
     }
-    (output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
-    (output / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
-    print(json.dumps(summary, indent=2, sort_keys=True))
-    print(json.dumps(manifest, indent=2, sort_keys=True))
+    (output / "summary.json").write_text(report_json(summary, indent=2, sort_keys=True), encoding="utf-8")
+    (output / "manifest.json").write_text(report_json(manifest, indent=2, sort_keys=True), encoding="utf-8")
+    print(report_json(summary, indent=2, sort_keys=True))
+    print(report_json(manifest, indent=2, sort_keys=True))
     return 0
 
 

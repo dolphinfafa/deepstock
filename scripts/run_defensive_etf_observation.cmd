@@ -21,6 +21,10 @@ if errorlevel 1 (
   echo [%date% %time%] export failed>>%LOG%
   exit /b 1
 )
+"%PYTHON_EXE%" scripts\clean_existing_data.py >>%LOG% 2>&1
+if errorlevel 1 exit /b 1
+"%PYTHON_EXE%" scripts\publish_data_catalog.py >>%LOG% 2>&1
+if errorlevel 1 exit /b 1
 "%PYTHON_EXE%" scripts\generate_defensive_etf_plan.py --prices artifacts\research\norgate\defensive_etf_prices.csv >>%LOG% 2>&1
 if errorlevel 1 (
   echo [%date% %time%] plan generation failed>>%LOG%

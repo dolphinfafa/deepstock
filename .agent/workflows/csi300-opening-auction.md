@@ -6,10 +6,9 @@
 - Policy version: `auction_context_v1_frozen_20260829`
 - Execution status: `research_only_no_orders`
 - Broker integration: none
-- Current data collection owner: the existing Darwen implementation until a
-  separate Deepstock migration is tested and explicitly cut over
-- Deepstock artifact synchronization: local read-only ingestion from Darwen at
-  12:50 and 23:58 daily, plus 18:20 on weekdays
+- Current owner: Deepstock independent `cn/auction` package
+- Runtime code/data/environment/database: Deepstock only; old Darwen writer
+  and scheduled artifact synchronization were removed at the October 6 cutover
 - Local handoff material: `handoff/` (ignored by Git and never redistributed)
 - Deepstock local research copy: `artifacts/auction_history*`,
   `artifacts/auction_probe`, and `artifacts/short_term_forward` (ignored by Git)
@@ -98,7 +97,7 @@ tables with `official_forward_sample=false`.
   observed to allow two calls per day.
 - Live 09:31 snapshots: Tushare `rt_min`, accepted only after repeated stable
   observations of the completed 09:31 bar.
-- Daily prices: Tushare plus the existing Darwen `MarketBar` adapter.
+- Daily prices: versioned local history plus Deepstock's captured Tushare adapter.
 - Announcements: Tushare `anns_d`, with immutable first-seen timestamps and
   strict `live`/`backfill` separation.
 
@@ -165,6 +164,33 @@ research-only, and the frozen prospective sample must not be used for
 post-hoc tuning.
 
 ## Takeover Boundary and Next Steps
+
+### Independent handover approved and cut over (2026-10-06)
+
+The user required independent collection/backtesting, superseding the historical
+boundary below. Migrated frozen research/model/forward code and tests. Local
+export retains 321 securities, 191,118 base daily rows, original identifiers and
+industry mapping; online SQLite backup preserves observations/first-seen times.
+Credentials come from Deepstock `.env`. No runtime imports or DB access to
+Darwen remain. Source evidence is retained for recovery.
+
+The single-writer scheduler preserves existing observation times and minute
+11:30/12:35 slots, using Deepstock's interpreter. Historical stk_mins calls,
+including manual calls, share a durable two/day, 3700-second quota ledger;
+failed requests count and there are no automatic retries. Unrelated jobs stay.
+October 6 collection/report smoke checks succeeded and retained 20 baseline
+cohorts (-4.60%). Quote gaps are quarantined; explicit partial views still obey
+fixed coverage gates. Auxiliary nulls remain for training-only imputation.
+
+Cache replay exposed extra signal dates after the declared end; the entrance
+now bounds signal dates while retaining future exit bars. The primary frozen
+context result reproduces +0.17343% after 20bp (June 5–August 28 validation).
+Old reports remain; diagnostic ensemble differences are retained, not selected.
+September labels remain 9/21; the final frozen report is blocked until the
+remaining 12 valid dates arrive. No broker order was sent.
+
+The sections below describe the historical October 4–5 setup, not the current
+owner or scheduling.
 
 The implementation currently lives in an uncommitted Darwen worktree and
 depends on Darwen `Company`, `Security`, `MarketBar`, database configuration,

@@ -10,6 +10,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 
 from deepstock.backtest import StrategyConfig, run_segmented_backtest
 
@@ -27,7 +28,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_prices(path: Path, config: StrategyConfig) -> pd.DataFrame:
-    raw = pd.read_csv(path)
+    raw = read_clean_csv(path)
     required = {"date", "symbol", "adjusted_close"}
     missing = required.difference(raw.columns)
     if missing:
@@ -85,10 +86,10 @@ def main() -> int:
         "selection_policy": "Results are ranked only by in-sample Sharpe ratio, then in-sample maximum drawdown. Out-of-sample metrics must not select parameters.",
     }
     (output_dir / "manifest.json").write_text(
-        json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"
+        report_json(manifest, indent=2, sort_keys=True), encoding="utf-8"
     )
     print(table.to_csv(index=False))
-    print(json.dumps(manifest, indent=2, sort_keys=True))
+    print(report_json(manifest, indent=2, sort_keys=True))
     return 0
 
 

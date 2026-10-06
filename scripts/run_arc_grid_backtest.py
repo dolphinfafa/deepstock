@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 
 from deepstock.grid import GridConfig, run_grid_backtest
 from deepstock.arc import assess_walk_forward, fixed_walk_forward_windows, summarize_walk_forward
@@ -19,11 +20,11 @@ def main() -> int:
     parser.add_argument("--prices", required=True)
     parser.add_argument("--output-dir", default="artifacts/robustness/arc-grid")
     args = parser.parse_args()
-    raw = pd.read_csv(args.prices)
+    raw = read_clean_csv(args.prices)
     raw["date"] = pd.to_datetime(raw["date"])
     arc = ARCConfig()
     prices = raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
-    prices = prices.loc[:, list(arc.risk_assets) + ["SHY"]].dropna()
+    prices = complete_panel(prices.loc[:, list(arc.risk_assets) + ["SHY"]])
     signals = classify_market_regime(prices.loc[:, list(arc.risk_assets)], arc)
     result = run_grid_backtest(prices, signals["strategy_route"], GridConfig())
     output = Path(args.output_dir)
@@ -37,10 +38,10 @@ def main() -> int:
         # and no test-period value is used to select GridConfig.
         walkforward = summarize_walk_forward(result, windows)
         walkforward.to_csv(output / "walkforward_results.csv", index=False)
-        (output / "walkforward_acceptance.json").write_text(json.dumps(assess_walk_forward(walkforward), indent=2, sort_keys=True), encoding="utf-8")
+        (output / "walkforward_acceptance.json").write_text(report_json(assess_walk_forward(walkforward), indent=2, sort_keys=True), encoding="utf-8")
     result.summary["walkforward_windows"] = len(windows)
-    (output / "summary.json").write_text(json.dumps(result.summary, indent=2, sort_keys=True), encoding="utf-8")
-    print(json.dumps(result.summary, indent=2, sort_keys=True))
+    (output / "summary.json").write_text(report_json(result.summary, indent=2, sort_keys=True), encoding="utf-8")
+    print(report_json(result.summary, indent=2, sort_keys=True))
     return 0
 
 

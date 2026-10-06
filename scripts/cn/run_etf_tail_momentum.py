@@ -11,6 +11,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv
 
 from deepstock.strategies.cn.tail_momentum import MARKET, PATHS, STRATEGY_ID, VERSION, cost_cases, prepare_sessions, run_tail_momentum, summarize, walk_forward
 from deepstock.research_control import research_pause
@@ -35,14 +36,14 @@ def verify_input(root: Path) -> tuple[pd.DataFrame, pd.DatetimeIndex, pd.DataFra
         actual = hashlib.sha256((root / name).read_bytes()).hexdigest()
         if manifest.get("sha256", {}).get(name) != actual:
             raise ValueError(f"Input checksum mismatch: {name}")
-    bars = pd.read_csv(root / "minutes.csv.gz")
-    calendar = pd.DatetimeIndex(pd.to_datetime(pd.read_csv(root / "calendar.csv")["date"]))
+    bars = read_clean_csv(root / "minutes.csv.gz")
+    calendar = pd.DatetimeIndex(pd.to_datetime(read_clean_csv(root / "calendar.csv")["date"]))
     dividends = pd.DataFrame(columns=["ex_date", "pay_date", "cash_per_share"])
     if manifest.get("corporate_action_status") == "cash_dividends_audited_no_splits":
         path = root / "dividends.csv"
         if manifest.get("sha256", {}).get(path.name) != hashlib.sha256(path.read_bytes()).hexdigest():
             raise ValueError("Dividend file checksum mismatch")
-        dividends = pd.read_csv(path)
+        dividends = read_clean_csv(path)
     elif manifest.get("corporate_action_status") != "price_only_unverified":
         raise ValueError("Corporate actions must be audited or explicitly price-only/unverified")
     return bars, calendar, dividends, manifest

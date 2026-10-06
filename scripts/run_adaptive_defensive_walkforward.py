@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 
 from deepstock.backtest import StrategyConfig, run_backtest
 from deepstock.defensive import config_hash, frozen_defensive_config
@@ -49,11 +50,11 @@ def main() -> int:
     parser.add_argument("--step-days", type=int, default=252)
     args = parser.parse_args()
 
-    raw = pd.read_csv(args.prices)
+    raw = read_clean_csv(args.prices)
     raw["date"] = pd.to_datetime(raw["date"])
     base = frozen_defensive_config()
     prices = raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
-    prices = prices.loc[:, list(base.symbols)].dropna()
+    prices = complete_panel(prices.loc[:, list(base.symbols)])
     full = run_backtest(prices, base)
     records: list[dict[str, object]] = []
     start = args.train_days
@@ -91,9 +92,9 @@ def main() -> int:
         "window_count": len(records),
         "selection_policy": "Configuration was fixed from the earlier in-sample grid; no rolling test result selected parameters.",
     }
-    (output / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True, default=str), encoding="utf-8")
+    (output / "manifest.json").write_text(report_json(manifest, indent=2, sort_keys=True, default=str), encoding="utf-8")
     print(table.to_csv(index=False))
-    print(json.dumps(manifest, indent=2, sort_keys=True, default=str))
+    print(report_json(manifest, indent=2, sort_keys=True, default=str))
     return 0
 
 

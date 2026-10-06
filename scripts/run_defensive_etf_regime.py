@@ -8,19 +8,20 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 
 from deepstock.backtest import StrategyConfig, run_segmented_backtest
 
 
 def load_prices(path: Path, symbols: tuple[str, ...]) -> pd.DataFrame:
-    raw = pd.read_csv(path)
+    raw = read_clean_csv(path)
     required = {"date", "symbol", "adjusted_close"}
     missing = required.difference(raw.columns)
     if missing:
         raise ValueError(f"CSV missing columns: {sorted(missing)}")
     raw["date"] = pd.to_datetime(raw["date"])
     prices = raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
-    return prices.loc[:, list(symbols)].dropna()
+    return complete_panel(prices.loc[:, list(symbols)])
 
 
 def main() -> int:
@@ -78,9 +79,9 @@ def main() -> int:
         "selection_policy": "No parameter selection; compare the frozen baseline with the fixed three-state rule.",
         "regime_policy": "Normal 80%; alert 40% when SPY <= 200-day average or 20-day annualized volatility >= 1.5x 252-day; crisis 20% when both trend and 2.0x volatility conditions hold.",
     }
-    (output / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+    (output / "manifest.json").write_text(report_json(manifest, indent=2, sort_keys=True), encoding="utf-8")
     print(table.to_csv(index=False))
-    print(json.dumps(manifest, indent=2, sort_keys=True))
+    print(report_json(manifest, indent=2, sort_keys=True))
     return 0
 
 

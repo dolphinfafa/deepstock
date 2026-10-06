@@ -255,3 +255,16 @@ td { color: #bdc7ce; padding: 12px; border-bottom: 1px solid #22313b; }
   .note-review { grid-template-columns: 1fr; }
   .note-review > div:last-child { align-items: flex-start; }
 }
+/* Versioned data library: aligned with the research library, not an execution UI. */
+.annualized-slot { display: grid; gap: .5rem; margin-top: 1rem; }
+.annualized-slot > strong { font-size: 1.35rem; }
+.annualized-slot small { color: var(--text-muted, #64748b); }
+.data-filters { flex-wrap: wrap; }
+.data-row { cursor: pointer; }
+.data-row.selected { background: #edf4ff; }
+.data-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1rem; }
+.data-pagination button { border: 1px solid #ccd4df; border-radius: .4rem; padding: .45rem .8rem; background: white; cursor: pointer; }
+.data-pagination button:disabled { opacity: .45; cursor: default; }
+.data-contract { display: grid; gap: .75rem; overflow-wrap: anywhere; }
+.data-contract > div { display: grid; grid-template-columns: 100px 1fr; gap: 1rem; }
+.data-contract code { white-space: normal; }

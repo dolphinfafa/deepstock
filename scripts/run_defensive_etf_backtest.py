@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 
 from deepstock.backtest import StrategyConfig, run_backtest
 from deepstock.defensive import config_hash, frozen_defensive_config
@@ -24,14 +25,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_prices(path: Path, config: StrategyConfig) -> pd.DataFrame:
-    raw = pd.read_csv(path)
+    raw = read_clean_csv(path)
     required = {"date", "symbol", "adjusted_close"}
     missing = required.difference(raw.columns)
     if missing:
         raise ValueError(f"CSV missing columns: {sorted(missing)}")
     raw["date"] = pd.to_datetime(raw["date"], utc=False)
     prices = raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
-    return prices.loc[:, list(config.symbols)].dropna()
+    return complete_panel(prices.loc[:, list(config.symbols)])
 
 
 def main() -> int:
@@ -51,9 +52,9 @@ def main() -> int:
     result.target_weights.to_csv(output_dir / "target_weights.csv", index_label="date")
     result.executed_weights.to_csv(output_dir / "executed_weights.csv", index_label="date")
     (output_dir / "summary.json").write_text(
-        json.dumps(result.summary, indent=2, sort_keys=True), encoding="utf-8"
+        report_json(result.summary, indent=2, sort_keys=True), encoding="utf-8"
     )
-    print(json.dumps(result.summary, indent=2, sort_keys=True))
+    print(report_json(result.summary, indent=2, sort_keys=True))
     return 0
 
 

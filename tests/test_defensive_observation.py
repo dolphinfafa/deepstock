@@ -72,6 +72,8 @@ def test_generator_drops_pre_inception_missing_rows(tmp_path, monkeypatch) -> No
     source = tmp_path / "prices.csv"
     output = tmp_path / "plan.json"
     prices.to_csv(source, index=False)
+    from deepstock.data import DataStore
+    DataStore(tmp_path).import_file(source, {"market": "CN", "provider": "synthetic test fixture"})
     monkeypatch.setattr(
         "sys.argv", ["generate_defensive_etf_plan.py", "--prices", str(source), "--output", str(output)]
     )

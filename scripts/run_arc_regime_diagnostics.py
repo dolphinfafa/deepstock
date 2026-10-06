@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 
 from deepstock.regime import ARCConfig, classify_market_regime, regime_statistics
 
@@ -62,11 +63,11 @@ def main() -> int:
     parser.add_argument("--output-dir", default="artifacts/robustness/arc-regime-diagnostics-2026-08-25")
     args = parser.parse_args()
 
-    raw = pd.read_csv(args.prices)
+    raw = read_clean_csv(args.prices)
     raw["date"] = pd.to_datetime(raw["date"])
     base = ARCConfig()
     prices = raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
-    prices = prices.loc[:, list(base.risk_assets)].dropna()
+    prices = complete_panel(prices.loc[:, list(base.risk_assets)])
     candidates = {
         "current_3_confirm_5_hold": base,
         "conservative_5_confirm_10_hold": ARCConfig(confirmation_days=5, min_hold_days=10),
@@ -99,7 +100,7 @@ def main() -> int:
         "forward_horizons_sessions": [5, 20, 60],
         "execution_status": "research_only_no_orders",
     }
-    (output / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+    (output / "manifest.json").write_text(report_json(manifest, indent=2, sort_keys=True), encoding="utf-8")
     print(comparison.to_csv(index=False))
     return 0
 

@@ -175,7 +175,7 @@ def main() -> int:
     parser.add_argument(
         "--source-root",
         type=Path,
-        default=Path("/srv/workspaces/zheyang/darwen/artifacts"),
+        required=True,
     )
     parser.add_argument(
         "--destination-root",

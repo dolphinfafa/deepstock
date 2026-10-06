@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 
 from deepstock.turtle import TurtleConfig, run_turtle_backtest
 
@@ -28,7 +29,7 @@ def main() -> int:
     parser.add_argument("--max-per-sector", type=int, default=None)
     parser.add_argument("--sector-map", default="", help="Comma-separated SYMBOL=SECTOR pairs.")
     args = parser.parse_args()
-    raw = pd.read_csv(args.prices)
+    raw = read_clean_csv(args.prices)
     raw["date"] = pd.to_datetime(raw["date"])
     benchmark = args.benchmark or args.symbols[0]
     sector_map = tuple(
@@ -51,8 +52,8 @@ def main() -> int:
     result.daily.to_csv(output / "daily_results.csv", index_label="date")
     result.target_weights.to_csv(output / "target_weights.csv", index_label="date")
     result.executed_weights.to_csv(output / "executed_weights.csv", index_label="date")
-    (output / "summary.json").write_text(json.dumps(result.summary, indent=2, sort_keys=True), encoding="utf-8")
-    print(json.dumps(result.summary, indent=2, sort_keys=True))
+    (output / "summary.json").write_text(report_json(result.summary, indent=2, sort_keys=True), encoding="utf-8")
+    print(report_json(result.summary, indent=2, sort_keys=True))
     return 0
 
 

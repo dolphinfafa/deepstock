@@ -11,7 +11,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Request, Response
+from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Request, Response, Query
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import AwareDatetime, BaseModel, Field
@@ -24,6 +24,9 @@ from deepstock.web.alerts import create_alert, deliver_email
 from deepstock.web.config import settings
 from deepstock.web.database import SessionLocal, get_session
 from deepstock.web.ingestion import ingest_all, ingest_defensive_bundle
+from deepstock.web.data_catalog import register_manifest, payload as dataset_payload
+from deepstock.data.store import DataStore, DataQualityError
+from deepstock.web.annualization import annualization_payload
 from deepstock.observation_reporting import validate_bundle
 from deepstock.web.models import (
     AccountSnapshot,
@@ -31,6 +34,8 @@ from deepstock.web.models import (
     AuditLog,
     AuthSession,
     DataSourceStatus,
+    DataVersion,
+    ResearchDataInput,
     ExecutionAuthorization,
     ExecutionPlan,
     JobStatus,
@@ -246,6 +251,7 @@ def _strategy_summary(session: Session, strategy: Strategy) -> dict[str, Any]:
         "archived_at": _iso(strategy.archived_at),
         "archive_reason": strategy.archive_reason,
         "updated_at": _iso(strategy.updated_at),
+        "annualization": annualization_payload(session, run),
         "latest_run": None
         if run is None
         else {
@@ -256,6 +262,7 @@ def _strategy_summary(session: Session, strategy: Strategy) -> dict[str, Any]:
             "data_end": run.data_end,
             "summary": run.summary,
             "metrics": _metric_payload(session, run.id),
+            "data_versions": [r.version_id for r in session.scalars(select(ResearchDataInput).where(ResearchDataInput.run_id == run.id))],
         },
     }
 
@@ -442,6 +449,81 @@ def dashboard(
             "email_test_passed": _email_gate_ready(session),
         },
     }
+
+
+@app.get("/api/data")
+def data_list(market: str | None = None, provider: str | None = None, node: str | None = None, status: str | None = None,
+              offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100),
+              _auth=Depends(_auth_dependency), session: Session = Depends(get_session)):
+    statement = select(DataVersion)
+    for field, value in [(DataVersion.market, market), (DataVersion.provider, provider), (DataVersion.node, node), (DataVersion.status, status)]:
+        if value:
+            statement = statement.where(field == value)
+    total = session.scalar(select(func.count()).select_from(statement.subquery()))
+    rows = session.scalars(statement.order_by(DataVersion.source_name, DataVersion.id).offset(offset).limit(limit))
+    return {"total": total, "items": [dataset_payload(row) for row in rows],
+            "providers": list(session.scalars(select(DataVersion.provider).distinct())),
+            "nodes": list(session.scalars(select(DataVersion.node).distinct()))}
+
+
+@app.get("/api/data/{version}")
+def data_detail(version: str, _auth=Depends(_auth_dependency), session: Session = Depends(get_session)):
+    row = session.get(DataVersion, version)
+    if row is None:
+        raise HTTPException(404, "数据版本不存在")
+    return {**dataset_payload(row), "research_runs": list(session.scalars(select(ResearchDataInput.run_id).where(ResearchDataInput.version_id == version)))}
+
+
+@app.get("/api/data/{version}/preview")
+def data_preview(version: str, layer: str = Query("clean", pattern="^(raw|clean)$"), offset: int = Query(0, ge=0, le=1000000),
+                 limit: int = Query(50, ge=1, le=100), _auth=Depends(_auth_dependency), session: Session = Depends(get_session)):
+    row = session.get(DataVersion, version)
+    if row is None:
+        raise HTTPException(404, "数据版本不存在")
+    if not row.preview_allowed or row.node != "deepstock-server":
+        return {"rows": [], "columns": [], "reason": "节点本地或许可受限数据，仅展示元信息和质量报告"}
+    store = DataStore(settings.project_root)
+    try:
+        manifest = store.get(version)
+        path = store.verified_path(manifest, layer)
+        if path.suffix == ".json":
+            value = json.loads(path.read_text(encoding="utf-8"))
+            provider_rows = value.get("results", value.get("data")) if isinstance(value, dict) else value
+            if isinstance(provider_rows, list):
+                rows = provider_rows[offset:offset + limit]
+                return {"rows": rows, "columns": list(rows[0]) if rows and isinstance(rows[0], dict) else ["value"], "reason": None}
+            rows = [{"symbol": k, "intervals": v} for k, v in value.items()][offset:offset + limit]
+            return {"rows": rows, "columns": ["symbol", "intervals"], "reason": None}
+        if path.suffix == ".sqlite3":
+            return {"rows": [], "columns": [], "reason": "数据库归档仅作历史证据；行情已单独提取清洗"}
+        import pandas as pd
+        frame = pd.read_csv(path, skiprows=range(1, offset + 1), nrows=limit, dtype={"stock_code": str})
+        return {"rows": json.loads(frame.to_json(orient="records")), "columns": frame.columns.tolist(), "reason": None}
+    except (DataQualityError, FileNotFoundError, ValueError) as error:
+        raise HTTPException(409, str(error)) from error
+
+
+@app.post("/api/agent/research/data-versions")
+def publish_data_versions(body: list[dict[str, Any]], _node=Depends(_node_dependency), session: Session = Depends(get_session)):
+    if len(body) > 5000:
+        raise HTTPException(413, "Too many data versions")
+    for manifest in body:
+        if manifest.get("node") != "quant-computer" or manifest.get("preview_allowed") is not False:
+            raise HTTPException(422, "Only price-free quant-node metadata is accepted")
+        if not isinstance(manifest.get("id"), str) or len(manifest["id"]) != 64 or any(c not in "0123456789abcdef" for c in manifest["id"]):
+            raise HTTPException(422, "Invalid data version")
+        contract = manifest.get("contract", {})
+        allowed_contract = {"market", "provider", "restricted", "adjustment", "price_adjustment", "total_return_adjustment", "retrieved_at_utc", "volume_unit", "amount_unit", "timezone", "license_note", "origin", "upstream_versions", "endpoint", "kind"}
+        if not isinstance(contract, dict) or set(contract).difference(allowed_contract) or len(json.dumps(manifest)) > 100000:
+            raise HTTPException(422, "Only bounded data contracts, not raw payloads, are accepted")
+        if set(manifest).difference({"id", "node", "market", "provider", "source_name", "source_sha256", "raw_sha256", "origin", "imported_at_utc", "rules", "contract", "preview_allowed", "status", "kind", "rows", "raw_rows", "quality", "data_start", "data_end", "clean_sha256"}):
+            raise HTTPException(422, "File paths, files or raw rows are not allowed")
+        try:
+            register_manifest(session, manifest)
+        except (ValueError, KeyError) as error:
+            raise HTTPException(422, "Invalid or changed immutable metadata") from error
+    session.commit()
+    return {"published": len(body)}
 
 
 @app.get("/api/strategies")
@@ -1334,6 +1416,8 @@ if settings.frontend_dist.exists():
 
 @app.get("/{path:path}", include_in_schema=False)
 def spa(path: str):
+    if path.startswith("api/"):
+        raise HTTPException(404, "API route not found")
     index = settings.frontend_dist / "index.html"
     requested = settings.frontend_dist / path
     if path and requested.is_file() and settings.frontend_dist in requested.resolve().parents:

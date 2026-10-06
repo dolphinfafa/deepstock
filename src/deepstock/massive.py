@@ -44,7 +44,14 @@ def _fetch_json(url: str) -> dict[str, Any]:
     request = Request(url, headers={"User-Agent": "deepstock-research/0.1"})
     try:
         with urlopen(request, timeout=30) as response:  # noqa: S310 - fixed HTTPS endpoint
-            return json.loads(response.read().decode("utf-8"))
+            payload = json.loads(response.read().decode("utf-8"))
+            from deepstock.data.capture import capture_response
+            safe = dict(payload)
+            if "next_url" in safe:
+                parsed = urlparse(safe["next_url"])
+                safe["next_url"] = urlunparse(parsed._replace(query=urlencode([(k, v) for k, v in parse_qsl(parsed.query) if k.lower() != "apikey"])))
+            capture_response("Massive", urlparse(url).path, safe, "US")
+            return payload
     except HTTPError as exc:
         raise RuntimeError(f"Massive request failed with HTTP status {exc.code}.") from exc
     except (URLError, TimeoutError) as exc:

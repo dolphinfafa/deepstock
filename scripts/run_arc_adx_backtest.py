@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 
 from deepstock.arc import (
     assess_walk_forward,
@@ -53,7 +54,7 @@ def load_ohlc_manifest(path: Path) -> dict[str, object]:
 
 
 def load_spy_ohlc(path: Path) -> pd.DataFrame:
-    raw = pd.read_csv(path)
+    raw = read_clean_csv(path)
     required = {
         "date",
         "symbol",
@@ -176,7 +177,7 @@ def main() -> int:
     if len(ohlc) != int(ohlc_manifest["row_count"]):
         raise ValueError("OHLC CSV row count does not match its source manifest.")
     etf_symbols = (*current_config.risk_assets, "SHY")
-    etf = prices.loc[:, list(etf_symbols)].dropna()
+    etf = complete_panel(prices.loc[:, list(etf_symbols)])
 
     current_signals = classify_market_regime(
         etf.loc[:, list(current_config.risk_assets)], current_config
@@ -255,13 +256,13 @@ def main() -> int:
             )
         walk_forward.to_csv(controller_dir / "walkforward_results.csv", index=False)
         (controller_dir / "summary.json").write_text(
-            json.dumps(result.summary, indent=2, sort_keys=True), encoding="utf-8"
+            report_json(result.summary, indent=2, sort_keys=True), encoding="utf-8"
         )
         (controller_dir / "regime_statistics.json").write_text(
-            json.dumps(state_statistics, indent=2, sort_keys=True), encoding="utf-8"
+            report_json(state_statistics, indent=2, sort_keys=True), encoding="utf-8"
         )
         (controller_dir / "walkforward_acceptance.json").write_text(
-            json.dumps(acceptance, indent=2, sort_keys=True), encoding="utf-8"
+            report_json(acceptance, indent=2, sort_keys=True), encoding="utf-8"
         )
         comparison_rows.append(
             {
@@ -354,10 +355,10 @@ def main() -> int:
         "bull_candidate": args.bull_candidate,
     }
     (output / "manifest.json").write_text(
-        json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"
+        report_json(manifest, indent=2, sort_keys=True), encoding="utf-8"
     )
     print(comparison.to_csv(index=False))
-    print(json.dumps(manifest, indent=2, sort_keys=True))
+    print(report_json(manifest, indent=2, sort_keys=True))
     return 0
 
 

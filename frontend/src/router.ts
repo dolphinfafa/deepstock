@@ -17,6 +17,7 @@ const router = createRouter({
     { path: '/frozen-strategies', name: 'frozen-library', component: LibraryView },
     { path: '/strategies/:id', name: 'strategy', component: StrategyView },
     { path: '/reports', name: 'reports', component: ReportsView },
+    { path: '/data', name: 'data', component: () => import('./views/DataView.vue') },
     { path: '/execution', name: 'execution', component: ExecutionView },
     { path: '/alerts', name: 'alerts', component: AlertsView },
     { path: '/system', name: 'system', component: SystemView },

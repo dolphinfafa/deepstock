@@ -10,6 +10,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 
 from deepstock.backtest import StrategyConfig, run_backtest
 
@@ -47,11 +48,11 @@ def main() -> int:
     parser.add_argument("--split-date", required=True)
     parser.add_argument("--output-dir", default="artifacts/robustness/adaptive-defensive-latest")
     args = parser.parse_args()
-    raw = pd.read_csv(args.prices)
+    raw = read_clean_csv(args.prices)
     raw["date"] = pd.to_datetime(raw["date"])
     baseline = StrategyConfig()
     prices = raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
-    prices = prices.loc[:, list(baseline.symbols)].dropna()
+    prices = complete_panel(prices.loc[:, list(baseline.symbols)])
     split = pd.Timestamp(args.split_date)
     in_dates = prices.index[prices.index < split]
     out_dates = prices.index[prices.index >= split]
@@ -94,9 +95,9 @@ def main() -> int:
         "parameter_count": len(records),
         "selection_policy": "Rank only by in-sample Sharpe and drawdown; do not select using out-of-sample metrics.",
     }
-    (output / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+    (output / "manifest.json").write_text(report_json(manifest, indent=2, sort_keys=True), encoding="utf-8")
     print(table.to_csv(index=False))
-    print(json.dumps(manifest, indent=2, sort_keys=True))
+    print(report_json(manifest, indent=2, sort_keys=True))
     return 0
 
 

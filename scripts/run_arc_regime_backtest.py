@@ -8,20 +8,21 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 
 from deepstock.arc import route_conditioned_performance
 from deepstock.regime import ARCConfig, classify_market_regime, regime_statistics, ARC_EXECUTION_STATUS
 
 
 def load_prices(path: Path, symbols: tuple[str, ...]) -> pd.DataFrame:
-    raw = pd.read_csv(path)
+    raw = read_clean_csv(path)
     required = {"date", "symbol", "adjusted_close"}
     missing = required.difference(raw.columns)
     if missing:
         raise ValueError(f"CSV missing columns: {sorted(missing)}")
     raw["date"] = pd.to_datetime(raw["date"])
     prices = raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
-    return prices.loc[:, list(symbols)].dropna()
+    return complete_panel(prices.loc[:, list(symbols)])
 
 
 def main() -> int:
@@ -49,7 +50,7 @@ def main() -> int:
     statistics = regime_statistics(signals)
     signals.to_csv(output / "daily_regime_signals.csv", index_label="date")
     summary.to_csv(output / "regime_summary.csv", index=False)
-    (output / "regime_statistics.json").write_text(json.dumps(statistics, indent=2, sort_keys=True), encoding="utf-8")
+    (output / "regime_statistics.json").write_text(report_json(statistics, indent=2, sort_keys=True), encoding="utf-8")
     manifest = {
         "system_name": "Deepstock ARC",
         "system_expansion": "Adaptive Regime Controller",
@@ -66,9 +67,9 @@ def main() -> int:
         "minimum_hold_days": config.min_hold_days,
         "oos_parameter_selection": "prohibited",
     }
-    (output / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+    (output / "manifest.json").write_text(report_json(manifest, indent=2, sort_keys=True), encoding="utf-8")
     print(summary.to_csv(index=False))
-    print(json.dumps(manifest, indent=2, sort_keys=True))
+    print(report_json(manifest, indent=2, sort_keys=True))
     return 0
 
 

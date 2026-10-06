@@ -24,6 +24,14 @@ period returns, not headline annualisation, and cannot authorize orders.
 
 ## Architecture and Data Flow
 
+October 6 update: `deepstock.data` provides raw → cleaning → entrance versioning
+and the authenticated `/data` page (see `data-layers.md`). Licensed Windows bars
+stay local and publish metadata/quality only. Alembic data-version and research
+input tables retain lineage. Every strategy has annualization with scope/dates/
+sample labels or an unavailable reason. CSI300 owns local adapters, securities,
+history, observation SQLite and scheduler; Darwen is not a runtime dependency.
+All strategy freezes and order permissions remain unchanged.
+
 The implemented architecture uses a FastAPI control plane, SQLite/SQLAlchemy,
 Alembic migrations, a Vue 3 research library, scheduled artifact ingestion and
 backups, and a Windows-local IBKR execution agent. The workflow is:

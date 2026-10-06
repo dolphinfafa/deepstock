@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-"""Resume the frozen Darwen minute study without exceeding its provider quota."""
+"""Resume Deepstock's frozen minute study without exceeding its provider quota."""
 from __future__ import annotations
 
 import argparse
 import json
 import subprocess
+import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from scripts.sync_csi300_auction_data import _try_lock, synchronize
+from scripts.clean_existing_data import run as clean_inputs
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SOURCE_ROOT = PROJECT_ROOT.parent / "darwen"
-SOURCE_PYTHON = Path("/opt/miniconda3/envs/darwen/bin/python")
+SOURCE_ROOT = PROJECT_ROOT
+SOURCE_PYTHON = Path(__import__("sys").executable)
 REPORT_NAME = "execution_backtest_20260929_frozen"
 DAILY_LIMIT = 2
 MINIMUM_SPACING = timedelta(seconds=3700)
@@ -44,6 +46,8 @@ def write_json(path: Path, value: dict) -> None:
 
 def run_backfill(source: Path, python: Path, destination: Path) -> dict:
     source = source.resolve()
+    if source == PROJECT_ROOT:
+        clean_inputs(PROJECT_ROOT)
     root = source / "artifacts/auction_history_tushare"
     state = destination / "csi300_sync"
     state.mkdir(parents=True, exist_ok=True)
@@ -74,7 +78,10 @@ def run_backfill(source: Path, python: Path, destination: Path) -> dict:
             ]
             # The original adapter makes one stk_mins call for this one window.
             # Never retry or invoke a second window in the same execution.
-            process = subprocess.run(command, cwd=source, check=False, timeout=180)
+            process = subprocess.run(command, cwd=source, check=False, timeout=180,
+                                     env={**os.environ, "DEEPSTOCK_MINUTE_RESERVATION": ledger["attempts"][-1]["reserved_at_utc"]})
+            # Preserve the provider's consumed marker; never overwrite it with the pre-call ledger.
+            ledger = json.loads(ledger_path.read_text())
             ledger["attempts"][-1]["returncode"] = process.returncode
             pending = previous.get("remaining_dates", [])
             if pending:
@@ -106,7 +113,10 @@ def run_backfill(source: Path, python: Path, destination: Path) -> dict:
         result["frozen_report_ready"] = frozen.exists()
         result["completed_at_utc"] = datetime.now(timezone.utc).isoformat()
         write_json(state / "minute_backfill_status.json", result)
-        synchronize(source / "artifacts", destination)
+        if (source / "artifacts").resolve() != destination.resolve():
+            synchronize(source / "artifacts", destination)
+        else:
+            clean_inputs(PROJECT_ROOT)
         return result
 
 

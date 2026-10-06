@@ -188,6 +188,27 @@ class DataSourceStatus(Base):
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
 
 
+class DataVersion(Base):
+    __tablename__ = "data_versions"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    node: Mapped[str] = mapped_column(String(120), index=True)
+    market: Mapped[str] = mapped_column(String(10), index=True)
+    provider: Mapped[str] = mapped_column(String(120), index=True)
+    source_name: Mapped[str] = mapped_column(String(250))
+    status: Mapped[str] = mapped_column(String(30), index=True)
+    data_start: Mapped[str | None] = mapped_column(String(10))
+    data_end: Mapped[str | None] = mapped_column(String(10))
+    row_count: Mapped[int] = mapped_column(Integer, default=0)
+    preview_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+
+
+class ResearchDataInput(Base):
+    __tablename__ = "research_data_inputs"
+    run_id: Mapped[str] = mapped_column(ForeignKey("research_runs.id", ondelete="CASCADE"), primary_key=True)
+    version_id: Mapped[str] = mapped_column(ForeignKey("data_versions.id"), primary_key=True)
+
+
 class ResearchNote(Base):
     __tablename__ = "research_notes"
 

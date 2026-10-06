@@ -60,9 +60,11 @@ describes asset exposures, not verified A-share coverage. It remains archived
 and paused; this metadata cleanup neither resumes its research nor changes its
 universe. Asset class remains `Futures`, separate from the market category.
 
-CSI300's imported research remains in its preserved handoff/Darwen artifacts;
-do not copy its external implementation or restart its quota-limited backfill
-as part of this source reorganisation. The entire `handoff/` remains Git ignored.
+The October 6 user decision supersedes the old import-only boundary: CSI300
+owns collection, models, fixed backtests and observation under `cn/auction/`,
+with Deepstock-local data/environment/scheduling. Shared cleaning/versioning
+remains in `deepstock.data`; Darwen is only a retained migration source, never
+a runtime dependency or duplicate writer. Entire `handoff/` stays Git ignored.
 
 ## Database and UI
 

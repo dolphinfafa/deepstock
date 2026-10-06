@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse, json
 from pathlib import Path
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 from deepstock.arc import fixed_walk_forward_windows, run_arc_portfolio, summarize_walk_forward, assess_walk_forward
 from deepstock.backtest import StrategyConfig, run_backtest
 from deepstock.grid import GridConfig, run_grid_backtest
@@ -18,7 +19,7 @@ def main() -> int:
     arc_config=ARCConfig(confirmation_days=a.confirmation_days,min_hold_days=a.min_hold_days,reentry_cooldown_days=a.reentry_cooldown_days,risk_off_confirmation_days=a.risk_off_confirmation_days,risk_off_bypasses_min_hold=a.risk_off_bypasses_min_hold,risk_off_bypasses_reentry_cooldown=a.risk_off_bypasses_reentry_cooldown)
     prices, eligibility, turnover, routes = load_point_in_time_inputs(Path(a.universe_dir), Path(a.etf_prices))
     etf_symbols=(*arc_config.risk_assets,'SHY')
-    etf=prices.loc[:, list(etf_symbols)].dropna()
+    etf=complete_panel(prices.loc[:, list(etf_symbols)])
     signals=classify_market_regime(etf.loc[:, list(arc_config.risk_assets)], arc_config)
     routes=signals.strategy_route.reindex(prices.index).fillna('defensive_etf')
     defensive=run_backtest(etf, StrategyConfig())
@@ -34,9 +35,9 @@ def main() -> int:
     out=Path(a.output_dir); out.mkdir(parents=True,exist_ok=True)
     result.daily.to_csv(out/'daily_results.csv',index_label='date'); result.target_weights.to_csv(out/'target_weights.csv',index_label='date')
     windows=fixed_walk_forward_windows(prices.index); wf=summarize_walk_forward(result,windows); wf.to_csv(out/'walkforward_results.csv',index=False)
-    (out/'walkforward_acceptance.json').write_text(json.dumps(assess_walk_forward(wf),indent=2,sort_keys=True),encoding='utf-8')
+    (out/'walkforward_acceptance.json').write_text(report_json(assess_walk_forward(wf),indent=2,sort_keys=True),encoding='utf-8')
     result.summary['confirmation_days']=a.confirmation_days; result.summary['min_hold_days']=a.min_hold_days; result.summary['reentry_cooldown_days']=a.reentry_cooldown_days; result.summary['risk_off_confirmation_days']=a.risk_off_confirmation_days; result.summary['risk_off_bypasses_min_hold']=a.risk_off_bypasses_min_hold; result.summary['risk_off_bypasses_reentry_cooldown']=a.risk_off_bypasses_reentry_cooldown; result.summary['bull_candidate']=a.bull_candidate; result.summary['rebalance_band']=a.rebalance_band; result.summary['route_cooldown_days']=a.route_cooldown_days
-    (out/'summary.json').write_text(json.dumps(result.summary,indent=2,sort_keys=True),encoding='utf-8')
-    (out/'manifest.json').write_text(json.dumps({'system_name':'Deepstock ARC','execution_status':ARC_EXECUTION_STATUS,'paper_authorized':False,'oos_parameter_selection':'prohibited','confirmation_days':a.confirmation_days,'min_hold_days':a.min_hold_days,'reentry_cooldown_days':a.reentry_cooldown_days,'risk_off_confirmation_days':a.risk_off_confirmation_days,'risk_off_bypasses_min_hold':a.risk_off_bypasses_min_hold,'risk_off_bypasses_reentry_cooldown':a.risk_off_bypasses_reentry_cooldown,'bull_candidate':a.bull_candidate,'rebalance_band':a.rebalance_band,'route_cooldown_days':a.route_cooldown_days},indent=2,sort_keys=True),encoding='utf-8')
-    print(json.dumps(result.summary,indent=2,sort_keys=True)); return 0
+    (out/'summary.json').write_text(report_json(result.summary,indent=2,sort_keys=True),encoding='utf-8')
+    (out/'manifest.json').write_text(report_json({'system_name':'Deepstock ARC','execution_status':ARC_EXECUTION_STATUS,'paper_authorized':False,'oos_parameter_selection':'prohibited','confirmation_days':a.confirmation_days,'min_hold_days':a.min_hold_days,'reentry_cooldown_days':a.reentry_cooldown_days,'risk_off_confirmation_days':a.risk_off_confirmation_days,'risk_off_bypasses_min_hold':a.risk_off_bypasses_min_hold,'risk_off_bypasses_reentry_cooldown':a.risk_off_bypasses_reentry_cooldown,'bull_candidate':a.bull_candidate,'rebalance_band':a.rebalance_band,'route_cooldown_days':a.route_cooldown_days},indent=2,sort_keys=True),encoding='utf-8')
+    print(report_json(result.summary,indent=2,sort_keys=True)); return 0
 if __name__=='__main__': raise SystemExit(main())

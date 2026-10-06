@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv, DataStore, input_evidence
 
 
 def merge_alias(
@@ -50,8 +51,8 @@ def main() -> int:
     parser.add_argument("--manifest", required=True)
     args = parser.parse_args()
 
-    base = pd.read_csv(args.base)
-    alias = pd.read_csv(args.alias)
+    base = read_clean_csv(args.base)
+    alias = read_clean_csv(args.alias)
     required = {"date", "symbol", "adjusted_close"}
     for name, frame in (("base", base), ("alias", alias)):
         if required.difference(frame.columns):
@@ -61,6 +62,7 @@ def main() -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
     merged.to_csv(output, index=False)
     manifest = {
+        "origin": "derived_alias_merge", "data_versions": input_evidence()["data_versions"],
         "operation": "historical_ticker_alias_merge",
         "canonical": args.canonical.upper(),
         "alias": args.alias_symbol.upper(),
@@ -75,6 +77,7 @@ def main() -> int:
     manifest_path = Path(args.manifest)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+    DataStore().import_file(output, {"market": "US", "provider": "Massive", "origin": "derived_alias_merge", "upstream_versions": [v["version"] for v in input_evidence()["data_versions"]]})
     print(json.dumps(manifest, indent=2, sort_keys=True))
     return 0
 

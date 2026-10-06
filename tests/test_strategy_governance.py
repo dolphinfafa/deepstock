@@ -175,6 +175,8 @@ def test_defensive_snapshot_uses_fixed_reports_and_defaults_risk_review_to_false
     observations = {"plan_id": "one"}
     paths = {name: tmp_path / name for name in ("prices.csv", "daily.csv", "walkforward.csv", "manifest.json", "plan.json", "observations.jsonl")}
     prices.to_csv(paths["prices.csv"], index=False)
+    from deepstock.data import DataStore
+    DataStore(tmp_path).import_file(paths["prices.csv"], {"market": "CN", "provider": "synthetic test fixture"})
     daily.to_csv(paths["daily.csv"], index=False)
     walkforward.to_csv(paths["walkforward.csv"], index=False)
     paths["manifest.json"].write_text(json.dumps(manifest), encoding="utf-8")
@@ -213,6 +215,8 @@ def test_snapshot_counts_only_observations_under_the_current_policy(tmp_path) ->
     daily = pd.DataFrame({"date": dates, "portfolio_net_return": [0.001] * len(dates), "turnover": [0.01] * len(dates), "transaction_cost": [0.00001] * len(dates)})
     paths = {name: tmp_path / name for name in ("prices.csv", "daily.csv", "walkforward.csv", "manifest.json", "plan.json", "observations.jsonl")}
     prices.to_csv(paths["prices.csv"], index=False)
+    from deepstock.data import DataStore
+    DataStore(tmp_path).import_file(paths["prices.csv"], {"market": "CN", "provider": "synthetic test fixture"})
     daily.to_csv(paths["daily.csv"], index=False)
     pd.DataFrame({"total_return": [0.1]}).to_csv(paths["walkforward.csv"], index=False)
     paths["manifest.json"].write_text(json.dumps({"selection_policy": "fixed; no rolling test result selected parameters"}), encoding="utf-8")

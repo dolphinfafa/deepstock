@@ -7,6 +7,9 @@ import argparse
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from deepstock.data.capture import capture_response, provider_versions
+from deepstock.data.store import DataStore
+from deepstock.data.inventory import metadata_for
 
 import pandas as pd
 
@@ -37,6 +40,7 @@ def main() -> int:
         )
         if series is None or len(series) == 0:
             raise ValueError(f"Norgate returned no data for {symbol}.")
+        capture_response('Norgate', symbol, pd.DataFrame(series), 'US', restricted=True)
         frame = pd.DataFrame(
             {"date": series["Date"], "symbol": symbol, "adjusted_close": series["Close"]}
         )
@@ -55,6 +59,7 @@ def main() -> int:
     temporary.replace(output)
     manifest = {
         "provider": "Norgate Data",
+        "origin": "derived_provider_export", "upstream_versions": provider_versions(),
         "retrieved_at_utc": datetime.now(timezone.utc).isoformat(),
         "symbols": list(SYMBOLS),
         "requested_from": args.start,
@@ -66,6 +71,7 @@ def main() -> int:
     }
     manifest_path = output.with_suffix(".manifest.json")
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+    DataStore().import_file(output, {**metadata_for(output), 'origin': 'derived_provider_export', 'upstream_versions': provider_versions()})
     print(json.dumps(manifest, indent=2, sort_keys=True))
     return 0
 

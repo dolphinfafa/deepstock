@@ -7,6 +7,9 @@ import argparse
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from deepstock.data.capture import capture_response, provider_versions
+from deepstock.data.store import DataStore
+from deepstock.data.inventory import metadata_for
 
 from deepstock.massive import download_total_return_daily_prices, load_env_value
 
@@ -42,6 +45,7 @@ def main() -> int:
         json.dumps(
             {
                 "provider": "Massive",
+                "origin": "derived_provider_export", "upstream_versions": provider_versions(),
                 "price_endpoint": "v2/aggs ticker range, 1 day",
                 "price_adjustment": "splits",
                 "dividend_endpoint": "stocks/v1/dividends",
@@ -60,6 +64,7 @@ def main() -> int:
         ),
         encoding="utf-8",
     )
+    DataStore().import_file(output, {**metadata_for(output), 'origin': 'derived_provider_export', 'upstream_versions': provider_versions()})
     print(f"Downloaded {len(prices)} adjusted daily bars for {len(symbols)} symbols.")
     return 0
 

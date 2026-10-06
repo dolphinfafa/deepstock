@@ -7,6 +7,9 @@ import argparse
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from deepstock.data.capture import capture_response, provider_versions
+from deepstock.data.store import DataStore
+from deepstock.data.inventory import metadata_for
 
 from deepstock.massive import download_split_adjusted_daily_ohlc, load_env_value
 
@@ -34,6 +37,7 @@ def main() -> int:
         json.dumps(
             {
                 "provider": "Massive",
+                "origin": "derived_provider_export", "upstream_versions": provider_versions(),
                 "endpoint": "v2/aggs ticker range, 1 day",
                 "adjustment": "split-adjusted OHLC; dividends are not back-adjusted",
                 "symbols": symbols,
@@ -49,6 +53,7 @@ def main() -> int:
         ),
         encoding="utf-8",
     )
+    DataStore().import_file(output, {**metadata_for(output), 'origin': 'derived_provider_export', 'upstream_versions': provider_versions()})
     print(f"Downloaded {len(bars)} daily OHLC bars for {len(symbols)} symbols.")
     return 0
 

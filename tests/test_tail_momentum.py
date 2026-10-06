@@ -155,6 +155,10 @@ def write_unit_inputs(root):
                 "corporate_action_status": "price_only_unverified",
                 "sha256": {n: hashlib.sha256((root / n).read_bytes()).hexdigest() for n in ("minutes.csv.gz", "calendar.csv")}}
     (root / "manifest.json").write_text(json.dumps(manifest))
+    from deepstock.data import DataStore
+    store = DataStore(root.parent)
+    store.import_file(root / "minutes.csv.gz", {"market": "CN", "provider": "unit_fixture_never_published", "timezone": "Asia/Shanghai"})
+    store.import_file(root / "calendar.csv", {"market": "CN", "provider": "unit_fixture_never_published", "kind": "calendar"})
     return manifest
 
 

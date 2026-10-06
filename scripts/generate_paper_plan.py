@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 
 from deepstock.paper_plan import create_paper_plan
 from deepstock.turtle import TurtleConfig
@@ -26,7 +27,7 @@ def main() -> int:
     parser.add_argument("--kill-switch", action="store_true")
     args = parser.parse_args()
 
-    raw = pd.read_csv(args.prices)
+    raw = read_clean_csv(args.prices)
     raw["date"] = pd.to_datetime(raw["date"])
     prices = raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index()
     config = TurtleConfig(
@@ -37,11 +38,12 @@ def main() -> int:
         exit_days=args.exit_days,
         max_positions=args.max_positions,
     )
+    prices = complete_panel(prices)
     plan = create_paper_plan(prices, config, kill_switch=args.kill_switch)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(plan, indent=2, sort_keys=True), encoding="utf-8")
-    print(json.dumps(plan, indent=2, sort_keys=True))
+    output.write_text(report_json(plan, indent=2, sort_keys=True), encoding="utf-8")
+    print(report_json(plan, indent=2, sort_keys=True))
     return 0
 
 

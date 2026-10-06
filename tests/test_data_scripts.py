@@ -55,6 +55,8 @@ def test_defensive_backtest_uses_common_complete_history(tmp_path) -> None:
     )
     path = tmp_path / "prices.csv"
     pd.DataFrame(rows).to_csv(path, index=False)
+    from deepstock.data import DataStore
+    DataStore(tmp_path).import_file(path, {"market": "US", "provider": "test fixture"})
 
     prices = load_prices(path, config)
 

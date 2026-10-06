@@ -11,18 +11,19 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from deepstock.data.store import read_clean_csv, read_clean_json, complete_panel, report_json
 
 from deepstock.strategy_governance import POLICY_EFFECTIVE_DATE
 from deepstock.defensive import require_frozen_config
 
 def _completed_price_date(prices_path: Path) -> str:
-    raw = pd.read_csv(prices_path)
+    raw = read_clean_csv(prices_path)
     required = {"date", "symbol", "adjusted_close"}
     missing = required.difference(raw.columns)
     if missing:
         raise ValueError(f"Price input missing columns: {sorted(missing)}")
     raw["date"] = pd.to_datetime(raw["date"])
-    prices = raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index().dropna()
+    prices = complete_panel(raw.pivot(index="date", columns="symbol", values="adjusted_close").sort_index())
     if prices.empty:
         raise ValueError("Price input has no complete sessions.")
     return prices.index[-1].date().isoformat()
@@ -145,8 +146,8 @@ def main() -> int:
     )
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(snapshot, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps(snapshot, indent=2, sort_keys=True))
+    output.write_text(report_json(snapshot, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(report_json(snapshot, indent=2, sort_keys=True))
     return 0
 
 

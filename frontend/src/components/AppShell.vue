@@ -15,6 +15,7 @@ const links = [
   { to: '/', label: '策略研究库', icon: '◫' },
   { to: '/frozen-strategies', label: '冻结策略', icon: '□' },
   { to: '/reports', label: '研究报告', icon: '≡' },
+  { to: '/data', label: '数据中心', icon: '▤' },
   { to: '/execution', label: '执行中心', icon: '↗' },
   { to: '/alerts', label: '告警', icon: '!' },
   { to: '/system', label: '系统状态', icon: '⌁' },

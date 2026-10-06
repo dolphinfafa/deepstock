@@ -478,7 +478,11 @@ def ingest_defensive_bundle(session: Session, bundle: dict[str, Any]) -> dict[st
         "config_hash": snapshot["config_hash"], "source_hash": _hash_json(bundle),
         "summary": f"冻结参数一致；数据截至 {data_date}，有效观察 {snapshot['shadow_sessions']} 次；继续影子观察。",
         "artifact_path": "artifacts/defensive_node/latest.json", "finished_at": captured,
-        "details": {"snapshot": snapshot, "assessment": assessment, "target_weights": plan["target_weights"]},
+        "details": {"snapshot": snapshot, "assessment": assessment, "target_weights": plan["target_weights"],
+                    "data_versions": summary.get("data_versions", []),
+                    "annualization": {"value": summary["annualized_return"], "scope": "full_history", "sessions": summary.get("trading_days"),
+                                      "data_start": summary.get("start"), "data_end": summary.get("end"), "short_sample": summary.get("trading_days", 252) < 252,
+                                      "source": "validated_node_daily_report", "cost_basis": "冻结防御ETF配置；成本后连续净值"}},
     })
     session.flush()
     for name in ("total_return", "annualized_return", "sharpe_ratio", "maximum_drawdown", "total_transaction_cost", "benchmark_total_return"):
@@ -607,9 +611,15 @@ def ingest_tail_momentum(session: Session) -> dict[str, Any]:
 
 
 def ingest_all(session: Session) -> dict[str, Any]:
+    from deepstock.web.data_catalog import ingest_datasets
+    from deepstock.web.reclean_runs import ingest_reclean_runs
+    catalog = ingest_catalog(session)
+    reruns = ingest_reclean_runs(session, settings.project_root)
     return {
-        "catalog": ingest_catalog(session),
+        "catalog": catalog,
         "auction": ingest_auction_forward(session),
         "defensive": ingest_defensive_observation(session),
         "tail_momentum": ingest_tail_momentum(session),
+        "reclean": reruns,
+        "datasets": ingest_datasets(session, settings.project_root),
     }
