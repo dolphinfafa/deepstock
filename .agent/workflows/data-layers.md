@@ -30,6 +30,8 @@ common-inception trimming, never internal missing sessions. CLI reports pin
 ```bash
 conda run -n deepstock python scripts/clean_existing_data.py
 conda run -n deepstock python scripts/rerun_clean_research.py --strategy spy_mean_reversion
+# Recover publication only; never repeat a completed expensive engine run.
+conda run -n deepstock python scripts/rerun_clean_research.py --strategy stock_turtle --publish-existing artifacts/reclean/<completed-stock-turtle-run>
 conda run -n deepstock python scripts/ingest_deepstock_state.py
 ```
 
@@ -38,6 +40,16 @@ schemas and mixed observation DBs retain an explicit blocked/evidence-only
 status; a DB archive is not a cleaned price panel. Preserve all old data and
 reports. Rule changes require a new version. Fixed reruns use unique ignored
 directories and never optimise on OOS. Pauses/freezes and order gates remain.
+Future reruns capture the starting tracked-code fingerprint and dirty state;
+nested controller IDs include the parent run, preventing rerun collisions.
+The first migration runs predate start-time capture: their reports cannot be
+claimed to reproduce a clean Git commit. Re-publication preserves source-file
+hashes and old reports, and never changes the engine result. OOS statistics
+must share one daily slice; never combine full-history drawdown with OOS CAGR.
+Cost is charged on traded weights (5bp per side here); turnover is half the
+sum of bought/sold weights, so cost divided by turnover is not single-side bps.
+Cached imports verify retained snapshots again; source changes during capture
+are rejected instead of publishing a mismatched version.
 Back up application SQLite before migrations; restore backup and matching code
 together if needed, never delete market evidence for rollback.
 

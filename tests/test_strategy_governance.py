@@ -22,14 +22,14 @@ from deepstock.defensive import config_hash, frozen_defensive_config
 def attach_fixed_evidence(paths):
     config = asdict(frozen_defensive_config())
     for name in ("manifest.json", "plan.json"):
-        report = json.loads(paths[name].read_text())
+        report = json.loads(paths[name].read_text(encoding="utf-8"))
         report.update(config=config, config_hash=config_hash(config))
         if name == "manifest.json":
-            report["actual_to"] = json.loads(paths["plan.json"].read_text())["data_date"]
+            report["actual_to"] = json.loads(paths["plan.json"].read_text(encoding="utf-8"))["data_date"]
         paths[name].write_text(json.dumps(report), encoding="utf-8")
     (paths["daily.csv"].parent / "summary.json").write_text(json.dumps({
         "config": config, "config_hash": config_hash(config),
-        "end": json.loads(paths["plan.json"].read_text())["data_date"],
+        "end": json.loads(paths["plan.json"].read_text(encoding="utf-8"))["data_date"],
         "daily_sha256": hashlib.sha256(paths["daily.csv"].read_bytes()).hexdigest(),
     }), encoding="utf-8")
 
@@ -232,13 +232,13 @@ def test_snapshot_counts_only_observations_under_the_current_policy(tmp_path) ->
     assert snapshot["shadow_sessions"] == 1
     assert snapshot["shadow_observation_calendar_days"] == 2
 
-    plan = json.loads(paths["plan.json"].read_text())
+    plan = json.loads(paths["plan.json"].read_text(encoding="utf-8"))
     plan["config"]["top_k_assets"] = None
     paths["plan.json"].write_text(json.dumps(plan), encoding="utf-8")
     with pytest.raises(ValueError, match="frozen"):
         build_snapshot(*[paths[name] for name in ("prices.csv", "daily.csv", "walkforward.csv", "manifest.json", "plan.json", "observations.jsonl")])
     plan["config"]["top_k_assets"] = 2
     paths["plan.json"].write_text(json.dumps(plan), encoding="utf-8")
-    paths["daily.csv"].write_text(paths["daily.csv"].read_text() + "\n", encoding="utf-8")
+    paths["daily.csv"].write_text(paths["daily.csv"].read_text(encoding="utf-8") + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="checksum"):
         build_snapshot(*[paths[name] for name in ("prices.csv", "daily.csv", "walkforward.csv", "manifest.json", "plan.json", "observations.jsonl")])

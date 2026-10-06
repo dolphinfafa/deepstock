@@ -56,10 +56,10 @@ def run_backfill(source: Path, python: Path, destination: Path) -> dict:
         if not _try_lock(lock):
             return {"status": "skipped_locked"}
         now = datetime.now(timezone.utc)
-        ledger = json.loads(ledger_path.read_text()) if ledger_path.exists() else {}
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8")) if ledger_path.exists() else {}
         base = [str(python), "-m", "scripts.backtest_auction_features"]
         fetch_report_path = root / "minute_fetch_report.json"
-        previous = json.loads(fetch_report_path.read_text()) if fetch_report_path.exists() else {}
+        previous = json.loads(fetch_report_path.read_text(encoding="utf-8")) if fetch_report_path.exists() else {}
         frozen = root / f"{REPORT_NAME}.json"
         result = {"checked_at_utc": now.isoformat(), "daily_limit": DAILY_LIMIT, "minimum_spacing_seconds": 3700}
         if frozen.exists():
@@ -81,12 +81,12 @@ def run_backfill(source: Path, python: Path, destination: Path) -> dict:
             process = subprocess.run(command, cwd=source, check=False, timeout=180,
                                      env={**os.environ, "DEEPSTOCK_MINUTE_RESERVATION": ledger["attempts"][-1]["reserved_at_utc"]})
             # Preserve the provider's consumed marker; never overwrite it with the pre-call ledger.
-            ledger = json.loads(ledger_path.read_text())
+            ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
             ledger["attempts"][-1]["returncode"] = process.returncode
             pending = previous.get("remaining_dates", [])
             if pending:
                 key = pending[0].replace("-", "")
-                minute_manifest = json.loads((root / "minute_manifest.json").read_text())
+                minute_manifest = json.loads((root / "minute_manifest.json").read_text(encoding="utf-8"))
                 outcome = minute_manifest.get(f"{key}_{key}", {})
                 ledger["attempts"][-1]["window_status"] = outcome.get("status", "unknown")
                 if "频率超限" in outcome.get("error", ""):
@@ -107,7 +107,7 @@ def run_backfill(source: Path, python: Path, destination: Path) -> dict:
             elif frozen.exists():
                 result["status"] = "complete"
         if fetch_report_path.exists():
-            fetched = json.loads(fetch_report_path.read_text())
+            fetched = json.loads(fetch_report_path.read_text(encoding="utf-8"))
             result.update({key: fetched.get(key) for key in ("remaining_windows", "remaining_dates", "status_counts")})
             result["completed_windows"] = 21 - int(fetched.get("remaining_windows", 21))
         result["frozen_report_ready"] = frozen.exists()

@@ -26,7 +26,7 @@ def test_permission_failure_is_persisted_redacted_and_never_calls_stock_minutes(
     assert called == ["etf_mins"]
     assert result["status"] == "blocked"
     assert result["stock_minute_endpoint_called"] is False
-    assert "unit-test-secret" not in (tmp_path / "access-report.json").read_text()
+    assert "unit-test-secret" not in (tmp_path / "access-report.json").read_text(encoding="utf-8")
     assert not (tmp_path / "manifest.json").exists()
 
 
@@ -48,7 +48,7 @@ def test_public_recent_mapping_uses_share_units_and_independent_calendar(monkeyp
     assert called == ["trade_cal"]
     normalized = pd.read_csv(tmp_path / "minutes.csv.gz")
     assert normalized.iloc[0]["volume"] == bars.iloc[0]["volume"]
-    manifest = json.loads((tmp_path / "manifest.json").read_text())
+    manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["coverage_limit"] == "at_most_five_recent_sessions"
     assert manifest["corporate_action_status"] == "price_only_unverified"
     assert set(manifest["sha256"]) == {"raw-eastmoney.json", "minutes.csv.gz", "calendar.csv"}

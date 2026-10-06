@@ -635,6 +635,11 @@ def _format_execution_report(report: dict) -> str:
     return "\n".join(lines)
 
 
+def bound_replay_signal_dates(frame: pd.DataFrame, end: date) -> pd.DataFrame:
+    """Retain training warm-up and future exit labels, but bound signal dates."""
+    return frame.loc[frame["trade_date"] <= end].copy()
+
+
 def run_execution_backtest(args: argparse.Namespace) -> dict:
     root = Path(args.output_root)
     snapshots = read_clean_csv(root / "universe_snapshots.csv", dtype={"stock_code": str})
@@ -672,7 +677,9 @@ def run_execution_backtest(args: argparse.Namespace) -> dict:
     feature_frame = attach_execution_entries(feature_frame, entries)
     # Future bars may construct exits, but never create extra signal dates or
     # shift the frozen validation window after more history is downloaded.
-    feature_frame = feature_frame.loc[(feature_frame["trade_date"] >= start) & (feature_frame["trade_date"] <= end)].copy()
+    # Keep pre-start training/warm-up history; only the upper bound is applied
+    # here. The fixed validation window is checked below before publication.
+    feature_frame = bound_replay_signal_dates(feature_frame, end)
     config = AuctionBacktestConfig(
         training_window_days=args.training_days,
         validation_days=args.validation_days,
@@ -690,6 +697,8 @@ def run_execution_backtest(args: argparse.Namespace) -> dict:
             include_alternate_exit=not args.skip_alternate_exit,
         )
     )
+    if date.fromisoformat(execution["validation_start"]) < start or date.fromisoformat(execution["validation_end"]) > end:
+        raise ValueError("Fixed validation window falls outside the declared signal interval")
     entry_rows = feature_frame["execution_tradable"].fillna(False)
     report = {
         "model": f"{config.refit_frequency}-refit Tushare auction production features",

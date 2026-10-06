@@ -72,7 +72,7 @@ class DataStore:
             alias = self._alias(path)
             if not alias.exists():
                 raise DataQualityError(f"Input not registered: {path.name}; run scripts/clean_existing_data.py first")
-            result = self.get(json.loads(alias.read_text())["version"])
+            result = self.get(json.loads(alias.read_text(encoding="utf-8"))["version"])
             if not path.exists() or digest(path) != result["source_sha256"]:
                 raise DataQualityError(f"Source changed after cleaning: {path.name}; register a new version")
         q = result["quality"]
@@ -91,6 +91,9 @@ class DataStore:
         folder = self.root / version
         if (folder / "manifest.json").exists():
             result = self.get(version)
+            self.verified_path(result, "raw")
+            if result.get("clean_file"):
+                self.verified_path(result, "clean")
             write_json(self._alias(source), {"version": version})
             return result
         folder.mkdir(parents=True, exist_ok=True)
@@ -101,6 +104,8 @@ class DataStore:
             source_hash = digest(raw)
         else:
             shutil.copyfile(source, raw)
+            if digest(raw) != source_hash or digest(source) != source_hash:
+                raise DataQualityError("Source changed during snapshot capture; no version published")
         result = {"id": version, "node": self.node, "market": metadata.get("market", "US"),
                   "provider": metadata.get("provider", "unknown"), "source_name": source.name,
                   "source_path": str(source), "source_sha256": digest(source), "raw_sha256": digest(raw),

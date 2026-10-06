@@ -234,6 +234,11 @@ def main() -> int:
             rebalance_band=0.10,
             route_cooldown_days=10,
         )
+        result.summary["execution_config"] = {
+            "transaction_cost_bps": 5.0, "rebalance_band": .10,
+            "route_cooldown_days": 10, "bull_candidate": args.bull_candidate,
+            "controller": name,
+        }
         windows = fixed_walk_forward_windows(evaluation_dates)
         walk_forward = summarize_walk_forward(result, windows)
         acceptance = assess_walk_forward(walk_forward)

@@ -29,6 +29,32 @@ def test_raw_bytes_immutable_dedupe_trace_and_idempotence(tmp_path):
     assert first["quality"]["duplicate_rows"] == 1
 
 
+@pytest.mark.parametrize("layer", ["raw", "clean"])
+def test_idempotent_import_does_not_accept_tampered_retained_evidence(tmp_path, layer):
+    source = fixture_file(tmp_path, [{"date": "2024-01-02", "symbol": "SPY", "adjusted_close": 100}])
+    store = DataStore(tmp_path)
+    first = store.import_file(source, {"market": "US"})
+    store.verified_path(first, layer).write_bytes(b"tampered")
+    with pytest.raises(DataQualityError, match="checksum"):
+        store.import_file(source, {"market": "US"})
+
+
+def test_source_race_does_not_publish_a_mismatched_snapshot(tmp_path, monkeypatch):
+    source = fixture_file(tmp_path, [{"date": "2024-01-02", "symbol": "SPY", "adjusted_close": 100}])
+    import shutil
+    original_copy = shutil.copyfile
+
+    def change_during_copy(origin, target):
+        original_copy(origin, target)
+        source.write_bytes(b"updated")
+
+    monkeypatch.setattr("deepstock.data.store.shutil.copyfile", change_during_copy)
+    store = DataStore(tmp_path)
+    with pytest.raises(DataQualityError, match="changed during"):
+        store.import_file(source, {"market": "US"})
+    assert not store.manifests() and not store._alias(source).exists()
+
+
 def test_entry_rejects_raw_unregistered_changed_source_and_tampered_clean(tmp_path):
     source = fixture_file(tmp_path, [{"date": "2024-01-02", "symbol": "SPY", "adjusted_close": 100}])
     with pytest.raises(DataQualityError, match="not registered"):

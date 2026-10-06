@@ -47,7 +47,7 @@ def test_invalid_evidence_is_rejected(mutation):
 
 
 def test_windows_wrapper_uses_adaptive_and_publishes_without_broker():
-    source = (Path(__file__).resolve().parents[1] / "scripts/run_defensive_etf_observation.cmd").read_text()
+    source = (Path(__file__).resolve().parents[1] / "scripts/run_defensive_etf_observation.cmd").read_text(encoding="utf-8")
     assert "run_defensive_etf_backtest.py --profile adaptive" in source
     assert "publish_defensive_observation.py" in source
     assert "ibkr_execution_agent" not in source

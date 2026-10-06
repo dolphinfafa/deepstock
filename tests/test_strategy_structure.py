@@ -12,8 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_every_strategy_has_consistent_explicit_market():
-    catalog = json.loads((ROOT / "config/strategy_catalog.json").read_text())["strategies"]
-    registry = json.loads((ROOT / "config/strategy_registry.json").read_text())["strategies"]
+    catalog = json.loads((ROOT / "config/strategy_catalog.json").read_text(encoding="utf-8"))["strategies"]
+    registry = json.loads((ROOT / "config/strategy_registry.json").read_text(encoding="utf-8"))["strategies"]
     mapping = {row["strategy_id"]: row["market"] for row in registry}
     assert {row["id"] for row in catalog} == set(mapping)
     for row in catalog:
@@ -42,7 +42,7 @@ def test_tail_is_cn_only_and_has_no_us_strategy_dependencies():
     old = importlib.import_module("deepstock.tail_momentum")
     new = importlib.import_module("deepstock.strategies.cn.tail_momentum")
     assert old.run_tail_momentum is new.run_tail_momentum
-    source = (ROOT / "src/deepstock/strategies/cn/tail_momentum.py").read_text()
+    source = (ROOT / "src/deepstock/strategies/cn/tail_momentum.py").read_text(encoding="utf-8")
     assert "strategies.us" not in source and "deepstock.arc" not in source
 
 

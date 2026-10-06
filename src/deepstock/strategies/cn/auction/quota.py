@@ -15,7 +15,7 @@ def consume_minute_request():
     with (root / "minute_quota.lock").open("a+") as handle:
         if not _try_lock(handle):
             raise RuntimeError("Minute quota ledger is locked")
-        ledger = json.loads(ledger_path.read_text()) if ledger_path.exists() else {}
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8")) if ledger_path.exists() else {}
         reservation = os.getenv("DEEPSTOCK_MINUTE_RESERVATION")
         now = datetime.now(timezone.utc)
         row = next((r for r in ledger.get("attempts", []) if r["reserved_at_utc"] == reservation), None)

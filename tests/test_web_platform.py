@@ -112,7 +112,7 @@ def _authorize_paper(client: TestClient, headers: dict[str, str], csrf: str) -> 
 
 
 def test_catalog_ingestion_is_idempotent() -> None:
-    catalog = json.loads((settings.project_root / "config/strategy_catalog.json").read_text())["strategies"]
+    catalog = json.loads((settings.project_root / "config/strategy_catalog.json").read_text(encoding="utf-8"))["strategies"]
     with SessionLocal() as session:
         first = ingest_all(session)
         second = ingest_all(session)

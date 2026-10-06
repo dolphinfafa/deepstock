@@ -186,6 +186,13 @@ Cache replay exposed extra signal dates after the declared end; the entrance
 now bounds signal dates while retaining future exit bars. The primary frozen
 context result reproduces +0.17343% after 20bp (June 5–August 28 validation).
 Old reports remain; diagnostic ensemble differences are retained, not selected.
+Final bounded replay reproduces all four ablation models' selected after-cost
+means (within floating-point tolerance), but **not** the optimized ensemble:
+149 old versus 147 new trades; mean portfolio daily net return -0.16224% old
+versus -0.14854% new. Fixed configs and June 5–August 28 validation agree.
+`deepstock_handover_verified.json` therefore verifies the bounded replay and
+primary context result, not complete ensemble parity. Keep this discrepancy
+open; do not replace the frozen baseline or use it to select a policy.
 September labels remain 9/21; the final frozen report is blocked until the
 remaining 12 valid dates arrive. No broker order was sent.
 

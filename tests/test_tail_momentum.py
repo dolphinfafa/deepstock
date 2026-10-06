@@ -140,7 +140,7 @@ def test_no_data_produces_blocked_report_not_synthetic_performance(tmp_path):
     report = run_research(tmp_path / "missing-data", tmp_path / "reports")
     assert report["status"] == "blocked_data"
     assert report["cases"] == []
-    assert "真实行情回测结果" in (tmp_path / "reports/report.md").read_text()
+    assert "真实行情回测结果" in (tmp_path / "reports/report.md").read_text(encoding="utf-8")
 
 
 def write_unit_inputs(root):
@@ -174,7 +174,7 @@ def test_runner_retains_all_fixed_cases_and_actual_coverage(tmp_path):
     assert all(case["walk_forward"] == [] for case in result["cases"])
     assert len(list(output.glob("*-daily.csv"))) == 12
     assert len(list(output.glob("*-benchmark.csv"))) == 12
-    report = (output / "report.md").read_text()
+    report = (output / "report.md").read_text(encoding="utf-8")
     assert "仅为短样本流程验证" in report
     assert "连续买入持有对照" in report
     assert "未平仓份额" in report

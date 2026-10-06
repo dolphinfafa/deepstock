@@ -1,5 +1,6 @@
 @echo off
 setlocal
+set "PYTHONUTF8=1"
 set "PROJECT_ROOT=%~dp0.."
 cd /d "%PROJECT_ROOT%"
 
