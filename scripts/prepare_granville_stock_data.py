@@ -153,6 +153,41 @@ def collect_cn(output, cfg):
             last_quote = str(pd.to_datetime(read_clean_csv(price_path).date).max().date())
             terminals[row.ts_code] = {"last_quote_date": last_quote, "delist_date": str(date.date()), "verified_proceeds": False}
     manifest["terminal_securities"] = terminals
+    # Re-audit every existing disclosure from retained, hash-verified provider
+    # bytes. Earlier cleaner revisions must not erase an additional payout.
+    # No price or dividend request is repeated here.
+    sources = {}
+    for source in [*(ROOT / "artifacts/providers/tushare/dividend").glob("*.csv.gz"), *(ROOT / "artifacts/providers/tushare").glob("*.csv.gz")]:
+        alias = DataStore()._alias(source)
+        if not alias.exists():
+            continue
+        raw_manifest = DataStore().get(json.loads(alias.read_text())["version"])
+        frame = pd.read_csv(DataStore().verified_path(raw_manifest, "raw"))
+        if frame.empty or "div_proc" not in frame or "ts_code" not in frame or frame.ts_code.nunique() != 1:
+            continue
+        symbol = frame.ts_code.iloc[0]
+        if symbol not in symbols:
+            continue
+        score = (int("end_date" in frame) + int("imp_ann_date" in frame) + int("base_share" in frame), raw_manifest["imported_at_utc"])
+        if symbol not in sources or score > sources[symbol][0]:
+            sources[symbol] = (score, frame, raw_manifest["id"])
+    audit_dir = "dividends-audit/" + RULE_VERSION
+    for symbol in symbols:
+        if symbol not in sources:
+            failures.append({"symbol": symbol, "error": "Retained complete dividend response missing"})
+            continue
+        _, frame, version = sources[symbol]
+        ex = pd.to_datetime(frame.ex_date.astype("string").str.replace(r"\.0$", "", regex=True), errors="coerce", format="mixed")
+        ann = pd.to_datetime(frame.ann_date.astype("string").str.replace(r"\.0$", "", regex=True), errors="coerce", format="mixed")
+        selected = frame.loc[ex.between(cfg["source_start"], cfg["evaluation_end"]) | (ex.isna() & (ann.isna() | ann.between(cfg["source_start"], cfg["evaluation_end"])))].copy()
+        try:
+            persist(selected, output / audit_dir / (symbol + ".csv.gz"), "CN", "stock_dividends", [version],
+                    source_rows=len(frame), excluded_outside_declared_interval=len(frame) - len(selected),
+                    source_start=cfg["source_start"], source_end=cfg["evaluation_end"])
+        except ValueError as error:
+            failures.append({"symbol": symbol, "error": "Dividend re-audit: " + str(error)})
+    manifest["dividend_audit_directory"] = audit_dir
+    manifest["failures"] = failures
     manifest.update(input_evidence())
     write_json(output / "manifest.json", manifest)
     if failures:
@@ -194,8 +229,11 @@ def collect_us(output, cfg):
                     bars[field] = raw[field.title()]
                     bars["adjusted_" + field] = adj[field.title()]
                 bars = persist(bars, path, "US", "daily_ohlc", refs, adjustment="raw_NONE_and_provider_TOTALRETURN_analytical_units", volume_unit="shares", amount_unit="USD")
-            last_quote = str(n.last_quoted_date(symbol))[:10]
-            if pd.Timestamp(last_quote) < last:
+            final_quote = n.last_quoted_date(symbol)
+            # Norgate returns None for still-listed securities; it is not a
+            # malformed terminal date or a failed price capture.
+            last_quote = str(final_quote)[:10] if final_quote is not None else None
+            if last_quote and pd.Timestamp(last_quote) < last:
                 terminals[symbol] = {"last_quote_date": last_quote, "verified_proceeds": False}
         except Exception as error:
             failures.append({"symbol": symbol, "error": str(error)[:250]})

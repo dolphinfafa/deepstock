@@ -168,14 +168,14 @@ def test_declared_fiscal_revision_not_unrelated_amount_or_same_day_conflict():
     rows = [{"ts_code": "A", "end_date": "2024-06-30", "ann_date": "2024-08-29", "ex_date": "2024-11-07", "div_proc": "实施", "cash_div_tax": .4, "stk_div": 0.},
             {"ts_code": "A", "end_date": "2024-06-30", "ann_date": "2024-10-30", "ex_date": "2024-11-07", "div_proc": "实施", "cash_div_tax": 1.4, "stk_div": 0.}]
     clean, _, q, _ = clean_frame(pd.DataFrame(rows), {"endpoint": "dividend"})
-    assert not q["blocking"] and len(clean) == 1 and clean.cash_div_tax.iloc[0] == 1.4
-    assert q["superseded_pre_ex_disclosures"] == 1
+    assert not q["blocking"] and len(clean) == 2
+    assert q["alternative_entitlement_rows"] == 2
     rows[1]["ann_date"] = rows[0]["ann_date"]
     assert clean_frame(pd.DataFrame(rows), {"endpoint": "dividend"})[2]["blocking"]
     rows[1]["ann_date"] = "2024-10-30"
     del rows[0]["end_date"]
     del rows[1]["end_date"]
-    assert clean_frame(pd.DataFrame(rows), {"endpoint": "dividend"})[2]["blocking"]
+    assert clean_frame(pd.DataFrame(rows), {"endpoint": "dividend"})[2]["alternative_entitlement_rows"] == 2
 
 
 def test_open_ended_documented_suspension_is_not_a_fictitious_terminal_sale():
@@ -188,3 +188,35 @@ def test_open_ended_documented_suspension_is_not_a_fictitious_terminal_sale():
     assert daily.iloc[-1].stale_position_marks == 1
     assert not trades.query("action == 'SELL'").symbol.eq("A").any()
     assert summary["stale_position_marks"] == 10
+
+
+def test_unknown_cash_entitlement_blocks_only_a_genuinely_held_strategy():
+    p, cfg, rule = panel_fixture("CN")
+    p.values["cash_dividend_tax_per_raw_share"][225, 7] = np.nan
+    daily, _, _ = run_stock_portfolio(p, cfg, rule, "CN", exit_policy="trend_only")
+    assert np.isfinite(daily.portfolio_equity).all()
+    p.values["cash_dividend_tax_per_raw_share"][225, 0] = np.nan
+    with pytest.raises(PortfolioDataError, match="entitlement unspecified"):
+        run_stock_portfolio(p, cfg, rule, "CN", exit_policy="trend_only")
+
+
+def test_nominal_amount_not_inferred_from_rounded_or_diluted_reference():
+    bars = pd.DataFrame({"symbol": ["A", "A"], "date": pd.to_datetime(["2025-01-02", "2025-01-03"]),
+                         "close": [41.77, 40.], "adj_factor": [198.944, 210.697], "pre_close": [41.77, 39.44]})
+    declarations = pd.DataFrame([{"ts_code": "A", "ann_date": "2024-12-25", "ex_date": "2025-01-03", "div_proc": "实施", "cash_div_tax": 2.38, "stk_div": 0.}])
+    clean, audit = reconcile_stock_actions(bars, declarations, bars.date.min(), bars.date.max())
+    assert clean.cash_div_tax.iloc[0] == 2.38
+    assert audit[0]["nominal_ex_reference_difference"] is True
+    declarations.loc[0, "cash_div_tax"] = 4
+    with pytest.raises(ValueError, match="Large nominal"):
+        reconcile_stock_actions(bars, declarations, bars.date.min(), bars.date.max())
+
+
+def test_stock_only_unspecified_cash_remains_nan_not_a_zero_imputation():
+    bars = pd.DataFrame({"symbol": ["A", "A"], "date": pd.to_datetime(["2025-01-02", "2025-01-03"]),
+                         "close": [10., 7.], "adj_factor": [1., 1.45], "pre_close": [10., 10 / 1.45]})
+    declarations = pd.DataFrame([{"ts_code": "A", "ann_date": "2024-12-25", "ex_date": "2025-01-03", "div_proc": "实施", "cash_div_tax": np.nan, "stk_div": .45}])
+    clean, audit = reconcile_stock_actions(bars, declarations, bars.date.min(), bars.date.max())
+    assert pd.isna(clean.cash_div_tax.iloc[0])
+    assert audit[0]["verified_cash_per_share"] is None
+    assert audit[0]["unspecified_cash_entitlement_blocks_held_strategy"] is True

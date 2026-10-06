@@ -60,7 +60,11 @@ def run(market, data_dir, benchmark_path, output, config_path):
         bars = pd.concat([read_clean_csv(data_dir / "prices" / (s + ".csv.gz")) for s in manifest["symbols"]], ignore_index=True)
         dividends = suspensions = None
         if market == "CN":
-            dividends = pd.concat([read_clean_csv(data_dir / "dividends" / (s + ".csv.gz")) for s in manifest["symbols"]], ignore_index=True)
+            div_dir = data_dir / manifest.get("dividend_audit_directory", "dividends")
+            dividends = pd.concat([read_clean_csv(div_dir / (s + ".csv.gz")) for s in manifest["symbols"]], ignore_index=True)
+            verified = data_dir / "verified_disclosures.csv.gz"
+            if verified.exists():
+                dividends = pd.concat([dividends, read_clean_csv(verified)], ignore_index=True)
             suspensions = pd.concat([read_clean_csv(data_dir / "suspensions" / (s + ".csv.gz")) for s in manifest["symbols"]], ignore_index=True)
         terminal = {s: v["last_quote_date"] for s, v in manifest.get("terminal_securities", {}).items()}
         panel = make_panel(bars, calendar, membership, market, rule["signal"], cfg, dividends=dividends, suspensions=suspensions, terminal=terminal)

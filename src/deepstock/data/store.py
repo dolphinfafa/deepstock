@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-RULE_VERSION = "clean-v1.12"
+RULE_VERSION = "clean-v1.13"
 ROOT = Path(__file__).resolve().parents[3]
 _local = threading.local()
 
@@ -382,6 +382,7 @@ def clean_stock_dividends(frame: pd.DataFrame):
     duplicates = frame.duplicated(values)
     conflicts = pd.Series(False, index=frame.index)
     superseded = pd.Series(False, index=frame.index)
+    alternatives = pd.Series(False, index=frame.index)
     implemented = frame.div_proc.eq("实施")
     economics = [c for c in ["cash_div_tax", "stk_div", "record_date", "pay_date", "div_listdate"] if c in frame]
     # Multiple fiscal-period entitlements may share one ex-date. Only compare
@@ -396,7 +397,16 @@ def clean_stock_dividends(frame: pd.DataFrame):
         # entitlement. Keep the earlier disclosure in immutable raw evidence.
         known = group.loc[announcements.loc[group.index].le(pd.to_datetime(group.ex_date))]
         known_ann = announcements.loc[known.index]
-        if "end_date" in group and group.end_date.notna().all() and not known.empty and known_ann.nunique() > 1:
+        different_economics = len(group[economics].drop_duplicates()) > 1
+        # Different proposal dates may be additional payouts or an aggregate
+        # revision. Neither "latest" nor sum-all is safe: preserve alternatives
+        # for the mandatory factor corroboration at the stock entrance.
+        original_ann = pd.to_datetime(known.ann_date, errors="coerce")
+        if different_economics and original_ann.nunique() > 1 and len(known) == len(group):
+            alternatives.loc[group.index] = True
+            frame.loc[group.index, "_quality_flags"] += "alternative_entitlements_require_factor_audit;"
+            continue
+        if "end_date" in group and group.end_date.notna().all() and not known.empty and known_ann.nunique() > 1 and not different_economics:
             latest = known_ann.max()
             superseded.loc[known.index[known_ann.lt(latest)]] = True
             group = group.loc[~superseded.loc[group.index]]
@@ -408,6 +418,7 @@ def clean_stock_dividends(frame: pd.DataFrame):
                "invalid_rows": int(bad.sum()), "conflict_rows": int(conflicts.sum()), "invalid_dates": invalid_dates,
                "duplicate_rows": int(duplicates.sum()), "modified_rows": len(frame), "imputed_rows": 0,
                "superseded_pre_ex_disclosures": int(superseded.sum()),
+               "alternative_entitlement_rows": int(alternatives.sum()),
                "policy": "Keep nullable plans and missing implemented economics explicit; period-specific entrance audit required"}
     return frame.loc[~bad & ~duplicates & ~superseded].reset_index(drop=True), frame.loc[bad].copy(), quality, "stock_dividends"
 

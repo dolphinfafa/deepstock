@@ -15,14 +15,17 @@ unadjusted raw. New exports capture provider responses and upstream versions.
 Dividend duplicates require matching entitlement amount, announcement/record/
 ex/pay dates; auxiliary disclosure revisions remain in raw evidence and audit.
 Unexplained factor magnitudes/splits still block the CN research entrance.
-`clean-v1.12` adds stock limits, verified-empty optional suspension responses,
+`clean-v1.13` adds stock limits, verified-empty optional suspension responses,
 nullable stock dividend plans and fiscal-period disclosure revisions. Same-day
 economic conflicts still block. Missing proposal dates require a supplied
 implementation date, never an inferred date. Explicit study-period dividend
 views retain whole raw responses/upstream IDs and outside-period row counts.
 Stock entrances independently reconcile disclosed entitlement totals with raw
 close/factor steps, preventing aggregate/repeated-period double counting; an
-ambiguous total blocks rather than guessing cash amounts.
+ambiguous total blocks rather than guessing cash amounts. Different dated
+nominal payouts stay alternatives until this audit; blindly taking the latest
+can erase an additional special dividend. All existing stock disclosures are
+re-audited from retained provider bytes without re-downloading bars.
 
 Cleaning normalises IDs/dates, removes only identical duplicates, audits
 numeric/OHLC/activity constraints and missing US sessions against XNYS. Unknown

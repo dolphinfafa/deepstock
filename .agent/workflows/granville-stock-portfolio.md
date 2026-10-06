@@ -59,6 +59,22 @@ CNY5, 5bp slip, 0.1bp transfer both sides, 5bp stamp duty on stock sales
 CN T+1 excludes same-day exits. Suspensions/limit opens delay fills; prior
 volume caps allow partial exits and preserve intent. Missing internal prices
 need explicit suspension evidence; stale marks are flagged, never executable.
+Stock action entrance logs factor quantization and checks the supplied ex-date
+reference. A single nominal entitlement with a small diluted-reference residual
+(at most 0.5% of preceding raw close) is retained with an explicit audit warning,
+not replaced by an inferred amount. This is a diagnostic allowance, not proof
+of real-share execution accounting. Multiple/aggregate disclosures still need
+one uniquely corroborated total; equal implementation revisions within the
+same fiscal period collapse, not separate periods. Incomplete or non-unique
+nominal payouts remain explicit unknowns and block any case held through the
+event, not unrelated/unheld portfolios (including the all-cash warm-up).
+Unspecified stock-only cash
+remains null and blocks any case genuinely held through its ex-date; no fake
+zero cash/tax is created. Norgate None terminal dates mean still-listed names.
+Small source factor revisions confined to the all-cash warm-up, with unchanged
+raw ex-reference, absolute step <=0.001 and relative step <=0.1%, remain in the
+unchanged prices and are explicitly audited. Unexplained evaluation-period
+steps still block. This does not manufacture an action or repair a price.
 If a held security ends and verified terminal proceeds are unavailable, block
 the result rather than sell at a fictional last/zero price or omit the stock.
 
@@ -68,5 +84,8 @@ raw-share corporate actions, taxes, settlements and verified terminal handling.
 All freezes and order permissions elsewhere remain unchanged.
 
 CLI: `python -m scripts.run_granville_portfolio --market US|CN --data-dir ...`.
+Supply `--benchmark` with the existing US SPY file / CN ETF source directory.
+To combine summaries only, use `--us-summary ... --cn-summary ...`; registered
+licensed rows never leave Windows. Case failures never change the principal.
 Dataset collection: `python scripts/prepare_granville_stock_data.py --market ...`.
 Server edit/test → GitHub → clean quantitative-computer pull is mandatory.

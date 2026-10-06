@@ -104,11 +104,12 @@ def make_panel(bars, calendar, membership, market, signal_rule, portfolio_rule, 
     panels["average_turnover"] = panels["turnover"].rolling(portfolio_rule["liquidity_sessions"], min_periods=portfolio_rule["liquidity_sessions"]).mean()
     tax = pd.DataFrame(0., index=dates, columns=symbols)
     action_audit = []
+    rounding_moves = []
     if market == "CN":
         if dividends is None:
             raise PortfolioDataError("CN dividend evidence required")
         try:
-            declarations, action_audit = reconcile_stock_actions(bars, dividends, dates[0], dates[-1])
+            declarations, action_audit = reconcile_stock_actions(bars, dividends, dates[0], dates[-1], allow_unresolved_entitlements=True)
         except ValueError as error:
             raise PortfolioDataError(str(error)) from error
         declarations["ex_date"] = pd.to_datetime(declarations.ex_date, errors="coerce")
@@ -120,7 +121,7 @@ def make_panel(bars, calendar, membership, market, signal_rule, portfolio_rule, 
         event_key = ["ts_code", "ex_date"] + (["end_date"] if "end_date" in active else [])
         active = active.drop_duplicates(event_key)
         amounts = pd.to_numeric(active.cash_div_tax, errors="coerce").to_numpy(dtype=float)
-        if not np.isfinite(amounts).all() or (amounts < 0).any() or active.ann_date.isna().any() or (active.ann_date > active.ex_date).any():
+        if np.isinf(amounts).any() or (amounts < 0).any() or active.ann_date.isna().any() or (active.ann_date > active.ex_date).any():
             raise PortfolioDataError("Ambiguous dividend amount/announcement date")
         for event in active.itertuples():
             if event.ex_date in dates and event.ts_code in symbols:
@@ -132,6 +133,17 @@ def make_panel(bars, calendar, membership, market, signal_rule, portfolio_rule, 
             for changed in changes:
                 prior = factor.index[factor.index < changed][-1]
                 if not len(events[(events > prior) & (events <= changed)]):
+                    a, b = factor.loc[prior], factor.loc[changed]
+                    qa = 10. ** (-max(3, len(str(a).partition(".")[2]))) / 2
+                    qb = 10. ** (-max(3, len(str(b).partition(".")[2]))) / 2
+                    source_rows = bars.loc[bars.symbol.eq(symbol)].set_index("date")
+                    unchanged_reference = "pre_close" in source_rows and abs(source_rows.loc[changed, "pre_close"] - source_rows.loc[prior, "close"]) <= .005
+                    inactive_warmup = changed < pd.Timestamp(portfolio_rule["evaluation_start"])
+                    bounded_precision = abs(b - a) <= max(qa + qb, .001) + 1e-10 and abs(b / a - 1) <= .001
+                    if inactive_warmup and unchanged_reference and bounded_precision:
+                        rounding_moves.append({"symbol": symbol, "date": str(changed.date()), "relative_factor_move": float(b / a - 1),
+                                               "policy": "small_source_factor_revision_in_unheld_warmup_unchanged_raw_ex_reference_no_price_repair"})
+                        continue
                     raise PortfolioDataError(f"Unexplained factor change: {symbol}: {changed.date()}")
     panels["cash_dividend_tax_per_raw_share"] = tax
     documented = pd.DataFrame(False, index=dates, columns=symbols)
@@ -143,6 +155,7 @@ def make_panel(bars, calendar, membership, market, signal_rule, portfolio_rule, 
                       documented.to_numpy(),
                       {"symbols": len(symbols), "documented_internal_suspension_sessions": missing_count,
                        "corporate_action_audit": action_audit,
+                       "rounding_only_factor_movements": rounding_moves,
                        "adjustment_accounting": "analytical_total_return_units_not_actual_broker_shares"})
 
 
@@ -178,6 +191,8 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
         held = np.flatnonzero(units > 1e-10)
         for j in held:
             ex_tax = v["cash_dividend_tax_per_raw_share"][i, j]
+            if not np.isfinite(ex_tax):
+                raise PortfolioDataError(f"Held dividend cash/tax entitlement unspecified: {panel.symbols[j]} at {day.date()}")
             if ex_tax:
                 if not np.isfinite(previous_raw_ratio[j]):
                     raise PortfolioDataError("Dividend tax lacks preceding share-equivalent evidence")
