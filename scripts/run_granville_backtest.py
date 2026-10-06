@@ -73,8 +73,11 @@ def render_report(publication):
 
 
 def run(us_path: Path, cn_dir: Path, output: Path, config_path: Path):
-    output.mkdir(parents=True, exist_ok=False)
     cfg = json.loads(config_path.read_text(encoding="utf-8"))
+    from deepstock.research_control import research_pause
+    if research_pause(cfg["strategy_id"], ROOT):
+        raise ValueError("ETF strategy research is paused")
+    output.mkdir(parents=True, exist_ok=False)
     if tuple(cfg["variants"]) != VARIANTS or cfg["principal_variant"] != "trend_pullback" or cfg["paper_authorized"] or cfg["live_authorized"]:
         raise ValueError("Fixed candidate/execution boundary changed")
     code = capture_code_provenance()

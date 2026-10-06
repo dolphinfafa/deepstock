@@ -171,9 +171,17 @@ def make_panel(bars, calendar, membership, market, signal_rule, portfolio_rule, 
                        "adjustment_accounting": "analytical_total_return_units_not_actual_broker_shares"})
 
 
-def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullback", exit_policy="time_7", stress=False):
+def signal_episodes(signal):
+    """Number continuous true runs from past/present closes; gaps re-arm."""
+    prior = np.vstack([np.zeros((1, signal.shape[1]), dtype=bool), signal[:-1]])
+    return np.cumsum(signal & ~prior, axis=0)
+
+
+def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullback", exit_policy="time_7", stress=False, *, entry_policy="signal_level"):
     if variant not in VARIANTS or exit_policy not in {"time_7", "trend_only"} or market not in {"US", "CN"}:
         raise ValueError("Unknown fixed candidate")
+    if entry_policy not in {"signal_level", "once_per_episode"}:
+        raise ValueError("Unknown entry episode policy")
     cfg = config["markets"][market]
     if not 0 < config["initial_position_target"] <= config["single_entry_ceiling"] <= config["gross_entry_ceiling"] <= 1 or config["max_positions"] != 5:
         raise ValueError("Invalid fixed portfolio entry caps")
@@ -181,6 +189,9 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
         raise ValueError("No cash-yield/authorization changes in this fixed research")
     v, sig = panel.values, panel.signals
     n = len(panel.symbols)
+    episodes = signal_episodes(sig[variant])
+    consumed_episode = np.full(n, -1)
+    entry_episode = np.full(n, -1)
     units = np.zeros(n)
     entry_price = np.zeros(n)
     entry_day = np.full(n, -1)
@@ -252,6 +263,7 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
             trades.append({"date": str(day.date()), "symbol": panel.symbols[j], "action": "SELL", "signal_date": str(date_signal.date()),
                            "reason": reason, "analytical_units": qty, "entry_raw_shares_reference": None, "analytical_execution_price": execution,
                            "charges": charges, "slippage": cost_slip, "held_sessions": i - entry_day[j], "cash_after": cash})
+            trades[-1]["signal_episode"] = int(entry_episode[j])
             sold_today.add(j)
             if units[j] <= 1e-10:
                 units[j] = 0.
@@ -262,6 +274,9 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
         candidate = sig[variant][i - 1] & sig["ready"][i - 1] & panel.eligible[i - 1] & (units <= 1e-10)
         candidate &= np.isfinite(v["strength"][i - 1]) & (v["average_turnover"][i - 1] >= cfg["minimum_average_turnover"])
         candidate &= i - last_exit > signal_rule["cooldown_sessions"]
+        repeated = candidate & (episodes[i - 1] == consumed_episode)
+        if entry_policy == "once_per_episode":
+            candidate &= ~repeated
         ranked = sorted(np.flatnonzero(candidate), key=lambda j: (-v["strength"][i - 1, j], panel.symbols[j]))
         for j in ranked:
             if (units > 1e-10).sum() >= config["max_positions"]:
@@ -294,6 +309,7 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
             cash -= notional + charges
             units[j] = qty
             entry_day[j], entry_price[j] = i, execution
+            entry_episode[j] = consumed_episode[j] = episodes[i - 1, j]
             fee += charges
             slippage_cash += cost_slip
             traded += qty * v["adjusted_open"][i, j]
@@ -301,6 +317,7 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
             trades.append({"date": str(day.date()), "symbol": panel.symbols[j], "action": "BUY", "signal_date": str(dates[i - 1].date()),
                            "reason": variant, "analytical_units": qty, "entry_raw_shares_reference": float(shares), "analytical_execution_price": execution,
                            "charges": charges, "slippage": cost_slip, "held_sessions": 0, "cash_after": cash})
+            trades[-1]["signal_episode"] = int(entry_episode[j])
         present = np.isfinite(v["adjusted_close"][i])
         previous_mark[present] = v["adjusted_close"][i, present]
         previous_raw_ratio[present] = v["adjusted_close"][i, present] / v["close"][i, present]
@@ -323,6 +340,8 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
                       "commission": fee, "slippage": slippage_cash, "dividend_tax": tax, "transaction_cost": (fee + slippage_cash + tax) / previous_nav,
                       "turnover": traded / (2 * previous_nav), "entry_fill": entries, "exit_fill": exits, "entry_signal": int(candidate.sum()),
                       "blocked_entry": blocked, "delayed_exit": delayed, "stale_position_marks": stale, "receivable": 0.,
+                      "same_episode_candidates": int(repeated.sum()),
+                      "suppressed_same_episode_candidates": int(repeated.sum()) if entry_policy == "once_per_episode" else 0,
                       "maximum_holding_sessions": max((i - entry_day[j] + 1 for j in held), default=0), "pending_exits": len(pending)})
         previous_nav = nav
     frame = pd.DataFrame(daily).set_index("date")
@@ -331,4 +350,4 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
                     "stale_position_marks": int(frame.stale_position_marks.sum()), "dividend_tax": float(frame.dividend_tax.sum()),
                     "maximum_holding_sessions": int(frame.maximum_holding_sessions.max()), "pending_exits_at_end": int(frame.pending_exits.iloc[-1]),
                     "quantity_unit": "analytical_total_return_units_not_broker_shares"})
-    return frame, pd.DataFrame(trades), summary
+    return frame, pd.DataFrame(trades, columns=["date", "symbol", "action", "signal_date", "reason", "analytical_units", "entry_raw_shares_reference", "analytical_execution_price", "charges", "slippage", "held_sessions", "cash_after", "signal_episode"]), summary

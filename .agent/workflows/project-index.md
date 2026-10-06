@@ -28,10 +28,12 @@ shared governance, data and execution remain outside these market packages.
 Do not mark a strategy `Both` merely because its indicators are portable.
 See `strategy-structure.md` before adding or reorganising a strategy. ETF
 afternoon momentum is A-share-only under the current user decision.
-Granville MA swing is the first explicitly approved Both study, with separate
-SPY and 510300 ledgers; it is research-only, never a pooled currency return.
-The separately approved Granville stock portfolio is also Both, with at most
-five stocks per market and free-slot replacement; see `granville-stock-portfolio.md`.
+The independent Granville stock portfolio is Both, with at most five stocks per
+market and free-slot replacement; see `granville-stock-portfolio.md`. The user
+removed the separate ETF MA-swing strategy on October 6; keep its immutable
+historical evidence and shared helpers, not its registration or page. Never
+pool USD/CNY returns. Entry-episode v2 is a single-change diagnostic, not winner
+promotion or authority for orders.
 
 ### Think Before Act
 

@@ -1,0 +1,17 @@
+{
+  "strategy_id": "granville_stock_portfolio",
+  "experiment_id": "granville-entry-episodes-v2-20261006",
+  "base_config": "config/granville_portfolio_v1.json",
+  "baseline_publication_id": "granville-stocks-20261006-fixed-v1",
+  "variant": "trend_pullback",
+  "exit_policy": "time_7",
+  "entry_policies": ["signal_level", "once_per_episode"],
+  "cost_cases": ["base", "stress"],
+  "principal_entry_policy": "signal_level",
+  "episode_definition": "A continuous true run of the unchanged close signal. A false close re-arms. At most one successful buy per symbol per episode; failed or slot-blocked buys do not consume the episode. Warm-up episodes are retained. Not proof of a distinct physical pullback.",
+  "unchanged_rules": "Same v1 stock pool, dates, ranks, position sizes, time_7 exit, stops, cooldown, costs, taxes and fills. No parameter search, regime changes or winner promotion.",
+  "evidence_scope": "Same previously seen history; retrospective single-change diagnostic, not prospective OOS. Zero complete walk-forward windows remains a limitation.",
+  "selection_policy": "Retain both policies and both costs on both markets, including blocked cases. Primary metrics remain the independently reproduced original baseline, never the best result.",
+  "paper_authorized": false,
+  "live_authorized": false
+}

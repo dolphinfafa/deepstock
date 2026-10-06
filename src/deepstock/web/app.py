@@ -406,7 +406,7 @@ def dashboard(
         "strategies": [_strategy_summary(session, strategy) for strategy in strategies],
         "counts": {
             "strategies": len(strategies),
-            "archived": session.scalar(select(func.count(Strategy.id)).where(Strategy.is_archived.is_(True))),
+            "archived": session.scalar(select(func.count(Strategy.id)).where(Strategy.is_archived.is_(True), Strategy.status != "removed")),
             "shadow": sum("shadow" in strategy.execution_status for strategy in strategies),
             "paper": sum("paper_active" == strategy.execution_status for strategy in strategies),
             "live": sum("live_active" == strategy.execution_status for strategy in strategies),
@@ -534,7 +534,7 @@ def strategies(
     session: Session = Depends(get_session),
     _auth: AuthSession = Depends(_auth_dependency),
 ) -> list[dict[str, Any]]:
-    query = select(Strategy).where(Strategy.is_archived.is_(archived))
+    query = select(Strategy).where(Strategy.is_archived.is_(archived), Strategy.status != "removed")
     if market is not None:
         query = query.where(Strategy.market == market.value)
     rows = session.scalars(query.order_by(Strategy.display_name)).all()
@@ -548,7 +548,7 @@ def strategy_detail(
     _auth: AuthSession = Depends(_auth_dependency),
 ) -> dict[str, Any]:
     strategy = session.get(Strategy, strategy_id)
-    if strategy is None:
+    if strategy is None or strategy.status == "removed":
         raise HTTPException(status_code=404, detail="strategy not found")
     runs = session.scalars(
         select(ResearchRun)
@@ -632,7 +632,7 @@ def reports(
     session: Session = Depends(get_session),
     _auth: AuthSession = Depends(_auth_dependency),
 ) -> list[dict[str, Any]]:
-    statement = select(ResearchReport)
+    statement = select(ResearchReport).join(Strategy, ResearchReport.strategy_id == Strategy.id).where(Strategy.status != "removed")
     if strategy_id:
         statement = statement.where(ResearchReport.strategy_id == strategy_id)
     rows = session.scalars(

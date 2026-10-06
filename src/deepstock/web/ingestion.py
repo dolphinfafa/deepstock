@@ -75,6 +75,22 @@ def ingest_catalog(session: Session, catalog_path: Path | None = None) -> dict[s
     # Validate the entire catalogue before any write, not halfway through ingestion.
     for item in catalog["strategies"]:
         StrategyMarket(item["market"])
+    removed = catalog.get("removed_strategies", [])
+    if {item["id"] for item in removed} & {item["id"] for item in catalog["strategies"]}:
+        raise ValueError("Removed strategy cannot remain registered")
+    # Retain FK-linked evidence, but retire existing rows on upgraded databases.
+    # A fresh installation never creates a deleted strategy.
+    for item in removed:
+        strategy = session.get(Strategy, item["id"])
+        if strategy is not None:
+            strategy.status = "removed"
+            strategy.execution_status = "removed_research_no_orders"
+            strategy.live_eligible = False
+            strategy.is_archived = True
+            strategy.archived_at = datetime.fromisoformat(item["removed_at"]).replace(tzinfo=timezone.utc)
+            strategy.archive_reason = item["reason"]
+            for version in session.scalars(select(StrategyVersion).where(StrategyVersion.strategy_id == strategy.id)):
+                version.active = False
     strategy_count = 0
     metric_count = 0
     for item in catalog["strategies"]:
@@ -613,8 +629,8 @@ def ingest_tail_momentum(session: Session) -> dict[str, Any]:
 def ingest_all(session: Session) -> dict[str, Any]:
     from deepstock.web.data_catalog import ingest_datasets
     from deepstock.web.reclean_runs import ingest_reclean_runs
-    from deepstock.web.granville_runs import ingest_granville_runs
     from deepstock.web.granville_stock_runs import ingest_granville_stock_runs
+    from deepstock.web.granville_optimization_runs import ingest_granville_optimization_runs
     catalog = ingest_catalog(session)
     reruns = ingest_reclean_runs(session, settings.project_root)
     return {
@@ -623,7 +639,7 @@ def ingest_all(session: Session) -> dict[str, Any]:
         "defensive": ingest_defensive_observation(session),
         "tail_momentum": ingest_tail_momentum(session),
         "reclean": reruns,
-        "granville": ingest_granville_runs(session, settings.project_root),
         "granville_stocks": ingest_granville_stock_runs(session, settings.project_root),
+        "granville_optimization": ingest_granville_optimization_runs(session, settings.project_root),
         "datasets": ingest_datasets(session, settings.project_root),
     }

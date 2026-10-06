@@ -32,15 +32,11 @@ sample labels or an unavailable reason. CSI300 owns local adapters, securities,
 history, observation SQLite and scheduler; Darwen is not a runtime dependency.
 All strategy freezes and order permissions remain unchanged.
 
-The independent `granville_ma_swing` is explicitly Both under the October 6
-user decision. Its fixed 20/60/200-MA daily ETF study compares three signal
-families on SPY and 510300.SH, using separate currencies, calendars, costs and
-corporate-action accounting. `trend_pullback` is the preregistered principal;
-all variants and base/stress costs remain visible. APIs return `market_results`
-and `annualization.scope=separate_markets`, never a pooled US/CN CAGR. The first
-2014–2026-09-29 run produced principal CAGR -0.254% / +0.168%, versus respective
-buy/hold +13.74% / +6.69%. These are retrospective diagnostic results, not
-prospective OOS or trading eligibility. See `granville-ma-swing.md`.
+The user removed the independent `granville_ma_swing` ETF strategy on October
+6. Its catalog/registry entry and pages are gone; DB retirement tombstones keep
+historical evidence, not an active/frozen listing or execution version. Its
+shared signal and benchmark helpers remain dependencies of the stock portfolio.
+Historical ETF ledger/config evidence is not erased or relabelled.
 
 The user also approved `granville_stock_portfolio`: separate Both candidate,
 maximum five holdings, prior-close ranking, replace only actually sold/free
@@ -57,6 +53,14 @@ time_7 principal CAGR is +12.32% US / -6.38% CN versus ETF +17.48% / +8.67%.
 US slippage stress is material; CN drawdown is worse than its benchmark. Zero
 full rolling windows and unresolved execution/action/sector gates forbid any
 promotion to Paper. See `granville-stock-portfolio.md` for all cases/limitations.
+
+The entry-episode v2 optimization separately registers just one change: one
+successful entry per symbol per continuous true close-signal run. Original
+baseline ledgers must replay identically, base/stress comparisons stay visible
+in both markets, and the original principal remains the display. Authenticated
+details show all eight new cases and link exit/reentry/cost-path diagnostics.
+Direct-cost cash ratios are not compounded return losses or hypothetical
+zero-cost returns. No new regime switching, order schedule or Paper authority.
 
 The implemented architecture uses a FastAPI control plane, SQLite/SQLAlchemy,
 Alembic migrations, a Vue 3 research library, scheduled artifact ingestion and

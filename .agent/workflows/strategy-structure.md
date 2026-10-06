@@ -25,7 +25,7 @@ src/deepstock/
   strategies/
     us/      defensive ETF, stock Turtle, SPY mean reversion, grid, ARC
     cn/      ETF afternoon momentum / T+1
-    both/    independent Granville ETF MA swing and stock portfolio, US/CN ledgers
+    both/    Granville stock portfolio, shared historical signal/accounting helpers
   markets.py              US / CN / Both category contract
   risk.py                 shared risk infrastructure
   strategy_governance.py  shared gates, not a strategy
@@ -52,7 +52,14 @@ governance and execution infrastructure stays outside those strategy packages.
 | --- | --- |
 | US | Defensive ETF; ARC/ADX; stock Turtle; grid; SPY mean reversion; frozen AHL candidate |
 | CN | CSI300 opening auction; ETF afternoon momentum / T+1 |
-| Both | Granville-inspired ETF MA swing (SPY / 510300.SH); independent Granville multi-stock portfolio |
+| Both | Independent Granville multi-stock portfolio |
+
+The separate `granville_ma_swing` ETF strategy was deleted from catalog and
+registry by user decision on October 6. `removed_strategies` tombstones retire
+upgraded DB rows and deactivate versions without cascading evidence deletion.
+Removed rows never appear in active/frozen lists or strategy detail; retained
+historical reports remain directly recoverable. Shared signal/config files are
+historical inputs to the stock portfolio, not an active parent dependency.
 
 The frozen AHL candidate's first eight contracts are US-exchange futures
 (`ES/NQ/ZN/ZB/CL/GC/6E/6J`), hence the US venue bucket. “Global” in its name

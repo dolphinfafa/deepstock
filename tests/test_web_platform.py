@@ -130,16 +130,16 @@ def test_frozen_strategy_is_separate_and_cannot_be_authorized(client: TestClient
     headers, csrf = _login(client)
     active = client.get("/api/strategies", headers=headers).json()
     frozen = client.get("/api/strategies?archived=true", headers=headers).json()
-    assert len(active) == 9
+    assert len(active) == 8
     assert len(frozen) == 1
     ahl = frozen[0]
     assert ahl["is_archived"] is True
     assert all(row["id"] != ahl["id"] for row in active)
     assert client.get(f"/api/strategies/{ahl['id']}", headers=headers).status_code == 200
     dashboard = client.get("/api/dashboard", headers=headers).json()
-    assert dashboard["counts"]["strategies"] == 9
+    assert dashboard["counts"]["strategies"] == 8
     assert dashboard["counts"]["archived"] == 1
-    assert len(dashboard["strategies"]) == 9
+    assert len(dashboard["strategies"]) == 8
     expires = date.today() + timedelta(days=5)
     response = client.post("/api/execution/authorizations", headers={**headers, "X-CSRF-Token": csrf}, json={
         "strategy_id": ahl["id"], "mode": "paper", "notional_cap_usd": 100,
@@ -166,7 +166,7 @@ def test_strategy_markets_filter_exact_categories_and_preserve_freeze(client: Te
     assert len(us) == 5 and all(row["market"] == "US" for row in us)
     assert {row["id"] for row in cn} == {"cn_etf_tail_momentum", "csi300_opening_auction"}
     assert all(row["market"] == "CN" for row in cn)
-    assert [row["id"] for row in both] == ["granville_ma_swing", "granville_stock_portfolio"]
+    assert [row["id"] for row in both] == ["granville_stock_portfolio"]
     frozen = client.get("/api/strategies?market=US&archived=true", headers=headers).json()
     assert [row["id"] for row in frozen] == ["ahl_global_futures_trend"]
     assert frozen[0]["execution_status"] == "frozen_research_no_orders"

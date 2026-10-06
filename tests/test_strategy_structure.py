@@ -21,7 +21,8 @@ def test_every_strategy_has_consistent_explicit_market():
         assert StrategyMarket(row["market"]) in set(StrategyMarket)
     assert mapping["cn_etf_tail_momentum"] == "CN"
     assert mapping["csi300_opening_auction"] == "CN"
-    assert mapping["granville_ma_swing"] == "Both"
+    assert "granville_ma_swing" not in mapping
+    assert mapping["granville_stock_portfolio"] == "Both"
     assert mapping["ahl_global_futures_trend"] == "US"  # Initial CME universe, not an A-share validation claim.
 
 

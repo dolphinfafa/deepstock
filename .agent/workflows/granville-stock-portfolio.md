@@ -140,3 +140,44 @@ historical sector cap or real-share settlement claim. Next: verified WBA cash/
 contingent-right/settlement evidence; longer point-in-time OHLCV; action, industry,
 tax/settlement accounting; new predeclared cost/holding diagnostics rather than
 selecting a winner from these results. No Paper, Live or new observer schedule.
+
+## Fixed next experiment: entry episodes v2
+
+User removed the independent ETF MA-swing strategy and approved portfolio
+optimization. ETF registrations/pages are retired, not shared helpers or past
+data; v1 `parent_strategy` is immutable historical lineage, not a live dependency.
+
+Before new performance, `config/granville_portfolio_episodes_v2.json` registers
+one change only for trend_pullback/time_7: compare `signal_level` versus
+`once_per_episode`, both original costs. A continuous true run of the unchanged
+close signal is an episode. A false close re-arms the next true run; at most
+one successful buy per stock per episode. Warm-up episodes are counted, and
+unfilled/capacity/slot-blocked opportunities do not consume eligibility. This
+proxy is not proof of a distinct new physical pullback. Original cooldown,
+limits, stops, next-open fills, rankings, sizes and 7-day exits are unchanged.
+
+Each market retains four cases (eight total); all original 24 cases/blocks are
+also retained. Before comparing the new rule, independently replay base/stress
+baseline and compare every original daily field and trade against SHA-verified
+immutable ledgers. Do not promote a winner. All history was already seen;
+this is neither forward OOS nor new full walk-forward evidence.
+
+CLI: `python -m scripts.run_granville_optimization --market US|CN --data-dir ...
+--baseline-dir ... --output-dir ...`. It reuses all registered input versions,
+never downloads or rewrites dataset manifests. Two summaries can be published
+with `--us-summary ... --cn-summary ...` into a fresh ignored directory under
+`artifacts/research/granville-stock-optimizations/`; licensed US bars stay local.
+Cross-node contracts compare complete parsed baseline and experiment configs.
+
+Diagnostics: completed-position exit reasons/holding and realized PnL (includes
+fill slippage/charges, does not allocate dividend tax); repeated successful
+entries in the same episode; cash costs separately by fees/slip/dividend tax;
+stress-minus-base net change = changed-path marked gross PnL minus extra direct
+cost. Direct cash costs divided by initial capital are not compounded return
+drag, and this identity is not a tradable zero-cost/reinvestment counterfactual.
+Final open holdings and partial/deferred fills remain, never fake liquidation.
+
+Later experiments (not stacked in v2): risk-normalized sizing, verified
+historical sector/correlation constraints, low-frequency market filtering, and
+longer point-in-time history/verified terminal accounting. Preserve US/CN
+separation, freezes, observation writers and all order gates.

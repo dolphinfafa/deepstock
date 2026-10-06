@@ -46,7 +46,8 @@ def ingest_granville_runs(session, root: Path):
         count += 1
     # The already-approved original note belongs to this independent candidate.
     note = session.get(ResearchNote, "3406ec87-93b6-4cf0-b6ad-4ab7697560c5")
-    if note and note.user_decision == "approved_for_test" and session.get(Strategy, "granville_ma_swing"):
+    strategy = session.get(Strategy, "granville_ma_swing")
+    if note and note.user_decision == "approved_for_test" and strategy and strategy.status != "removed":
         note.strategy_id = "granville_ma_swing"
         note.scope_type = "strategy"
     session.commit()

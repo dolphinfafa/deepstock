@@ -45,6 +45,9 @@ def cached_response(endpoint, start=None, end=None):
 
 
 def download(output: Path, end="2026-09-29", reuse_captured=False):
+    from deepstock.research_control import research_pause
+    if research_pause("granville_ma_swing", ROOT):
+        raise ValueError("ETF strategy research is paused")
     output.mkdir(parents=True, exist_ok=False)
     pro = get_pro()
     daily, factors = [], []

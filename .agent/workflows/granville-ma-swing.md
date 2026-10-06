@@ -1,5 +1,15 @@
 # Granville-Inspired ETF Moving-Average Swing
 
+## Removed by user on October 6, 2026
+
+The independent ETF strategy is no longer registered or displayed, including
+the frozen-strategy library. Upgraded DB rows are evidence-only `removed`,
+all versions inactive; historical ledgers/reports remain recoverable. Regular
+ingestion no longer imports ETF results, and its run/download entrances reject
+the unregistered strategy. Shared signal/accounting helpers and immutable v1
+configuration are retained for the stock portfolio and old evidence, not an
+active ETF strategy. The historical description below is not current authority.
+
 Independent strategy `granville_ma_swing`, explicitly **Both**, research-only.
 User approved a new strategy and separate US/A-share backtests on October 6.
 First fixed instruments are SPY and 510300.SH, broad-market ETFs, not a

@@ -27,6 +27,29 @@ def fixed_config(path):
     return cfg
 
 
+def load_stock_inputs(market, data_dir, cfg, rule, config_path):
+    """Reuse registered evidence; experiments never rewrite collection identity."""
+    manifest = json.loads((data_dir / "manifest.json").read_text(encoding="utf-8"))
+    if manifest["market"] != market or manifest["config_hash"] != digest(config_path):
+        raise ValueError("Dataset/config identity differs")
+    calendar = pd.DatetimeIndex(pd.to_datetime(read_clean_csv(data_dir / "calendar.csv").date))
+    membership = read_clean_csv(data_dir / "membership.csv.gz")
+    if manifest["failures"]:
+        raise PortfolioDataError(f"Required constituent evidence blocked: {manifest['failures']}")
+    bars = pd.concat([read_clean_csv(data_dir / "prices" / (s + ".csv.gz")) for s in manifest["symbols"]], ignore_index=True)
+    dividends = suspensions = None
+    if market == "CN":
+        div_dir = data_dir / manifest.get("dividend_audit_directory", "dividends")
+        dividends = pd.concat([read_clean_csv(div_dir / (s + ".csv.gz")) for s in manifest["symbols"]], ignore_index=True)
+        verified = data_dir / "verified_disclosures.csv.gz"
+        if verified.exists():
+            dividends = pd.concat([dividends, read_clean_csv(verified)], ignore_index=True)
+        suspensions = pd.concat([read_clean_csv(data_dir / "suspensions" / (s + ".csv.gz")) for s in manifest["symbols"]], ignore_index=True)
+    terminal = {s: v["last_quote_date"] for s, v in manifest.get("terminal_securities", {}).items()}
+    panel = make_panel(bars, calendar, membership, market, rule, cfg, dividends=dividends, suspensions=suspensions, terminal=terminal)
+    return panel, manifest
+
+
 def run(market, data_dir, benchmark_path, output, config_path):
     cfg = fixed_config(config_path)
     output.mkdir(parents=True, exist_ok=False)
