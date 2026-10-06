@@ -209,8 +209,8 @@
       "metrics": {},
       "progress": [
         {"stage": "design", "title": "冻结5股票补位规则与两类退出", "detail": "三类入场×两类退出×两类成本，主展示预先固定，不按结果选参。", "status": "done"},
-        {"stage": "data", "title": "历史成分、行情与公司行动审计", "detail": "原始价与复权OHLC、实际涨跌停、停牌和分红交叉校验；缺失不填价格。", "status": "current"},
-        {"stage": "backtest", "title": "两市场独立股票组合回测", "detail": "共同区间、连续组合净值和两套ETF基准；全部24组保留，包括显式阻塞。", "status": "current"},
+        {"stage": "data", "title": "历史成分、行情与公司行动审计", "detail": "US535只、CN338只历史成员；原始/复权OHLC、限价、停牌和披露审计。暖期缺失保留NaN，兑付和现金权益未知不虚构。", "status": "done"},
+        {"stage": "backtest", "title": "两市场独立股票组合回测", "detail": "共同区间24组已运行，22组有完整结果；US趋势回踩/仅趋势退出两成本情景因WBA退市兑付缺证据阻塞。全部结果与两套ETF基准已发布。", "status": "done"},
         {"stage": "validation", "title": "长历史与真实执行账本", "detail": "点时行业、终止兑付、真实股数/税务结算和前瞻验证仍需补齐，不授权交易。", "status": "blocked"}
       ]
     },

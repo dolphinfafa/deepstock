@@ -93,3 +93,50 @@ To combine summaries only, use `--us-summary ... --cn-summary ...`; registered
 licensed rows never leave Windows. Case failures never change the principal.
 Dataset collection: `python scripts/prepare_granville_stock_data.py --market ...`.
 Server edit/test → GitHub → clean quantitative-computer pull is mandatory.
+
+## October 6 results and remaining gates
+
+Immutable publication: `artifacts/research/granville-stocks/20261006-fixed-v1/`.
+US ran on the quantitative computer, CN on the server; both started from clean
+`375c4d3` with source snapshots and runtime versions. The Windows runtime is
+3.12.14 versus server 3.12.13, explicitly retained. Raw config byte hashes differ
+under Windows CRLF; full parsed contracts must match and both raw hashes plus a
+semantic configuration hash are retained. This is not permission to change rules.
+
+535 US historical members / 338 CN monthly historical members; evaluation has
+436 / 423 respective sessions. All 24 fixed cases retained: 22 completed and
+2 blocked. US trend_pullback/trend_only, both cost cases, held WBA-202508 into
+August 28, 2025; verified full terminal proceeds are missing. No fictional sale,
+stock removal or substitute principal. The time_7 principal completes.
+
+| Base cost | US cumulative / CAGR / MDD | CN cumulative / CAGR / MDD |
+| --- | --- | --- |
+| ma_cross / time_7 | -9.99% / -5.90% / -17.21% | +11.07% / +6.45% / -13.93% |
+| ma_cross / trend_only | -4.36% / -2.54% / -18.58% | +9.40% / +5.50% / -17.80% |
+| trend_pullback / time_7 (principal) | +22.26% / +12.32% / -17.89% | -10.48% / -6.38% / -28.36% |
+| trend_pullback / trend_only | blocked — WBA proceeds | +13.02% / +7.56% / -26.41% |
+| deviation_reversal / time_7 | -7.66% / -4.50% / -25.70% | +0.37% / +0.22% / -19.76% |
+| deviation_reversal / trend_only | -8.04% / -4.73% / -28.73% | +4.84% / +2.86% / -20.29% |
+| local ETF 100% buy/hold | +32.14% / +17.48% / -18.75% | +14.97% / +8.67% / -12.71% |
+
+Principal average exposure 75.24% US / 69.81% CN; annualized round-trip turnover
+31.74 / 30.00. US 10bp-slip stress cuts principal cumulative return from 22.26%
+to 4.66%, not an isolated brokerage-fee deduction: costs can change lot/cash
+paths under the same rules. No high-return alternative is promoted. Even the
+80%-initial SPY benchmark returns 25.71% with -15.12% MDD, stronger than the
+principal. CN shows no gain from promoting this stock-rotation principal.
+
+Data audit retains SW's 82 sparse pre-index warm-up dates as NaN; evaluated US
+sessions are complete. CN retains 103 small unchanged-reference factor moves
+confined to inactive warm-up; no adjusted price is repaired. Implementation PDF
+1220848913 independently verifies 601898's 2024-08-20 total cash dividend 0.555
+(annual 0.442 + special 0.113), which Tushare listed incompletely. Public PDF,
+registered source/derived evidence and hashes remain local ignored artifacts.
+300803 cash for two reported stock-only events remains unspecified; none of the
+completed cases was held through those dates. A genuinely held case must block.
+
+There are zero full 504+252 rolling windows: sample is too short. No forward OOS,
+historical sector cap or real-share settlement claim. Next: verified WBA cash/
+contingent-right/settlement evidence; longer point-in-time OHLCV; action, industry,
+tax/settlement accounting; new predeclared cost/holding diagnostics rather than
+selecting a winner from these results. No Paper, Live or new observer schedule.

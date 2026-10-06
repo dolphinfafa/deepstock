@@ -1,4 +1,6 @@
 from copy import deepcopy
+import json
+from pathlib import Path
 import pytest
 from deepstock.data.store import write_json
 from deepstock.web.database import SessionLocal
@@ -59,3 +61,23 @@ def test_stock_candidate_cannot_be_dropped_or_replaced(tmp_path):
         with pytest.raises(ValueError, match="All fixed"):
             ingest_granville_stock_runs(session, tmp_path)
         session.rollback()
+
+
+def test_cross_node_config_requires_same_parameters_not_same_newline_bytes(tmp_path, monkeypatch):
+    from scripts import run_granville_portfolio as cli
+    cfg = json.loads((Path(__file__).resolve().parents[1] / "config/granville_portfolio_v1.json").read_text())
+    config_path = tmp_path / "config.json"
+    write_json(config_path, cfg)
+    paths = {}
+    for market in ["US", "CN"]:
+        paths[market] = tmp_path / (market + ".json")
+        write_json(paths[market], {"market": market, "config": cfg, "config_hash": ("a" if market == "US" else "b") * 64,
+                                   "status": "completed", "data_versions": [], "input_exclusions": []})
+    monkeypatch.setattr(cli, "render_report", lambda value: "# Synthetic unit fixture, not performance evidence")
+    value = cli.publish(paths["US"], paths["CN"], tmp_path / "publication", config_path)
+    assert value["source_config_hashes"] == {"US": "a" * 64, "CN": "b" * 64}
+    modified = json.loads(paths["CN"].read_text())
+    modified["config"]["initial_capital"] += 1
+    write_json(paths["CN"], modified)
+    with pytest.raises(ValueError, match="different market/config"):
+        cli.publish(paths["US"], paths["CN"], tmp_path / "invalid", config_path)

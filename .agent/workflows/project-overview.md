@@ -51,6 +51,12 @@ Licensed US bars run on Windows; summaries/metadata alone reach the server.
 CN historical monthly membership is an explicitly lagged proxy. Analytical
 economic units, CN stock taxes, capacity, limits, suspensions and corporate-
 action audit are documented separately from broker-share execution. No orders.
+The first dual-market stock publication (`20261006-fixed-v1`) retains 24 cases:
+22 complete, 2 US trend-only cases blocked by WBA terminal proceeds. Fixed
+time_7 principal CAGR is +12.32% US / -6.38% CN versus ETF +17.48% / +8.67%.
+US slippage stress is material; CN drawdown is worse than its benchmark. Zero
+full rolling windows and unresolved execution/action/sector gates forbid any
+promotion to Paper. See `granville-stock-portfolio.md` for all cases/limitations.
 
 The implemented architecture uses a FastAPI control plane, SQLite/SQLAlchemy,
 Alembic migrations, a Vue 3 research library, scheduled artifact ingestion and

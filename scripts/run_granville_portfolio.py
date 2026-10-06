@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import json
+import hashlib
 from pathlib import Path
 import shutil
 import sys
@@ -194,13 +195,17 @@ def publish(us_path, cn_path, output, config_path):
     cfg = fixed_config(config_path)
     results = {"US": json.loads(us_path.read_text(encoding="utf-8")), "CN": json.loads(cn_path.read_text(encoding="utf-8"))}
     for market, result in results.items():
-        if result["market"] != market or result["config_hash"] != digest(config_path) or result["config"] != cfg:
+        # Git's Windows CRLF checkout changes byte hashes without changing any
+        # parameter. Compare the full parsed contract, retain every raw hash.
+        if result["market"] != market or result["config"] != cfg:
             raise ValueError("Cannot merge different market/config versions")
     output.mkdir(parents=True, exist_ok=False)
     value = {"id": "granville-stocks-" + output.name, "strategy_id": cfg["strategy_id"],
              "status": "completed" if all(r["status"] == "completed" for r in results.values()) else "completed_with_blocks",
              "as_of_date": datetime.now(timezone.utc).date().isoformat(), "data_start": cfg["evaluation_start"], "data_end": cfg["evaluation_end"],
              "config": cfg, "config_hash": digest(config_path), "code_version": None, "market_results": results,
+             "config_semantic_hash": hashlib.sha256(json.dumps(cfg, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+             "source_config_hashes": {market: result["config_hash"] for market, result in results.items()},
              "summary": "双市场多股票组合固定诊断：最多5只、卖出后补位，24组全部保留；回溯诊断，未授权交易。",
              "source_summary_hashes": {"US": digest(us_path), "CN": digest(cn_path)},
              "data_versions": list({v["version"]: v for r in results.values() for v in r["data_versions"]}.values()),
