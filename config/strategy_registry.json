@@ -61,6 +61,13 @@
       "specification": ".agent/workflows/granville-ma-swing.md"
     },
     {
+      "strategy_id": "granville_stock_portfolio",
+      "market": "Both",
+      "display_name": "Granville Multi-Stock Portfolio",
+      "execution_status": "research_only_no_orders",
+      "specification": ".agent/workflows/granville-stock-portfolio.md"
+    },
+    {
       "strategy_id": "csi300_opening_auction",
       "market": "CN",
       "display_name": "CSI 300 Opening Auction",

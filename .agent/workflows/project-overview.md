@@ -42,6 +42,16 @@ and `annualization.scope=separate_markets`, never a pooled US/CN CAGR. The first
 buy/hold +13.74% / +6.69%. These are retrospective diagnostic results, not
 prospective OOS or trading eligibility. See `granville-ma-swing.md`.
 
+The user also approved `granville_stock_portfolio`: separate Both candidate,
+maximum five holdings, prior-close ranking, replace only actually sold/free
+slots, no daily rank churn. Three entries × time_7/trend_only × base/stress are
+retained, including blocked cases; principal is trend_pullback/time_7. Common
+2025-01-02–2026-09-29 diagnostic sample does not establish long-history OOS.
+Licensed US bars run on Windows; summaries/metadata alone reach the server.
+CN historical monthly membership is an explicitly lagged proxy. Analytical
+economic units, CN stock taxes, capacity, limits, suspensions and corporate-
+action audit are documented separately from broker-share execution. No orders.
+
 The implemented architecture uses a FastAPI control plane, SQLite/SQLAlchemy,
 Alembic migrations, a Vue 3 research library, scheduled artifact ingestion and
 backups, and a Windows-local IBKR execution agent. The workflow is:

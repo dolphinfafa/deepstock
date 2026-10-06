@@ -30,6 +30,8 @@ See `strategy-structure.md` before adding or reorganising a strategy. ETF
 afternoon momentum is A-share-only under the current user decision.
 Granville MA swing is the first explicitly approved Both study, with separate
 SPY and 510300 ledgers; it is research-only, never a pooled currency return.
+The separately approved Granville stock portfolio is also Both, with at most
+five stocks per market and free-slot replacement; see `granville-stock-portfolio.md`.
 
 ### Think Before Act
 

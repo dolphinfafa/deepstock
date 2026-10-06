@@ -52,8 +52,8 @@ watch(() => live.revision, load)
     <section v-if="separateMarkets" class="detail-grid">
       <article v-for="(result, market) in strategy.market_results" :key="market" class="panel">
         <div class="section-title"><div><small>{{ marketLabel(String(market)) }} · {{ result.currency }}</small><h2>{{ result.symbol }} · 独立回测</h2></div></div>
-        <p>固定主展示：{{ result.principal_variant }} · 基础成本 · 全历史</p>
-        <div class="metric-list">
+        <p>固定主展示：{{ result.principal_variant }}<template v-if="result.principal_exit_policy"> / {{ result.principal_exit_policy }}</template> · 基础成本 · 报告区间</p>
+        <div v-if="result.metrics" class="metric-list">
           <div><span>年化收益率</span><strong>{{ pct(result.metrics.annualized_return) }}</strong></div>
           <div><span>累计收益</span><strong>{{ pct(result.metrics.total_return) }}</strong></div>
           <div><span>最大回撤</span><strong class="loss">{{ pct(result.metrics.maximum_drawdown) }}</strong></div>
@@ -63,9 +63,11 @@ watch(() => live.revision, load)
           <div><span>平均暴露 / 年化换手</span><strong>{{ pct(result.metrics.average_exposure) }} / {{ result.metrics.annualized_turnover.toFixed(2) }}</strong></div>
           <div><span>固定滚动负收益窗口</span><strong>{{ result.diagnostics.negative_windows }} / {{ result.diagnostics.walk_forward_windows }}</strong></div>
         </div>
-        <p>{{ result.metrics.start }} — {{ result.metrics.end }} · {{ result.metrics.trading_days }} 交易日</p>
+        <p v-if="result.metrics">{{ result.metrics.start }} — {{ result.metrics.end }} · {{ result.metrics.trading_days }} 交易日</p>
+        <p v-else class="form-error">固定主候选未完成：{{ result.diagnostics.blocking_reason }}。不改选其他候选替代。</p>
+        <p v-if="result.principal_exit_policy">股票池：{{ result.universe_count }} 只历史成员；最多5仓。{{ result.diagnostics.walk_forward_status === 'insufficient_history_for_504_plus_252_sessions' ? '样本不足504+252日，尚无完整滚动验证窗口。' : '' }}</p>
         <small>单边佣金 {{ result.cost_basis.commission_bps }}bp（最低 {{ result.cost_basis.minimum_commission }} {{ result.currency }}）+滑点 {{ result.cost_basis.slippage_bps }}bp；压力滑点 {{ result.cost_basis.stress_slippage_bps }}bp。现金利息0。<br />{{ result.cost_basis.price_model }}<br />回溯诊断留出不等于前瞻OOS；当前仅研究，不下单。</small>
-        <div class="table-wrap"><table><thead><tr><th>全部固定候选</th><th>成本</th><th>年化</th><th>回撤</th></tr></thead><tbody><tr v-for="item in result.cases" :key="`${item.variant}-${item.cost_case}`"><td>{{ item.variant }}</td><td>{{ item.cost_case }}</td><td>{{ pct(item.periods.full.annualized_return) }}</td><td>{{ pct(item.periods.full.maximum_drawdown) }}</td></tr></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>全部固定候选</th><th v-if="result.principal_exit_policy">退出规则</th><th>成本</th><th>年化</th><th>回撤</th><th v-if="result.principal_exit_policy">状态</th></tr></thead><tbody><tr v-for="item in result.cases" :key="`${item.variant}-${item.exit_policy || ''}-${item.cost_case}`"><td>{{ item.variant }}</td><td v-if="result.principal_exit_policy">{{ item.exit_policy }}</td><td>{{ item.cost_case }}</td><td>{{ pct(item.periods.full?.annualized_return) }}</td><td>{{ pct(item.periods.full?.maximum_drawdown) }}</td><td v-if="result.principal_exit_policy" :title="item.blocking_reason">{{ item.status === 'blocked' ? item.blocking_reason : '完成' }}</td></tr></tbody></table></div>
       </article>
     </section>
     <section class="panel compact-panel annualized-slot"><span>年化收益率 · {{ strategy.annualization?.scope || '未建立' }}</span><strong>{{ separateMarkets ? '分市场展示' : strategy.annualization?.value == null ? '暂无' : `${(strategy.annualization.value * 100).toFixed(2)}%` }}</strong><p>{{ strategy.annualization?.short_sample ? '短样本参考年化，不作为准入依据。' : '' }} {{ strategy.annualization?.reason }} {{ strategy.annualization?.data_start || '' }} — {{ strategy.annualization?.data_end || '' }}<template v-if="strategy.annualization?.sessions"> · {{ strategy.annualization.sessions }} 交易日</template></p><small>{{ strategy.annualization?.cost_basis }}</small><div v-if="strategy.latest_run?.data_versions?.length">输入版本：<RouterLink v-for="version in strategy.latest_run.data_versions" :key="version" :to="{ path: '/data', query: { version } }"><code>{{ version.slice(0, 12) }}</code> </RouterLink></div></section>

@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-RULE_VERSION = "clean-v1.6"
+RULE_VERSION = "clean-v1.12"
 ROOT = Path(__file__).resolve().parents[3]
 _local = threading.local()
 
@@ -217,6 +217,14 @@ def clean_dividends(frame: pd.DataFrame):
 def clean_frame(frame: pd.DataFrame, metadata: dict) -> tuple[pd.DataFrame, pd.DataFrame, dict, str]:
     if metadata.get("endpoint") == "fund_div" or metadata.get("kind") == "dividends":
         return clean_dividends(frame)
+    if metadata.get("endpoint") == "dividend" or metadata.get("kind") == "stock_dividends":
+        return clean_stock_dividends(frame)
+    if frame.empty and metadata.get("endpoint") == "suspend_d" and metadata.get("empty_response_verified"):
+        frame = frame.copy()
+        frame["_raw_row"] = pd.Series(dtype="int64")
+        frame["_quality_flags"] = pd.Series(dtype="string")
+        return frame, frame.iloc[:0], {"blocking": False, "issues": [], "imputed_rows": 0,
+                                      "policy": "Captured empty optional suspension response, not a price input"}, "suspensions"
     frame = frame.copy()
     original = frame.copy()
     frame["_raw_row"] = np.arange(len(frame))
@@ -260,9 +268,11 @@ def clean_frame(frame: pd.DataFrame, metadata: dict) -> tuple[pd.DataFrame, pd.D
     changed = original[date_col].astype(str).ne(frame[date_col]).fillna(False)
     frame.loc[changed, "_quality_flags"] += "normalized_date;"
     keys.append(date_col)
+    if metadata.get("endpoint") == "suspend_d":
+        keys.extend(c for c in ["suspend_type", "suspend_timing"] if c in frame)
     if "title" in frame and "url" in frame:
         keys.extend(["title", "url"])
-    numeric = [c for c in frame if c in {"adjusted_open", "adjusted_high", "adjusted_low", "adjusted_close", "open", "high", "low", "close", "price", "pre_close", "volume", "vol", "amount", "turnover", "entry_0931_open", "entry_0931_vwap", "entry_0931_volume", "entry_0931_close", "weight", "turnover_rate", "volume_ratio", "float_share", "adj_factor", "div_cash", "cash_per_share"}]
+    numeric = [c for c in frame if c in {"adjusted_open", "adjusted_high", "adjusted_low", "adjusted_close", "open", "high", "low", "close", "price", "pre_close", "volume", "vol", "amount", "turnover", "entry_0931_open", "entry_0931_vwap", "entry_0931_volume", "entry_0931_close", "weight", "turnover_rate", "volume_ratio", "float_share", "adj_factor", "div_cash", "cash_per_share", "up_limit", "down_limit"}]
     for col in numeric:
         frame[col] = pd.to_numeric(frame[col], errors="coerce")
         invalid = ~np.isfinite(frame[col])
@@ -326,13 +336,80 @@ def clean_frame(frame: pd.DataFrame, metadata: dict) -> tuple[pd.DataFrame, pd.D
     kind = "daily_prices" if "adjusted_close" in frame else "daily_ohlc" if "open" in frame else "universe" if "snapshot_date" in frame else "auction_entries" if "entry_0931_vwap" in frame else "auction_snapshot" if "price" in frame else "minute_bars"
     if "adj_factor" in frame and "close" not in frame:
         kind = "adjustment_factors"
+    if "up_limit" in frame:
+        kind = "daily_limits"
     if "div_cash" in frame or "cash_per_share" in frame:
         kind = "dividends"
     if "title" in frame:
         kind = "announcements"
     elif "is_open" in frame:
         kind = "calendar"
+    elif "suspend_type" in frame:
+        kind = "suspensions"
     return cleaned, rejected, quality, kind
+
+
+def clean_stock_dividends(frame: pd.DataFrame):
+    """Retain plan/progress disclosures, validate supplied event economics.
+
+    Nullable plan dates/amounts stay missing; entrance checks implemented events
+    in its own declared period. Never convert a missing cash entitlement to zero.
+    """
+    frame = frame.copy()
+    frame["_raw_row"] = np.arange(len(frame))
+    frame["_quality_flags"] = "normalized_statement_dates;"
+    identifier = "ts_code" if "ts_code" in frame else "symbol"
+    frame[identifier] = frame[identifier].astype("string").str.upper().str.strip()
+    bad = frame[identifier].isna() | frame[identifier].eq("")
+    implemented = frame.div_proc.eq("实施")
+    invalid_dates = 0
+    for col in [c for c in frame if c.endswith("date")]:
+        values = frame[col].astype("string").str.replace(r"\.0$", "", regex=True)
+        present = values.notna() & values.ne("")
+        dates = pd.to_datetime(values, errors="coerce", format="mixed")
+        invalid = present & dates.isna()
+        if col == "ann_date":
+            imp = pd.to_datetime(frame.get("imp_ann_date", pd.Series(index=frame.index, dtype="object")).astype("string").str.replace(r"\.0$", "", regex=True), errors="coerce", format="mixed")
+            invalid |= implemented & dates.isna() & imp.isna()
+        invalid_dates += int(invalid.sum())
+        bad |= invalid
+        frame[col] = dates.dt.strftime("%Y-%m-%d")
+    for col in [c for c in ["stk_div", "stk_bo_rate", "stk_co_rate", "cash_div", "cash_div_tax"] if c in frame]:
+        present = frame[col].notna()
+        frame[col] = pd.to_numeric(frame[col], errors="coerce")
+        bad |= present & (~np.isfinite(frame[col]) | frame[col].lt(0))
+    values = [c for c in frame if not c.startswith("_")]
+    duplicates = frame.duplicated(values)
+    conflicts = pd.Series(False, index=frame.index)
+    superseded = pd.Series(False, index=frame.index)
+    implemented = frame.div_proc.eq("实施")
+    economics = [c for c in ["cash_div_tax", "stk_div", "record_date", "pay_date", "div_listdate"] if c in frame]
+    # Multiple fiscal-period entitlements may share one ex-date. Only compare
+    # revisions within the same supplied period; absent period evidence must
+    # not be guessed from announcement dates or amounts.
+    event_key = [identifier, "ex_date"] + (["end_date"] if "end_date" in frame else [])
+    announcements = pd.to_datetime(frame.ann_date, errors="coerce")
+    if "imp_ann_date" in frame:
+        announcements = pd.to_datetime(frame.imp_ann_date, errors="coerce").fillna(announcements)
+    for _, group in frame.loc[implemented & frame.ex_date.notna() & ~bad].groupby(event_key, dropna=False):
+        # An explicitly later pre-ex announcement revises the same fiscal
+        # entitlement. Keep the earlier disclosure in immutable raw evidence.
+        known = group.loc[announcements.loc[group.index].le(pd.to_datetime(group.ex_date))]
+        known_ann = announcements.loc[known.index]
+        if "end_date" in group and group.end_date.notna().all() and not known.empty and known_ann.nunique() > 1:
+            latest = known_ann.max()
+            superseded.loc[known.index[known_ann.lt(latest)]] = True
+            group = group.loc[~superseded.loc[group.index]]
+        if len(group[economics].drop_duplicates()) > 1:
+            conflicts.loc[group.index] = True
+    bad |= conflicts
+    frame.loc[bad, "_quality_flags"] = "invalid_or_conflicting;"
+    quality = {"blocking": bool(bad.any()), "issues": ["Invalid/conflicting stock dividend disclosures"] if bad.any() else [],
+               "invalid_rows": int(bad.sum()), "conflict_rows": int(conflicts.sum()), "invalid_dates": invalid_dates,
+               "duplicate_rows": int(duplicates.sum()), "modified_rows": len(frame), "imputed_rows": 0,
+               "superseded_pre_ex_disclosures": int(superseded.sum()),
+               "policy": "Keep nullable plans and missing implemented economics explicit; period-specific entrance audit required"}
+    return frame.loc[~bad & ~duplicates & ~superseded].reset_index(drop=True), frame.loc[bad].copy(), quality, "stock_dividends"
 
 
 def _remember(manifest: dict) -> None:
