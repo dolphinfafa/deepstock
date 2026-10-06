@@ -59,6 +59,10 @@ CNY5, 5bp slip, 0.1bp transfer both sides, 5bp stamp duty on stock sales
 CN T+1 excludes same-day exits. Suspensions/limit opens delay fills; prior
 volume caps allow partial exits and preserve intent. Missing internal prices
 need explicit suspension evidence; stale marks are flagged, never executable.
+US sparse quotes strictly before both first historical index eligibility and
+evaluation are retained as audited NaN warm-up, not filled or discarded. Rolling
+readiness cannot resume until a full continuous history exists. Evaluation or
+already-eligible unexplained gaps still block; no security is removed.
 Stock action entrance logs factor quantization and checks the supplied ex-date
 reference. A single nominal entitlement with a small diluted-reference residual
 (at most 0.5% of preceding raw close) is retained with an explicit audit warning,

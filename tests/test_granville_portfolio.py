@@ -220,3 +220,16 @@ def test_stock_only_unspecified_cash_remains_nan_not_a_zero_imputation():
     assert pd.isna(clean.cash_div_tax.iloc[0])
     assert audit[0]["verified_cash_per_share"] is None
     assert audit[0]["unspecified_cash_entitlement_blocks_held_strategy"] is True
+
+
+def test_sparse_pre_index_warmup_is_explicit_nan_not_survivor_exclusion():
+    bars, dates, members, _, cfg, rule = inputs()
+    members.loc[members.symbol.eq("A"), "date"] = dates[210]
+    bars = bars.loc[~(bars.symbol.eq("A") & bars.date.eq(dates[200]))]
+    panel = make_panel(bars, dates, members, "US", rule, cfg)
+    assert "A" in panel.symbols and np.isnan(panel.values["close"][200, 0])
+    assert not panel.signals["ready"][220, 0]
+    assert panel.diagnostics["pre_eligibility_incomplete_warmup"][0]["missing_sessions"] == 1
+    members.loc[members.symbol.eq("A"), "date"] = dates[190]
+    with pytest.raises(PortfolioDataError, match="Unexplained"):
+        make_panel(bars, dates, members, "US", rule, cfg)

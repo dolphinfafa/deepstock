@@ -84,6 +84,7 @@ def make_panel(bars, calendar, membership, market, signal_rule, portfolio_rule, 
                     if event.trade_date in dates:
                         tradable.loc[event.trade_date, symbol] = False
     missing_count = 0
+    pre_eligibility_gaps = []
     for symbol in symbols:
         observed = panels["close"][symbol].dropna().index
         terminal_date = (terminal or {}).get(symbol)
@@ -91,8 +92,18 @@ def make_panel(bars, calendar, membership, market, signal_rule, portfolio_rule, 
         internal = dates[(dates >= observed[0]) & (dates <= expected_end)].difference(observed)
         unsupported = set(internal).difference(suspension_dates[symbol])
         if unsupported:
-            raise PortfolioDataError(f"Unexplained internal quote gaps: {symbol}: {sorted(unsupported)[0].date()}")
-        missing_count += len(internal)
+            first_eligible = pd.to_datetime(membership.loc[membership.symbol.eq(symbol), "date"]).min()
+            if market == "US" and max(unsupported) < first_eligible and max(unsupported) < pd.Timestamp(portfolio_rule["evaluation_start"]):
+                # Historical pre-index/OTC quotes can be sparse. They remain
+                # NaN, and rolling readiness is invalid until sufficient
+                # continuous history is observed. Never fill/drop sessions or
+                # exclude the security from its later eligible stock pool.
+                pre_eligibility_gaps.append({"symbol": symbol, "missing_sessions": len(unsupported),
+                                             "first": str(min(unsupported).date()), "last": str(max(unsupported).date()),
+                                             "first_eligible": str(first_eligible.date()), "policy": "unheld_pre_eligibility_warmup_NaN_no_signal_until_continuous_history"})
+            else:
+                raise PortfolioDataError(f"Unexplained internal quote gaps: {symbol}: {sorted(unsupported)[0].date()}")
+        missing_count += len(set(internal).intersection(suspension_dates[symbol]))
     signal_frames = {name: pd.DataFrame(False, index=dates, columns=symbols) for name in [*VARIANTS, "ready", "trend_exit", "reversion_exit"]}
     for symbol in symbols:
         frame = pd.DataFrame({name: panels[name][symbol] for name in prices})
@@ -155,6 +166,7 @@ def make_panel(bars, calendar, membership, market, signal_rule, portfolio_rule, 
                       documented.to_numpy(),
                       {"symbols": len(symbols), "documented_internal_suspension_sessions": missing_count,
                        "corporate_action_audit": action_audit,
+                       "pre_eligibility_incomplete_warmup": pre_eligibility_gaps,
                        "rounding_only_factor_movements": rounding_moves,
                        "adjustment_accounting": "analytical_total_return_units_not_actual_broker_shares"})
 
