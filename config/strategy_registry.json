@@ -54,6 +54,13 @@
       "specification": ".agent/workflows/ahl-global-futures-trend.md"
     },
     {
+      "strategy_id": "granville_ma_swing",
+      "market": "Both",
+      "display_name": "Granville-Inspired ETF MA Swing",
+      "execution_status": "research_only_no_orders",
+      "specification": ".agent/workflows/granville-ma-swing.md"
+    },
+    {
       "strategy_id": "csi300_opening_auction",
       "market": "CN",
       "display_name": "CSI 300 Opening Auction",

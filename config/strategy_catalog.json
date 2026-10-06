@@ -173,6 +173,26 @@
       ]
     },
     {
+      "id": "granville_ma_swing",
+      "display_name": "葛兰威尔均线波段",
+      "code": "GMA",
+      "market": "Both",
+      "asset_class": "ETF",
+      "summary": "独立比较均线上穿、趋势回踩和极端乖离；美股 SPY 与 A股 510300 分别验证。",
+      "thesis_md": "## 策略思想\n葛兰威尔法则关注价格所在位置、均线方向、回踩恢复以及极端乖离，而非仅凭金叉死叉交易。笔记没有公开三均线周期或关键K定义，因此本研究是独立定义的量化代理，不声称复现作者系统。\n\n## 固定规则\n采用20/60/200日均线和ATR14。在收盘高于MA200、MA60高于MA200的环境中，比较两日确认上穿、三日内回踩后恢复、低于MA20两倍ATR的反转。预先指定趋势回踩为主展示，保留全部候选和滑点压力结果，不按收益择优。\n\n收盘确认，下一交易日开盘成交，初始目标暴露80%，最多持仓7日后发退出信号；普通退出最少持有3日，8%收盘止损不受该限制。退出冷却3日。暴露随价格漂移，80%不是每日硬上限。\n\n## 双市场边界\n首轮仅验证宽基ETF，不代表全市场个股。美股SPY采用Norgate总收益OHLC分析单位，不是历史真实报价的IBKR执行复刻。A股510300使用原始价格、实际现金分红、100股整手及T+1，含佣金、滑点和前日成交量容量。\n\n## 评估与后续\n2014年至2026-09-29连续成本后净值；2021-08-23之后只是回溯诊断留出，不是真正未见前瞻OOS。固定504/252/252窗口不重置持仓。下一步先检查成本敏感性、空仓机会成本和负收益窗口；扩展更多ETF或个股需新固定实验，不从本轮结果调参。未授权Paper或实盘。",
+      "status": "Research-only",
+      "execution_status": "research_only_no_orders",
+      "spec_path": ".agent/workflows/granville-ma-swing.md",
+      "version": "granville-etf-v1-20261006",
+      "metrics": {},
+      "progress": [
+        {"stage": "design", "title": "固定三类信号与双市场规范", "detail": "主展示预先指定趋势回踩；全部候选保留，不按回溯留出选参。", "status": "done"},
+        {"stage": "data", "title": "清洗版本与公司行动校验", "detail": "SPY总收益日线；510300原始日线、复权因子、分红和SSE日历，输入版本可追溯。", "status": "done"},
+        {"stage": "backtest", "title": "双市场成本后回测", "detail": "三类信号、主成本及压力成本、两套买入持有基准和固定滚动窗口，完整报告独立展示。", "status": "done"},
+        {"stage": "validation", "title": "前瞻与执行验证", "detail": "历史诊断不等于前瞻证据；尚未启动影子计划，也未授权Paper或实盘。", "status": "blocked"}
+      ]
+    },
+    {
       "id": "csi300_opening_auction",
       "display_name": "沪深300集合竞价",
       "code": "AUC",

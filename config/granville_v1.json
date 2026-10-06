@@ -1,0 +1,40 @@
+{
+  "strategy_id": "granville_ma_swing",
+  "version": "granville-etf-v1-20261006",
+  "market": "Both",
+  "principal_variant": "trend_pullback",
+  "variants": ["ma_cross", "trend_pullback", "deviation_reversal"],
+  "signal": {
+    "fast_days": 20,
+    "medium_days": 60,
+    "slow_days": 200,
+    "atr_days": 14,
+    "slope_days": 5,
+    "slope_min_atr": 0.1,
+    "touch_band_atr": 0.25,
+    "recovery_window": 3,
+    "confirmation_days": 2,
+    "recovery_max_atr": 1.0,
+    "deviation_entry_atr": -2.0,
+    "exit_buffer_atr": 0.5,
+    "minimum_hold_sessions": 3,
+    "maximum_hold_sessions": 7,
+    "cooldown_sessions": 3,
+    "stop_loss": 0.08
+  },
+  "initial_capital": 100000.0,
+  "initial_target_exposure": 0.8,
+  "cash_return": 0.0,
+  "evaluation_start": "2014-01-02",
+  "evaluation_end": "2026-09-29",
+  "diagnostic_split": "2021-08-23",
+  "walk_forward": {"history_sessions": 504, "test_sessions": 252, "step_sessions": 252},
+  "markets": {
+    "US": {"symbol": "SPY", "commission_bps": 2.5, "minimum_commission": 1.0, "slippage_bps": 2.5, "stress_slippage_bps": 10.0, "lot_size": 0, "currency": "USD", "price_model": "provider_total_return_ohlc_analytical_units"},
+    "CN": {"symbol": "510300.SH", "commission_bps": 3.0, "minimum_commission": 5.0, "slippage_bps": 5.0, "stress_slippage_bps": 10.0, "lot_size": 100, "currency": "CNY", "price_model": "raw_ohlc_cash_dividend_ledger", "daily_limit": 0.1, "prior_volume_participation": 0.01, "stamp_duty_bps": 0.0}
+  },
+  "selection_policy": "No ranking or selection on OOS; retain all three variants and both cost cases. The principal is fixed before results.",
+  "evidence_scope": "Retrospective diagnostic holdout only; all history predates registration. Not a genuinely unseen prospective OOS.",
+  "paper_authorized": false,
+  "live_authorized": false
+}

@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-RULE_VERSION = "clean-v1.3"
+RULE_VERSION = "clean-v1.6"
 ROOT = Path(__file__).resolve().parents[3]
 _local = threading.local()
 
@@ -161,7 +161,62 @@ class DataStore:
         return path
 
 
+def clean_dividends(frame: pd.DataFrame):
+    """Keep disclosures, collapse only identical economic events, never amounts.
+
+    Tushare may revise base_unit/net_ex_date without changing cash entitlement.
+    Auxiliary revisions remain in immutable raw evidence and explicit audit.
+    """
+    frame = frame.copy()
+    frame["_raw_row"] = np.arange(len(frame))
+    frame["_quality_flags"] = ""
+    identifier = "ts_code" if "ts_code" in frame else "symbol"
+    frame[identifier] = frame[identifier].astype("string").str.strip().str.upper()
+    bad = frame[identifier].isna() | frame[identifier].eq("")
+    implemented = frame.div_proc.eq("实施") if "div_proc" in frame else pd.Series(True, index=frame.index)
+    invalid_dates = 0
+    for col in [c for c in frame if c.endswith("date")]:
+        # Nullable provider integer dates arrive as CSV floats (20260119.0).
+        values = frame[col].astype("string").str.replace(r"\.0$", "", regex=True)
+        present = values.notna() & values.ne("")
+        dates = pd.to_datetime(values, errors="coerce", format="mixed")
+        invalid = present & dates.isna()
+        if col in {"ann_date", "record_date", "ex_date", "pay_date"}:
+            invalid |= implemented & dates.isna()
+        bad |= invalid
+        invalid_dates += int(invalid.sum())
+        frame[col] = dates.dt.strftime("%Y-%m-%d")
+    cash_col = "div_cash" if "div_cash" in frame else "cash_per_share"
+    frame[cash_col] = pd.to_numeric(frame[cash_col], errors="coerce")
+    bad |= implemented & (~np.isfinite(frame[cash_col]) | frame[cash_col].lt(0))
+    bad |= implemented & (frame.pay_date.lt(frame.ex_date) | frame.record_date.ge(frame.ex_date) | frame.ann_date.gt(frame.ex_date))
+    keys = [identifier, "ex_date"] + (["div_proc"] if "div_proc" in frame else [])
+    economics = ["ann_date", "record_date", "pay_date", cash_col]
+    conflict = pd.Series(False, index=frame.index)
+    for _, group in frame.loc[implemented & ~bad].groupby(keys, dropna=False):
+        if len(group[economics].drop_duplicates()) > 1:
+            conflict.loc[group.index] = True
+    bad |= conflict
+    # Non-implemented disclosures retain their exact content; no guessed events.
+    identical = frame.duplicated([c for c in frame if not c.startswith("_")])
+    equivalent = implemented & ~bad & frame.duplicated(keys + economics)
+    removed = identical | equivalent
+    frame.loc[~bad, "_quality_flags"] = "normalized_dividend_dates;"
+    frame.loc[bad, "_quality_flags"] = "invalid_or_conflicting;"
+    quality = {"blocking": bool(bad.any() or frame.empty), "issues": [], "invalid_rows": int(bad.sum()),
+               "invalid_dates": invalid_dates, "conflict_rows": int(conflict.sum()), "duplicate_rows": int(identical.sum()),
+               "equivalent_disclosures": int((equivalent & ~identical).sum()), "modified_rows": int((~bad).sum()),
+               "imputed_rows": 0, "policy": "Economic event keys; auxiliary revisions retained in raw, no amount/date repairs"}
+    if bad.any():
+        quality["issues"].append(f"{int(bad.sum())} invalid/conflicting dividend rows quarantined")
+    if removed.any():
+        quality["issues"].append(f"{int(removed.sum())} equivalent dividend disclosures collapsed; auxiliary revisions retained in raw")
+    return frame.loc[~bad & ~removed].sort_values(keys).reset_index(drop=True), frame.loc[bad].copy(), quality, "dividends"
+
+
 def clean_frame(frame: pd.DataFrame, metadata: dict) -> tuple[pd.DataFrame, pd.DataFrame, dict, str]:
+    if metadata.get("endpoint") == "fund_div" or metadata.get("kind") == "dividends":
+        return clean_dividends(frame)
     frame = frame.copy()
     original = frame.copy()
     frame["_raw_row"] = np.arange(len(frame))
@@ -207,11 +262,11 @@ def clean_frame(frame: pd.DataFrame, metadata: dict) -> tuple[pd.DataFrame, pd.D
     keys.append(date_col)
     if "title" in frame and "url" in frame:
         keys.extend(["title", "url"])
-    numeric = [c for c in frame if c in {"adjusted_open", "adjusted_high", "adjusted_low", "adjusted_close", "open", "high", "low", "close", "price", "pre_close", "volume", "vol", "amount", "turnover", "entry_0931_open", "entry_0931_vwap", "entry_0931_volume", "entry_0931_close", "weight", "turnover_rate", "volume_ratio", "float_share"}]
+    numeric = [c for c in frame if c in {"adjusted_open", "adjusted_high", "adjusted_low", "adjusted_close", "open", "high", "low", "close", "price", "pre_close", "volume", "vol", "amount", "turnover", "entry_0931_open", "entry_0931_vwap", "entry_0931_volume", "entry_0931_close", "weight", "turnover_rate", "volume_ratio", "float_share", "adj_factor", "div_cash", "cash_per_share"}]
     for col in numeric:
         frame[col] = pd.to_numeric(frame[col], errors="coerce")
         invalid = ~np.isfinite(frame[col])
-        if col in {"volume", "vol", "amount", "turnover", "entry_0931_volume", "weight", "float_share"}:
+        if col in {"volume", "vol", "amount", "turnover", "entry_0931_volume", "weight", "float_share", "div_cash", "cash_per_share"}:
             invalid |= frame[col] < 0
         elif col not in {"turnover_rate", "volume_ratio"}:
             invalid |= frame[col] <= 0
@@ -269,6 +324,10 @@ def clean_frame(frame: pd.DataFrame, metadata: dict) -> tuple[pd.DataFrame, pd.D
                "missing_sessions": missing, "unexpected_sessions": unexpected, "calendar": calendar_state,
                "imputed_rows": 0, "policy": "Evidence-only repair; unknown price/activity gaps remain unfilled"}
     kind = "daily_prices" if "adjusted_close" in frame else "daily_ohlc" if "open" in frame else "universe" if "snapshot_date" in frame else "auction_entries" if "entry_0931_vwap" in frame else "auction_snapshot" if "price" in frame else "minute_bars"
+    if "adj_factor" in frame and "close" not in frame:
+        kind = "adjustment_factors"
+    if "div_cash" in frame or "cash_per_share" in frame:
+        kind = "dividends"
     if "title" in frame:
         kind = "announcements"
     elif "is_open" in frame:

@@ -32,6 +32,16 @@ sample labels or an unavailable reason. CSI300 owns local adapters, securities,
 history, observation SQLite and scheduler; Darwen is not a runtime dependency.
 All strategy freezes and order permissions remain unchanged.
 
+The independent `granville_ma_swing` is explicitly Both under the October 6
+user decision. Its fixed 20/60/200-MA daily ETF study compares three signal
+families on SPY and 510300.SH, using separate currencies, calendars, costs and
+corporate-action accounting. `trend_pullback` is the preregistered principal;
+all variants and base/stress costs remain visible. APIs return `market_results`
+and `annualization.scope=separate_markets`, never a pooled US/CN CAGR. The first
+2014–2026-09-29 run produced principal CAGR -0.254% / +0.168%, versus respective
+buy/hold +13.74% / +6.69%. These are retrospective diagnostic results, not
+prospective OOS or trading eligibility. See `granville-ma-swing.md`.
+
 The implemented architecture uses a FastAPI control plane, SQLite/SQLAlchemy,
 Alembic migrations, a Vue 3 research library, scheduled artifact ingestion and
 backups, and a Windows-local IBKR execution agent. The workflow is:

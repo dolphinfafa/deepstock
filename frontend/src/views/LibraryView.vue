@@ -84,8 +84,9 @@ watch(archived, load)
         <p>{{ row.summary }}</p>
         <p v-if="archived">{{ row.archive_reason }}</p>
         <div class="strategy-meta"><span>{{ marketLabel(row.market) }}</span><span>{{ row.asset_class }}</span><span>{{ row.current_version }}</span></div>
-        <div class="strategy-result"><small>最新关键结果</small><strong>{{ row.latest_run?.status === 'paused_missing_data' ? '需要更多数据' : metricText(keyMetric(row)) }}</strong></div>
-        <div class="annualized-slot"><span>年化收益率</span><strong>{{ row.annualization?.value == null ? '暂无' : `${(row.annualization.value * 100).toFixed(2)}%` }}</strong><small>{{ row.annualization?.short_sample ? '短样本参考年化' : row.annualization?.scope || '' }} · {{ row.annualization?.sessions ? `${row.annualization.sessions} 交易日` : row.annualization?.reason }}</small></div>
+        <div v-if="row.annualization?.scope === 'separate_markets'" class="annualized-slot"><span>成本后年化 · 固定主候选</span><strong v-for="(result, key) in row.market_results" :key="key">{{ marketLabel(String(key)) }} {{ result.symbol }} · {{ (result.metrics.annualized_return * 100).toFixed(2) }}%</strong><small>全历史；两市场分开计算，不合并净值。回溯诊断，非前瞻OOS。</small></div>
+        <template v-else><div class="strategy-result"><small>最新关键结果</small><strong>{{ row.latest_run?.status === 'paused_missing_data' ? '需要更多数据' : metricText(keyMetric(row)) }}</strong></div>
+        <div class="annualized-slot"><span>年化收益率</span><strong>{{ row.annualization?.value == null ? '暂无' : `${(row.annualization.value * 100).toFixed(2)}%` }}</strong><small>{{ row.annualization?.short_sample ? '短样本参考年化' : row.annualization?.scope || '' }} · {{ row.annualization?.sessions ? `${row.annualization.sessions} 交易日` : row.annualization?.reason }}</small></div></template>
         <p v-if="row.latest_run?.run_type?.startsWith('tail_momentum_')">{{ row.latest_run.summary }}</p>
         <div class="card-foot"><span>{{ row.latest_run?.data_end ? `数据截至 ${row.latest_run.data_end}` : row.latest_run?.as_of_date || '尚无运行日期' }}</span><span>查看完整研究 →</span></div>
       </RouterLink>

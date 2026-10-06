@@ -613,6 +613,7 @@ def ingest_tail_momentum(session: Session) -> dict[str, Any]:
 def ingest_all(session: Session) -> dict[str, Any]:
     from deepstock.web.data_catalog import ingest_datasets
     from deepstock.web.reclean_runs import ingest_reclean_runs
+    from deepstock.web.granville_runs import ingest_granville_runs
     catalog = ingest_catalog(session)
     reruns = ingest_reclean_runs(session, settings.project_root)
     return {
@@ -621,5 +622,6 @@ def ingest_all(session: Session) -> dict[str, Any]:
         "defensive": ingest_defensive_observation(session),
         "tail_momentum": ingest_tail_momentum(session),
         "reclean": reruns,
+        "granville": ingest_granville_runs(session, settings.project_root),
         "datasets": ingest_datasets(session, settings.project_root),
     }

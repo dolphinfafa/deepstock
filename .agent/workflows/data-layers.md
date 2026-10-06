@@ -11,6 +11,10 @@ declared contract and cleaning revision. Application SQLite stores version
 metadata and research-input relations through Alembic, not large market arrays.
 Legacy exports are `legacy_import`; TOTALRETURN is provider-adjusted, not
 unadjusted raw. New exports capture provider responses and upstream versions.
+`clean-v1.6` also recognises fund adjustment factors and dividend event schemas.
+Dividend duplicates require matching entitlement amount, announcement/record/
+ex/pay dates; auxiliary disclosure revisions remain in raw evidence and audit.
+Unexplained factor magnitudes/splits still block the CN research entrance.
 
 Cleaning normalises IDs/dates, removes only identical duplicates, audits
 numeric/OHLC/activity constraints and missing US sessions against XNYS. Unknown

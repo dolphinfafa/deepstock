@@ -25,7 +25,7 @@ src/deepstock/
   strategies/
     us/      defensive ETF, stock Turtle, SPY mean reversion, grid, ARC
     cn/      ETF afternoon momentum / T+1
-    both/    reserved; no automatically migrated or validated candidates
+    both/    independent Granville ETF MA swing, separate US/CN ledgers
   markets.py              US / CN / Both category contract
   risk.py                 shared risk infrastructure
   strategy_governance.py  shared gates, not a strategy
@@ -52,7 +52,7 @@ governance and execution infrastructure stays outside those strategy packages.
 | --- | --- |
 | US | Defensive ETF; ARC/ADX; stock Turtle; grid; SPY mean reversion; frozen AHL candidate |
 | CN | CSI300 opening auction; ETF afternoon momentum / T+1 |
-| Both | None yet |
+| Both | Granville-inspired ETF MA swing (SPY / 510300.SH) |
 
 The frozen AHL candidate's first eight contracts are US-exchange futures
 (`ES/NQ/ZN/ZB/CL/GC/6E/6J`), hence the US venue bucket. “Global” in its name

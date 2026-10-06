@@ -252,6 +252,7 @@ def _strategy_summary(session: Session, strategy: Strategy) -> dict[str, Any]:
         "archive_reason": strategy.archive_reason,
         "updated_at": _iso(strategy.updated_at),
         "annualization": annualization_payload(session, run),
+        "market_results": run.details.get("market_results", {}) if run else {},
         "latest_run": None
         if run is None
         else {
