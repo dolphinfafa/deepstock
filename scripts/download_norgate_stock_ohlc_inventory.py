@@ -48,7 +48,10 @@ def run(capture_dir, output):
         symbol = reference["symbol"]
         record = {"symbol": symbol, "metadata_version": reference.get("metadata_version")}
         try:
-            if reference.get("audit", {}).get("status") == "outside_requested_quote_lifetime":
+            first, last = reference.get("first_quote"), reference.get("last_quote")
+            if (reference.get("metadata_version") and first is not None and
+                    (pd.Timestamp(first) > pd.Timestamp(captured["source_end"]) or
+                     (last is not None and pd.Timestamp(last) < pd.Timestamp(captured["source_start"])))):
                 record["status"] = "outside_verified_quote_lifetime"
             else:
                 if not reference.get("metadata_version") or not reference.get("native_version"):

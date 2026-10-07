@@ -38,6 +38,8 @@ def test_verified_terminal_boundary_and_ipo_exclude_only_outside_lifetime():
     days = pd.bdate_range("2026-08-20", periods=5)
     _, _, audit = native_membership_view(pd.DataFrame(), days, "OLD", "1990-01-01", "2004-12-03", days[0])
     assert audit["status"] == "outside_requested_quote_lifetime"
+    _, _, future = native_membership_view(pd.DataFrame(), days, "FUTURE_IPO", "2026-10-01", None, days[0])
+    assert future["status"] == "outside_requested_quote_lifetime"
     _, _, audit = native_membership_view(native(days[2:4], [0, 1]), days, "IPO", days[2], days[3], days[0])
     assert audit["missing_history_sessions"] == 0
     with pytest.raises(DataQualityError, match="Empty membership"):

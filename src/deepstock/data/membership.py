@@ -85,7 +85,7 @@ def native_membership_view(frame, calendar, symbol, first_quote, last_quote, req
         raise DataQualityError("Unique ordered native membership session calendar required")
     first = pd.to_datetime(first_quote, errors="coerce")
     last = pd.to_datetime(last_quote, errors="coerce") if last_quote is not None else dates[-1]
-    if pd.isna(first) or pd.isna(last) or first > last:
+    if pd.isna(first) or pd.isna(last) or (last_quote is not None and first > last):
         raise DataQualityError("Verified first/last quote boundaries required")
     expected = dates[(dates >= first) & (dates <= last)]
     if frame.empty:
