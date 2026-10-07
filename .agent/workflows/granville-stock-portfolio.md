@@ -298,3 +298,12 @@ Keep research-only. Next requirements remain longer point-in-time history,
 verified terminal proceeds, industry and real-share/tax/settlement accounting.
 Any new entry/holding/filter change requires a separate fixed experiment, not
 post-hoc selection from these four results. No new observer, Paper or Live orders.
+
+Release verification after publication: server266 tests(84.27s), Windows266
+tests at f1cf499(49.78s), frontend typecheck/build passed. Latest-display tests
+now use isolated SQLite instead of local real artifacts, and cover both planned
+versus completed and newly completed versus older evidence. Authenticated
+production detail/report match publication; dataset provenance links the new
+run, both licensed previews are empty; AHL/tail gates and livefalse/killtrue
+remain. Repeat ingestion creates zero additional sizing runs. Results/workflows
+were pushed to GitHub and ff-only synchronized; no expensive engine rerun.
