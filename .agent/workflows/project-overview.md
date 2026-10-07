@@ -437,6 +437,16 @@ summary-only publication20261007-risk-shrink-v3-restored becomes latest; origina
 headlines,24 cases/WBA blocks,v2 and CN history remain. New plans must not hide
 completed evidence. Full licensed ledgers stay Windows; no orders or promotion.
 
+Later October7 readiness audit corrects the US performance interpretation:
+historical constituent intervals only cover throughAugust21, unlike prices
+throughSeptember29.26 uncovered sessions caused eligibility to become allfalse;
+baseline's last20 sessions were cash. Preserve old output bytes but flag
+original/v2/v3 US results as impaired, not valid full-period performance. A
+necessary membership presence entrance blocks new incomplete runs; append-only
+input-version notices and a separate report expose the defect without replacing
+historical runs. CN unchanged. Official WBA terms11.45USD cash plus a contingent
+nontransferable right capped3USD do not supply complete valuation/settlement.
+
 The strategy research library at `https://dev-cn-01.yios.cn/deepstock/` is a
 Vue 3 application served by FastAPI. The user-level
 `deepstock-dashboard.service` runs Uvicorn on `127.0.0.1:15001`; NGINX is the

@@ -82,6 +82,7 @@ watch(archived, load)
         <div class="strategy-card-top"><span class="strategy-code">{{ row.code }}</span><StatusBadge :status="row.status" /></div>
         <h2>{{ row.display_name }}</h2>
         <p>{{ row.summary }}</p>
+        <p v-for="notice in row.evidence_notices || []" :key="notice.id" class="form-error">{{ notice.title }}。美股指标仅作历史审计。</p>
         <p v-if="archived">{{ row.archive_reason }}</p>
         <div class="strategy-meta"><span>{{ marketLabel(row.market) }}</span><span>{{ row.asset_class }}</span><span>{{ row.current_version }}</span></div>
         <div v-if="row.annualization?.scope === 'separate_markets'" class="annualized-slot"><span>成本后年化 · 固定主候选</span><strong v-for="(result, key) in row.market_results" :key="key">{{ marketLabel(String(key)) }} · {{ result.metrics ? `${(result.metrics.annualized_return * 100).toFixed(2)}%` : '数据/兑付阻塞' }}</strong><small>两市场分开计算，不合并净值。回溯诊断，非前瞻OOS。</small></div>

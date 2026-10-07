@@ -45,6 +45,10 @@ watch(() => live.revision, load)
       <div class="heading-status"><StatusBadge :status="strategy.status" /><small>{{ strategy.execution_status }}</small></div>
     </header>
     <div class="version-line"><span>当前版本</span><code>{{ strategy.current_version }}</code><span>更新于 {{ strategy.updated_at?.slice(0, 10) }}</span></div>
+    <section v-for="notice in strategy.evidence_notices || []" :key="notice.id" class="panel compact-panel form-error">
+      <strong>{{ notice.title }}</strong><p>{{ notice.detail }}</p>
+      <RouterLink :to="{ path: '/reports', query: { report: `${notice.id}-report` } }">查看数据审计更正报告</RouterLink>
+    </section>
     <div v-if="strategy.is_archived" class="panel compact-panel"><strong>研究已冻结 · {{ strategy.archived_at?.slice(0, 10) }}</strong><p>{{ strategy.archive_reason }}</p></div>
     <div v-if="strategy.latest_run?.status === 'paused_missing_data'" class="panel compact-panel"><strong>需要更多数据 · 研究已暂停</strong><p>尚无合格真实行情回测结果。补齐分钟历史、交易日历及公司行动数据后，需你明确要求恢复；当前不会自动下载或回测。</p></div>
     <p v-if="strategy.latest_run?.data_end">最新数据截至 {{ strategy.latest_run.data_end }} · 评估日期 {{ strategy.latest_run.as_of_date }}</p>
@@ -53,6 +57,7 @@ watch(() => live.revision, load)
       <article v-for="(result, market) in strategy.market_results" :key="market" class="panel">
         <div class="section-title"><div><small>{{ marketLabel(String(market)) }} · {{ result.currency }}</small><h2>{{ result.symbol }} · 独立回测</h2></div></div>
         <p>固定主展示：{{ result.principal_variant }}<template v-if="result.principal_exit_policy"> / {{ result.principal_exit_policy }}</template> · 基础成本 · 报告区间</p>
+        <p v-if="(strategy.evidence_notices || []).some((notice: any) => notice.market === String(market))" class="form-error">以下指标是受数据覆盖缺陷影响的历史输出，仅保留审计；不能作为有效完整区间绩效或优化结论。</p>
         <p v-if="result.current_experiment_status === 'not_rerun_historical_evidence'">A股本轮未回测，以下沿用10月6日历史证据。</p>
         <div v-if="result.metrics" class="metric-list">
           <div><span>年化收益率</span><strong>{{ pct(result.metrics.annualized_return) }}</strong></div>

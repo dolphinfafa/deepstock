@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from deepstock.data.capture import capture_response
+from deepstock.data.membership import require_us_membership
 from deepstock.data.store import ROOT, RULE_VERSION, DataQualityError, DataStore, clean_stock_dividends, digest, input_evidence, read_clean_csv, read_clean_json, write_json
 
 
@@ -207,9 +208,11 @@ def collect_us(output, cfg):
     wanted = {symbol: spans for symbol, spans in mapping.items() if any(pd.Timestamp(r["start"]) <= last and pd.Timestamp(r["end"]) >= first for r in spans)}
     if not wanted:
         raise ValueError("No historical eligible securities")
-    rows = [{"date": r["start"], "end": r["end"], "symbol": symbol, "weight": 1} for symbol, spans in wanted.items() for r in spans]
-    persist(pd.DataFrame(rows), output / "membership.csv.gz", "US", "historical_membership")
     calendar = xcals.get_calendar("XNYS", start=cfg["source_start"], end=cfg["evaluation_end"]).sessions.tz_localize(None)
+    rows = [{"date": r["start"], "end": r["end"], "symbol": symbol, "weight": 1} for symbol, spans in wanted.items() for r in spans]
+    member_frame = pd.DataFrame(rows)
+    require_us_membership(calendar, member_frame, cfg["evaluation_start"], cfg["evaluation_end"])
+    persist(member_frame, output / "membership.csv.gz", "US", "historical_membership")
     persist(pd.DataFrame({"date": calendar}), output / "calendar.csv", "US", "calendar")
     failures, terminals = [], {}
     for i, symbol in enumerate(sorted(wanted)):

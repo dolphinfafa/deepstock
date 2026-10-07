@@ -65,7 +65,7 @@ def run(market, data_dir, baseline_dir, output, config_path):
                     "scripts/run_granville_backtest.py", "scripts/rerun_clean_research.py",
                     "src/deepstock/strategies/both/granville_portfolio.py", "src/deepstock/strategies/both/granville_diagnostics.py",
                     "src/deepstock/strategies/both/granville.py", "src/deepstock/data/store.py",
-                    "src/deepstock/data/stock_actions.py", cfg["signal_config"], exp["base_config"], "pyproject.toml"]
+                    "src/deepstock/data/stock_actions.py", "src/deepstock/data/membership.py", cfg["signal_config"], exp["base_config"], "pyproject.toml"]
     code["source_file_hashes"] = {name: digest(ROOT / name) for name in source_names}
     for name in source_names:
         target = output / "source" / name

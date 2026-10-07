@@ -7,6 +7,8 @@ import pandas as pd
 
 from .granville import generate_signals, summarize, VARIANTS
 from deepstock.data.stock_actions import reconcile_stock_actions
+from deepstock.data.membership import require_us_membership
+from deepstock.data.store import DataQualityError
 
 
 class PortfolioDataError(ValueError):
@@ -56,6 +58,10 @@ def make_panel(bars, calendar, membership, market, signal_rule, portfolio_rule, 
     if market == "US":
         for row in membership.itertuples():
             eligible.loc[(dates >= pd.Timestamp(row.date)) & (dates <= pd.Timestamp(row.end)), row.symbol] = True
+        try:
+            require_us_membership(dates, membership, portfolio_rule["evaluation_start"], portfolio_rule["evaluation_end"])
+        except DataQualityError as error:
+            raise PortfolioDataError(str(error)) from error
     else:
         snap = membership.copy()
         snap["date"] = pd.to_datetime(snap.date)

@@ -307,3 +307,68 @@ production detail/report match publication; dataset provenance links the new
 run, both licensed previews are empty; AHL/tail gates and livefalse/killtrue
 remain. Repeat ingestion creates zero additional sizing runs. Results/workflows
 were pushed to GitHub and ff-only synchronized; no expensive engine rerun.
+
+## Subsequent October7 correction — US membership coverage invalidates comparison
+
+The preceding v1/v2/v3 outputs and interpretations are historical records, not
+current validation conclusions. Readiness inspection found US membership ends
+2026-08-21 despite OHLC/calendar ending2026-09-29. Registered input
+84993cbfd27161f8e2f498a19fb9a4aa6edb66c4ac81376ac4808fae419de4db,
+sourceSHA1c5751bc61af6a200a81339cdbabbc7025c107748948159ed5b5344ba7a9ccce,
+contains503 active symbol intervalsAugust21 but0 August24/September29.
+Twenty-six evaluation sessions follow its cutoff. Original baseline has20
+zero-position sessions startingSeptember1. Unknown future membership was
+mistaken for known ineligibility; trade replay verification did not detect it.
+US annualized12.32%/3.86% and other original/v2/v3 outputs therefore remain
+auditable impaired diagnostics, NOT valid full-period performance or evidence
+that sizing improved/failed. CN evidence is independent and unchanged.
+
+Added collection/engine coverage entrance blocks a missing-index tail/internal
+date, including the first evaluation open's prior close. Never extend cached
+members, use current survivors, fill missing status0 or trim evaluation to hide
+this. The necessary positive-presence check does not certify full universe
+coverage. Old dataset/manifests/results remain byte-identical. Version-matched
+quality notices appear on homepage/detail and a separate correction report;
+no new empty ResearchRun displaces the old records. A corrected input needs a
+new identity and a new fixed rerun, all original24/v2/v3 retained with warnings.
+
+Long-history inventory: liquidity cache requests2005 onward, declares1301
+codes,1040 retained mapping codes,261 no-price failures; all14 mapping chunks
+endAugust21. These failures require first/last-quote and overlap verification,
+not automatic exclusion or an unsupported claim that they predate the sample.
+Cache has adjusted close/volume/turnover, not NONE/TOTALRETURN OHLC. Current
+Norgate watchlist count1305 is another reason to refresh complete historical
+membership rather than reuse the short-window535 pool over decades. SPY OHLC
+exists1993-01-29—2026-09-29,8474 rows, but does not fix constituent inputs.
+
+Official completion source:
+https://www.sycamorepartners.com/news-article/sycamore-partners-completes-acquisition-of-walgreens-boots-alliance
+confirms August28,2025 closing,11.45USD cash per raw share plus one
+non-transferable contingent right capped at3USD from future VillageMD monetization.
+The cap is not paid cash or known fair value. Actual cash settlement/right
+valuation/payment dates remain unknown; WBA's two historical blocks remain.
+Retained raw HTML11816 bytes/SHA
+1e448a2af5236fc611f26c1796451492da8af10010b27583f4d3aaf936316e70,
+registered public evidence version
+b600198f52caba1124edd95d16833f7e9b7812199be3ade750fb6ffe70779ff5.
+No terminal sale or cash amount is added to strategy ledgers.
+
+Offline Windows audit CLI: python -m scripts.audit_granville_data_readiness
+--data-dir ... --history-dir ... --sizing-dir ... --output <new-summary.json>.
+It reads registered data, verifies original daily hashes and publishes only
+counts/versions/impacts, no licensed prices or full ledgers. Before long-history
+performance, refresh raw daily member coverage and complete historical symbol
+list, classify legitimate IPO/terminal boundaries, obtain both OHLC adjustments,
+then resolve held terminal cash/rights/settlement. No post-hoc rule changes or
+new performance run is authorized by readiness collection itself.
+
+Subsequent native metadata verification classifies all261 no-price failures as
+terminal before2005-01-01, latest last quote2004-12-03; unresolved overlaps0.
+They are legitimate out-of-range for the2005 onward cache, not evidence of261
+missing in-sample prices. Current1305 versus old1301 watchlist contains8 new
+codes/4 absent codes (including terminal aliases), not automatically4 new
+constituents. Native AAPL membership sample has28 observationsAugust20—
+September29; WBA sample in that post-removal range is empty. A sample availability
+probe does not certify a complete universe. Formal CLI
+--verify-provider-metadata captures raw local security/watchlist metadata with
+restricted version/hash and returns aggregate classification only; no bars.

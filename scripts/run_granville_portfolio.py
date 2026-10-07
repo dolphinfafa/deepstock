@@ -56,7 +56,7 @@ def run(market, data_dir, benchmark_path, output, config_path):
     code = capture_code_provenance()
     source_names = ["scripts/run_granville_portfolio.py", "scripts/prepare_granville_stock_data.py",
                     "src/deepstock/strategies/both/granville_portfolio.py", "src/deepstock/strategies/both/granville.py",
-                    "src/deepstock/data/store.py", "src/deepstock/data/stock_actions.py", cfg["signal_config"], "pyproject.toml"]
+                    "src/deepstock/data/store.py", "src/deepstock/data/stock_actions.py", "src/deepstock/data/membership.py", cfg["signal_config"], "pyproject.toml"]
     code["source_file_hashes"] = {name: digest(ROOT / name) for name in source_names}
     for name in source_names:
         target = output / "source" / name

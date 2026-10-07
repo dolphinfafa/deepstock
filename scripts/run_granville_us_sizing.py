@@ -41,7 +41,7 @@ def run(data_dir, baseline_dir, output, config_path):
     names = ["scripts/run_granville_us_sizing.py", "scripts/run_granville_optimization.py", "scripts/run_granville_portfolio.py",
              "scripts/run_granville_backtest.py", "scripts/rerun_clean_research.py", "src/deepstock/strategies/us/granville_sizing.py",
              "src/deepstock/strategies/both/granville_portfolio.py", "src/deepstock/strategies/both/granville_diagnostics.py",
-             "src/deepstock/strategies/both/granville.py", "src/deepstock/data/store.py", "src/deepstock/data/stock_actions.py",
+             "src/deepstock/strategies/both/granville.py", "src/deepstock/data/store.py", "src/deepstock/data/stock_actions.py", "src/deepstock/data/membership.py",
              exp["base_config"], cfg["signal_config"], "config/granville_us_sizing_v3.json", "pyproject.toml"]
     code["source_file_hashes"] = {n: digest(ROOT / n) for n in names}
     for name in names:

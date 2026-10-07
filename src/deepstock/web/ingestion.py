@@ -627,6 +627,7 @@ def ingest_tail_momentum(session: Session) -> dict[str, Any]:
 
 
 def ingest_all(session: Session) -> dict[str, Any]:
+    from deepstock.web.evidence_notices import ingest_evidence_notices
     from deepstock.web.data_catalog import ingest_datasets
     from deepstock.web.reclean_runs import ingest_reclean_runs
     from deepstock.web.granville_stock_runs import ingest_granville_stock_runs
@@ -642,5 +643,6 @@ def ingest_all(session: Session) -> dict[str, Any]:
         "granville_stocks": ingest_granville_stock_runs(session, settings.project_root),
         "granville_optimization": ingest_granville_optimization_runs(session, settings.project_root),
         "granville_sizing": ingest_granville_stock_runs(session, settings.project_root, subdirectory="granville-stock-sizing", sizing=True),
+        "evidence_notices": ingest_evidence_notices(session, settings.project_root),
         "datasets": ingest_datasets(session, settings.project_root),
     }

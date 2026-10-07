@@ -25,6 +25,7 @@ from deepstock.web.config import settings
 from deepstock.web.database import SessionLocal, get_session
 from deepstock.web.ingestion import ingest_all, ingest_defensive_bundle
 from deepstock.web.data_catalog import register_manifest, payload as dataset_payload
+from deepstock.web.evidence_notices import notices_for_run
 from deepstock.data.store import DataStore, DataQualityError
 from deepstock.web.annualization import annualization_payload
 from deepstock.observation_reporting import validate_bundle
@@ -253,6 +254,7 @@ def _strategy_summary(session: Session, strategy: Strategy) -> dict[str, Any]:
         "updated_at": _iso(strategy.updated_at),
         "annualization": annualization_payload(session, run),
         "market_results": run.details.get("market_results", {}) if run else {},
+        "evidence_notices": notices_for_run(settings.project_root, strategy.id, run.details) if run else [],
         "latest_run": None
         if run is None
         else {
@@ -673,6 +675,7 @@ def report_detail(
     report = session.get(ResearchReport, report_id)
     if report is None:
         raise HTTPException(status_code=404, detail="report not found")
+    run = session.get(ResearchRun, report.run_id) if report.run_id else None
     return {
         "id": report.id,
         "strategy_id": report.strategy_id,
@@ -683,6 +686,7 @@ def report_detail(
         "content": report.content,
         "artifact_path": report.artifact_path,
         "content_hash": report.content_hash,
+        "evidence_notices": notices_for_run(settings.project_root, report.strategy_id, run.details) if run else [],
     }
 
 

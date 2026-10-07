@@ -101,3 +101,14 @@ Stock exports retain original thousand-CNY amount as an auxiliary field beside
 canonical CNY turnover; cross-source audits select documented turnover, never
 fit a ratio to outcomes. Offline audit recovery validates capture hashes and
 makes zero new requests. No old stock manifest or raw price is rewritten.
+
+US stock membership now has a separate necessary coverage entrance:
+deepstock.data.membership requires nonempty historical index intervals for
+every evaluation/prior-signal close. Empty tail/internal coverage blocks before
+signals, never silently forces cash or extends an old interval. Passing this
+presence check is NOT proof of full daily membership/publication completeness;
+new acquisition must retain raw0/1 dates and exact captured universe/coverage.
+Historical readiness failures attach append-only notices by input version,
+separate from immutable result/report bytes; corrected versions do not inherit
+an unrelated old notice. Official terminal press releases stay evidence-only,
+not executable quotes, complete payout valuations or guessed settlement dates.

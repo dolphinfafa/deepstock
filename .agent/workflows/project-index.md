@@ -38,6 +38,11 @@ US risk-shrink v3 changes sizing only, keeps Both/CN historical evidence and
 fixed original headlines; see granville-stock-portfolio.md. easy-tdx is an
 independent CN data-source audit, not a strategy input; read
 easy-tdx-data-audit.md for its pinned SDK/build/request/license boundaries.
+October7 follow-up invalidates full-period US Granville performance conclusions:
+member intervals stopAugust21 while prices continueSeptember29. Preserve old
+ledgers with version-matched quality notices, not as valid comparison evidence.
+New collection/entrances reject missing membership coverage; never extend old
+intervals or relabel unknown eligibility as false. See the portfolio workflow.
 
 ### Think Before Act
 
