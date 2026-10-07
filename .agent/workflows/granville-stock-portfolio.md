@@ -508,3 +508,30 @@ backup remain unchanged. GitHub's transient push500 recovered;4d2ff3b was
 successfully pushed and clean ff-only pulled. Subsequent documentation-only
 sync does not repeat the native diagnostic or claim new valid performance.
 Await user direction before contacting support; research/order gates remain.
+
+### Authorized support inquiry (October8)
+
+The user explicitly approved one reviewed inquiry to Norgate. Its official
+contact page was retained and parsed without executing downloadedJavaScript;
+recipient support@norgatedata.com was verified. One server-side SSL SMTP email
+was accepted2026-10-07T17:28:11.161823+00:00 (October8 01:28:11China), clean
+3951e95. Acceptance is not delivery/answer confirmation. The exact approved
+external body, code and summary were sent without attachments, licensed daily
+records, private credentials, internal paths or ownerCC. Local .eml/receipt
+remain ignored and never imported to a previewable data catalog.
+
+`scripts.send_norgate_membership_inquiry` defaults topreview; --send is manual
+only, requires encrypted SMTP and a new exclusive attempt folder, and never
+retries ambiguous SMTP outcomes. This one user approval is not authority for
+scheduled sends, extra disclosures, retries or changes to scientific rules.
+No IMAP integration is configured; ask the user to share relevant reply text.
+Preserve provider responses as immutable evidence before evaluating an explicit
+non-quote membership guarantee. A mere support acknowledgement is insufficient.
+Membership/WBA gates and no-order/freeze/schedule limits remain unchanged.
+Standalone support-status report adds no ResearchRun or performance output.
+
+Server306 regression tests passed86.66s; authenticated production support
+report/progress/contact metadata checks passed and restricted previews stayed
+empty. Earlier financial reports, performance identity and notices are
+unchanged. Synchronize this verified status through GitHub and a clean
+quantitative-node ff-only pull, without repeating the real send.

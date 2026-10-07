@@ -1,10 +1,11 @@
-# Norgate membership semantics — support request draft
+# Norgate membership semantics — support inquiry record
 
-Status: explicitly authorized by the user on 2026-10-08; **not sent yet**.
-Send one email only, with no licensed raw bars, daily member rows, account details
-or credentials. Preserve the original approved body below; exclude the internal
-references from the email. Official contact address verified from the contact
-page: `support@norgatedata.com`.
+Status: explicitly authorized by the user on 2026-10-08; **one email submitted**
+at 2026-10-08 01:28:11 Asia/Shanghai (2026-10-07 17:28:11 UTC). SMTP accepted it;
+delivery and a provider response are not confirmed. No attachments, licensed raw
+bars, daily member rows, account details or credentials were sent. The exact
+approved body below was sent, excluding internal references. Official contact
+address verified from the contact page: `support@norgatedata.com`.
 
 Suggested subject: Historical S&P 500 indicator on non-quote days — NONE vs ALLMARKETDAYS
 
@@ -71,3 +72,28 @@ commit `c8eb883d5e8e58e094967f8278c75a29d428b0ad`. Price-free summary SHA-256
 Exact gap-date lists and six provider responses remain restricted/local.
 Public documentation: <https://pypi.org/project/norgatedata/>;
 official support channel: <https://norgatedata.com/contact.php>.
+
+## Delivery evidence and follow-up
+
+Single server-side attempt at clean commit `3951e95`. Private sender headers,
+local `.eml` and transport receipt stay under the ignored
+`artifacts/research/support/norgate-membership-20261008-attempt-1/` directory;
+they are never committed or published to the data catalog.
+
+Request-body SHA-256:
+`add3725b30e9abe2d19e91611a8432fe507453ca58df67303d494c180f5f2c3a`.
+Message SHA-256:
+`2253285719748e5a1d11e7a817f64e87cf150d94a4eca3a5e7be702a68113d6b`.
+Receipt SHA-256:
+`04c656e0c861bd1cfd3ea419e248d083256da635b478b0fff3aa21954b1e1c8f`.
+Official contact-page retained response version:
+`3be3e5aa28b7da42fc2a80e572bb58b163739b248fa370fa5638b1b5244c45b0`;
+SHA-256 `f942bb319e1303c0fb76df1f765544f486f93c5a984bb0c19375c4e858696999`.
+
+The request is waiting for a reply. No mailbox-reading integration is configured;
+the user must share any relevant response. No automated resends or reminders
+were scheduled. Preserve the original reply and its source/date before evaluating
+the semantics. Provider acknowledgement alone is not missing-day truth: require
+a concrete explanation of how indicators behave across non-quote index changes,
+then separately assess whether a new versioned contract is defensible. Existing
+membership, WBA and trading gates remain blocked.
