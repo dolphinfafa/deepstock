@@ -393,3 +393,31 @@ NOT mean corrected membership/OHLC or full WBA proceeds were obtained. Next:
 new immutable complete daily-member/universe capture, then required raw/adjusted
 OHLC and a separately identified fixed data-correction rerun. Do not reuse
 v3's535-name count as a proof of complete refreshed historical membership.
+
+## Fresh native capture and fixed-period data correction
+
+Continuation first acquires new evidence, not another signal/filter experiment.
+`python -m scripts.download_norgate_membership --output-dir <new-folder>` pins
+2005-01-01—2026-09-29 and required closes from2024-12-31. It captures the entire
+current-and-past watchlist before/after, quote-life/asset metadata and every
+in-range code's native unpadded daily0/1 response. All codes, including legitimate
+pre2005 terminals, remain in the manifest. Missing dates stay unknown; positive
+intervals split at gaps. Required-scope gaps block, while older gaps are reported
+without claiming complete long-history membership. Native responses/clean daily
+views and the manifest are registered/hash-verified; no licensed rows leave
+Windows. AAPL/WBA/SW probes confirmed the native series follows quote dates;
+SW's sparse early history means non-observation cannot be guessed as0.
+
+`prepare_granville_stock_data --market US --us-membership-dir <new-capture>
+--reuse-us-price-dir <old-export> --output-dir <empty-new-export>` consumes only
+the declared capture. It selects all actual signal-close/evaluation members,
+never forces535. Existing same-date registered NONE/TOTALRETURN prices can be
+reused with their original versions; only newly required codes need bars. Old
+membership is never reused or rewritten. This corrects the fixed2025-01-02—
+2026-09-29 data scope, not a long-horizon performance study. New data still must
+pass stock/terminal entrances. All fixed twelve original US cases remain;
+new valid output, if obtained, is separately identified and CN remains historical.
+Do not use old v3's535-name/ledger-equivalence requirement against corrected
+data; preserve that old experiment unchanged. No altered rules, OOS selection,
+Paper/Live orders or scheduler changes. Actual acquisition results are recorded
+below only after native execution.

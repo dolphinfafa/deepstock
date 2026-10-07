@@ -54,6 +54,10 @@ def run(market, data_dir, benchmark_path, output, config_path):
     cfg = fixed_config(config_path)
     output.mkdir(parents=True, exist_ok=False)
     code = capture_code_provenance()
+    if code["tracked_dirty"]:
+        raise ValueError("Committed clean source required")
+    dataset_hash = digest(data_dir / "manifest.json")
+    config_hash = digest(config_path)
     source_names = ["scripts/run_granville_portfolio.py", "scripts/prepare_granville_stock_data.py",
                     "src/deepstock/strategies/both/granville_portfolio.py", "src/deepstock/strategies/both/granville.py",
                     "src/deepstock/data/store.py", "src/deepstock/data/stock_actions.py", "src/deepstock/data/membership.py", cfg["signal_config"], "pyproject.toml"]
@@ -163,11 +167,17 @@ def run(market, data_dir, benchmark_path, output, config_path):
     result["config"] = cfg
     result["config_hash"] = digest(config_path)
     result["code_provenance"] = code
+    result["dataset_manifest_sha256"] = dataset_hash
+    result["fresh_membership_capture_version"] = manifest.get("fresh_membership_capture_version")
+    result["fresh_membership_manifest_sha256"] = manifest.get("fresh_membership_manifest_sha256")
     result["artifact_hashes"] = {p.name: digest(p) for p in output.glob("*.csv")}
     result["runtime"] = {"numpy": np.__version__, "pandas": pd.__version__}
     refs = [*manifest.get("data_versions", []), *input_evidence()["data_versions"]]
     result["data_versions"] = list({r["version"]: r for r in refs}.values())
     result["input_exclusions"] = input_evidence()["input_exclusions"]
+    if (capture_code_provenance()["source_sha256"] != code["source_sha256"]
+            or digest(data_dir / "manifest.json") != dataset_hash or digest(config_path) != config_hash):
+        raise ValueError("Source/dataset/config changed during fixed run")
     write_json(output / "market_summary.json", result)
     return result
 

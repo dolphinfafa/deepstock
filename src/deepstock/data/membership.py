@@ -71,3 +71,58 @@ def require_us_membership(calendar, membership, evaluation_start, evaluation_end
     if result["status"] == "blocked":
         raise DataQualityError(f"{result['reason']}: {result['first_zero_member_close']} through {result['last_zero_member_close']}")
     return result
+
+
+def native_membership_view(frame, calendar, symbol, first_quote, last_quote, required_start):
+    """Keep native 0/1 observations; missing dates never become zero or spans.
+
+    Quote-life boundaries are provider metadata, not inferred from an empty
+    response. Missing earlier history is reported separately from the required
+    evaluation/prior-close scope. Neither is certified by aggregate counts.
+    """
+    dates = pd.DatetimeIndex(calendar)
+    if dates.empty or dates.has_duplicates or dates.tz is not None or not dates.is_monotonic_increasing:
+        raise DataQualityError("Unique ordered native membership session calendar required")
+    first = pd.to_datetime(first_quote, errors="coerce")
+    last = pd.to_datetime(last_quote, errors="coerce") if last_quote is not None else dates[-1]
+    if pd.isna(first) or pd.isna(last) or first > last:
+        raise DataQualityError("Verified first/last quote boundaries required")
+    expected = dates[(dates >= first) & (dates <= last)]
+    if frame.empty:
+        if len(expected):
+            raise DataQualityError("Empty membership inside verified security lifetime")
+        return pd.DataFrame(columns=["date", "symbol", "weight"]), [], {
+            "status": "outside_requested_quote_lifetime", "rows": 0,
+            "missing_history_sessions": 0, "missing_required_sessions": 0}
+    if {"Date", "Index Constituent"}.difference(frame):
+        raise DataQualityError("Native membership Date and Index Constituent required")
+    observed = pd.DatetimeIndex(pd.to_datetime(frame.Date, errors="coerce"))
+    values = pd.to_numeric(frame["Index Constituent"], errors="coerce")
+    if (observed.hasnans or observed.tz is not None or observed.has_duplicates
+            or not observed.is_monotonic_increasing or not values.isin([0, 1]).all()
+            or len(observed.difference(expected))):
+        raise DataQualityError("Invalid native membership dates/0-or-1 values/lifetime")
+    missing = expected.difference(observed)
+    required_missing = missing[missing >= pd.Timestamp(required_start)]
+    view = pd.DataFrame({"date": observed, "symbol": symbol, "weight": values.to_numpy(dtype=int)})
+    intervals = []
+    start = previous = None
+    previous_index = -2
+    for day, active, index in zip(observed, values, dates.get_indexer(observed)):
+        if start is not None and (not active or index != previous_index + 1):
+            intervals.append({"start": str(start.date()), "end": str(previous.date())})
+            start = None
+        if active and start is None:
+            start = day
+        previous, previous_index = day, index
+    if start is not None:
+        intervals.append({"start": str(start.date()), "end": str(previous.date())})
+    return view, intervals, {
+        "status": "blocked" if len(required_missing) else "required_scope_observed",
+        "rows": len(view), "positive_rows": int(values.sum()),
+        "missing_history_sessions": len(missing), "missing_required_sessions": len(required_missing),
+        "first_missing_history_date": str(missing[0].date()) if len(missing) else None,
+        "last_missing_history_date": str(missing[-1].date()) if len(missing) else None,
+        "first_missing_required_date": str(required_missing[0].date()) if len(required_missing) else None,
+        "policy": "Native NONE padding; no inferred 0/1, no positive interval across an unobserved session",
+    }

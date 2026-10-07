@@ -196,43 +196,70 @@ def collect_cn(output, cfg):
     return manifest
 
 
-def collect_us(output, cfg):
+def collect_us(output, cfg, membership_dir=None, reuse_price_dir=None):
     import norgatedata as n
-    base = ROOT / "artifacts/research/norgate/stock-universe-sp500-liquidity"
-    mapping = {}
-    for path in sorted(base.glob("membership-*.json")):
-        mapping.update(read_clean_json(path))
+    capture, capture_version = None, None
+    if membership_dir is not None:
+        if output.exists() and any(output.iterdir()):
+            raise ValueError("Fresh membership correction requires a new empty output directory")
+        from scripts.download_norgate_membership import load_capture
+        mapping, capture, capture_version = load_capture(membership_dir)
+        if pd.Timestamp(capture["source_start"]) > pd.Timestamp(cfg["source_start"]) or pd.Timestamp(capture["source_end"]) < pd.Timestamp(cfg["evaluation_end"]):
+            raise ValueError("Fresh membership capture does not cover fixed source dates")
+    else:
+        base = ROOT / "artifacts/research/norgate/stock-universe-sp500-liquidity"
+        mapping = {}
+        for path in sorted(base.glob("membership-*.json")):
+            mapping.update(read_clean_json(path))
     if not mapping:
         raise ValueError("Historical membership chunks missing")
     first, last = pd.Timestamp(cfg["evaluation_start"]), pd.Timestamp(cfg["evaluation_end"])
-    wanted = {symbol: spans for symbol, spans in mapping.items() if any(pd.Timestamp(r["start"]) <= last and pd.Timestamp(r["end"]) >= first for r in spans)}
+    calendar = xcals.get_calendar("XNYS", start=cfg["source_start"], end=cfg["evaluation_end"]).sessions.tz_localize(None)
+    signal_start = calendar[calendar < first][-1] if len(calendar[calendar < first]) else first
+    wanted = {symbol: spans for symbol, spans in mapping.items() if any(pd.Timestamp(r["start"]) <= last and pd.Timestamp(r["end"]) >= signal_start for r in spans)}
     if not wanted:
         raise ValueError("No historical eligible securities")
-    calendar = xcals.get_calendar("XNYS", start=cfg["source_start"], end=cfg["evaluation_end"]).sessions.tz_localize(None)
     rows = [{"date": r["start"], "end": r["end"], "symbol": symbol, "weight": 1} for symbol, spans in wanted.items() for r in spans]
     member_frame = pd.DataFrame(rows)
     require_us_membership(calendar, member_frame, cfg["evaluation_start"], cfg["evaluation_end"])
-    persist(member_frame, output / "membership.csv.gz", "US", "historical_membership")
+    if capture and pd.Timestamp(capture["required_start"]) > signal_start:
+        raise ValueError("Fresh native membership has not verified the first prior-signal close")
+    upstream = [capture_version, capture["interval_version"]] if capture else []
+    persist(member_frame, output / "membership.csv.gz", "US", "historical_membership", upstream)
     persist(pd.DataFrame({"date": calendar}), output / "calendar.csv", "US", "calendar")
-    failures, terminals = [], {}
+    failures, terminals, reused = [], {}, []
+    references = {r["symbol"]: r for r in capture["records"]} if capture else {}
     for i, symbol in enumerate(sorted(wanted)):
         path = output / "prices" / (symbol + ".csv.gz")
         try:
             if path.exists():
                 bars = read_clean_csv(path)
             else:
-                raw = pd.DataFrame(n.price_timeseries(symbol, stock_price_adjustment_setting=n.StockPriceAdjustmentType.NONE, start_date=cfg["source_start"], end_date=cfg["evaluation_end"]))
-                adj = pd.DataFrame(n.price_timeseries(symbol, stock_price_adjustment_setting=n.StockPriceAdjustmentType.TOTALRETURN, start_date=cfg["source_start"], end_date=cfg["evaluation_end"]))
-                refs = [capture_response("Norgate", symbol + "-NONE", raw, "US", restricted=True),
-                        capture_response("Norgate", symbol + "-TOTALRETURN", adj, "US", restricted=True)]
-                if raw.empty or adj.empty or not np.array_equal(raw.Date, adj.Date):
-                    raise ValueError("Raw/total-return session mismatch")
-                bars = pd.DataFrame({"date": pd.to_datetime(raw.Date), "symbol": symbol, "volume": raw.Volume, "turnover": raw.Turnover})
-                for field in ["open", "high", "low", "close"]:
-                    bars[field] = raw[field.title()]
-                    bars["adjusted_" + field] = adj[field.title()]
-                bars = persist(bars, path, "US", "daily_ohlc", refs, adjustment="raw_NONE_and_provider_TOTALRETURN_analytical_units", volume_unit="shares", amount_unit="USD")
-            final_quote = n.last_quoted_date(symbol)
+                existing = reuse_price_dir / "prices" / (symbol + ".csv.gz") if reuse_price_dir else None
+                if existing is not None and existing.exists():
+                    previous = json.loads((reuse_price_dir / "manifest.json").read_text(encoding="utf-8"))
+                    if previous["market"] != "US" or previous["source_start"] != cfg["source_start"] or previous["source_end"] != cfg["evaluation_end"]:
+                        raise ValueError("Reused price dates/market differ; never reuse membership")
+                    original = read_clean_csv(existing)
+                    if set(original.symbol) != {symbol}:
+                        raise ValueError("Reused security price identity differs")
+                    bars = persist(original, path, "US", "daily_ohlc", [original.attrs["data_version"]],
+                                   adjustment="raw_NONE_and_provider_TOTALRETURN_analytical_units", volume_unit="shares", amount_unit="USD",
+                                   reused_verified_price_only=True)
+                    reused.append(symbol)
+                else:
+                    raw = pd.DataFrame(n.price_timeseries(symbol, stock_price_adjustment_setting=n.StockPriceAdjustmentType.NONE, padding_setting=n.PaddingType.NONE, start_date=cfg["source_start"], end_date=cfg["evaluation_end"]))
+                    adj = pd.DataFrame(n.price_timeseries(symbol, stock_price_adjustment_setting=n.StockPriceAdjustmentType.TOTALRETURN, padding_setting=n.PaddingType.NONE, start_date=cfg["source_start"], end_date=cfg["evaluation_end"]))
+                    refs = [capture_response("Norgate", symbol + "-NONE", raw, "US", restricted=True),
+                            capture_response("Norgate", symbol + "-TOTALRETURN", adj, "US", restricted=True)]
+                    if raw.empty or adj.empty or not np.array_equal(raw.Date, adj.Date):
+                        raise ValueError("Raw/total-return session mismatch")
+                    bars = pd.DataFrame({"date": pd.to_datetime(raw.Date), "symbol": symbol, "volume": raw.Volume, "turnover": raw.Turnover})
+                    for field in ["open", "high", "low", "close"]:
+                        bars[field] = raw[field.title()]
+                        bars["adjusted_" + field] = adj[field.title()]
+                    bars = persist(bars, path, "US", "daily_ohlc", refs, adjustment="raw_NONE_and_provider_TOTALRETURN_analytical_units", volume_unit="shares", amount_unit="USD")
+            final_quote = references[symbol]["last_quote"] if capture else n.last_quoted_date(symbol)
             # Norgate returns None for still-listed securities; it is not a
             # malformed terminal date or a failed price capture.
             last_quote = str(final_quote)[:10] if final_quote is not None else None
@@ -244,6 +271,9 @@ def collect_us(output, cfg):
             print(json.dumps({"market": "US", "processed": i + 1, "total": len(wanted), "failures": len(failures)}), flush=True)
     manifest = {"market": "US", "symbols": sorted(wanted), "symbol_count": len(wanted), "source_start": cfg["source_start"], "source_end": cfg["evaluation_end"],
                 "membership_model": "historical_daily_index_intervals", "failures": failures, "terminal_securities": terminals,
+                "fresh_membership_capture_version": capture_version,
+                "fresh_membership_manifest_sha256": digest(membership_dir / "manifest.json") if capture else None,
+                "reused_verified_price_count": len(reused), "new_price_count": len(wanted) - len(reused),
                 "config_hash": digest(ROOT / "config/granville_portfolio_v1.json"), "retrieved_at_utc": datetime.now(timezone.utc).isoformat(), **input_evidence()}
     write_json(output / "manifest.json", manifest)
     if failures:
@@ -255,10 +285,16 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--market", choices=["US", "CN"], required=True)
     p.add_argument("--output-dir", type=Path, required=True)
+    p.add_argument("--us-membership-dir", type=Path, help="New hash-verified full-watchlist native capture; old chunks never extended")
+    p.add_argument("--reuse-us-price-dir", type=Path, help="Reuse only registered same-date raw/adjusted price exports, never stale eligibility")
     args = p.parse_args()
     cfg = json.loads((ROOT / "config/granville_portfolio_v1.json").read_text(encoding="utf-8"))
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    result = (collect_us if args.market == "US" else collect_cn)(args.output_dir, cfg)
+    if args.market != "US" and (args.us_membership_dir or args.reuse_us_price_dir):
+        p.error("US capture/reuse options cannot affect CN")
+    if args.reuse_us_price_dir and not args.us_membership_dir:
+        p.error("Price reuse requires a new complete native membership capture")
+    result = collect_us(args.output_dir, cfg, args.us_membership_dir, args.reuse_us_price_dir) if args.market == "US" else collect_cn(args.output_dir, cfg)
     print(json.dumps({"market": result["market"], "status": "captured", "symbol_count": result["symbol_count"]}))
 
 
