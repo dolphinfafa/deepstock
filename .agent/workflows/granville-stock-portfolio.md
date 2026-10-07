@@ -421,3 +421,19 @@ Do not use old v3's535-name/ledger-equivalence requirement against corrected
 data; preserve that old experiment unchanged. No altered rules, OOS selection,
 Paper/Live orders or scheduler changes. Actual acquisition results are recorded
 below only after native execution.
+
+Native capture at clean3686f42 completed all1305 codes, verified261 pre2005
+terminals, and returned503 members atSeptember29. No aggregate empty tail
+remains, but the stronger all-code gate is still blocked: BIGGQ/SBNY/
+YELLQ-202607 have required native dates missing; VYLR lacks verified first/last
+quote boundaries. Missing historical observations total12695. All original
+responses/daily views remain on Windows under
+artifacts/research/norgate/membership-native-20261007-v2/; do not relabel this
+as complete PIT evidence. No correction performance has run.
+
+`download_norgate_stock_ohlc_inventory` can explicitly load blocked membership
+**for evidence acquisition only**, using its entire frozen list, retaining all
+codes and querying NONE/TOTALRETURN with no padding. It does not mark any
+strategy input ready or weaken the normal load_capture gate. This permits
+parallel completion of price evidence while membership/terminal unknowns
+remain. Full licensed rows stay local; only hashes/counts/status leave Windows.

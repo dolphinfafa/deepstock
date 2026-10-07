@@ -15,7 +15,7 @@ from deepstock.data.store import ROOT, DataStore, digest, read_clean_csv, read_c
 from scripts.rerun_clean_research import capture_code_provenance
 
 
-def load_capture(folder):
+def load_capture(folder, *, evidence_only=False):
     """Hash-verified registered manifest and derived/native inputs, never globs."""
     store = DataStore()
     manifest = json.loads((folder / "manifest.json").read_text(encoding="utf-8"))
@@ -24,7 +24,7 @@ def load_capture(folder):
     if digest(folder / "manifest.json") != registered["raw_sha256"]:
         raise ValueError("Membership capture manifest changed")
     store.verified_path(registered, "raw")
-    if manifest["status"] != "required_scope_observed" or manifest["failures"]:
+    if not evidence_only and (manifest["status"] != "required_scope_observed" or manifest["failures"]):
         raise ValueError("Full-watchlist required membership scope blocked")
     mapping = read_clean_json(folder / "membership-native.json")
     if store.resolve(folder / "membership-native.json")["id"] != manifest["interval_version"]:

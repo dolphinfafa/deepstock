@@ -105,3 +105,37 @@ def test_fresh_collector_uses_new_full_pool_not_535_and_retains_price_version(tm
     assert saved[0][1] == ["c" * 64, "i" * 64]
     assert next(s for s in saved if s[0].name == "A.csv.gz")[1] == ["p" * 64]
     assert result["fresh_membership_manifest_sha256"] == digest(folder / "manifest.json")
+
+
+def test_raw_ohlc_inventory_requires_same_native_dates_and_preserves_both_layers():
+    from scripts.download_norgate_stock_ohlc_inventory import stock_frame
+    days = pd.bdate_range("2026-08-20", periods=3)
+    raw = pd.DataFrame({"Date": days, "Open": 10, "High": 12, "Low": 9, "Close": 11, "Volume": 100, "Turnover": 1100})
+    adjusted = raw.copy(deep=True)
+    adjusted[["Open", "High", "Low", "Close"]] *= 2
+    result = stock_frame(raw, adjusted, "A")
+    assert result.close.tolist() == [11] * 3
+    assert result.adjusted_close.tolist() == [22] * 3
+    assert result.volume.tolist() == [100] * 3
+    with pytest.raises(ValueError, match="date mismatch"):
+        stock_frame(raw, adjusted.iloc[:-1], "A")
+    with pytest.raises(ValueError, match="ordered native"):
+        stock_frame(raw.iloc[::-1], adjusted.iloc[::-1], "A")
+    with pytest.raises(ValueError, match="Complete raw"):
+        stock_frame(raw, adjusted.drop(columns="High"), "A")
+
+
+def test_evidence_only_loading_does_not_admit_blocked_membership(tmp_path, monkeypatch):
+    from scripts import download_norgate_membership as capture
+    from deepstock.data.store import digest
+    manifest = {"status": "blocked", "failures": [{"symbol": "A", "error": "native gap"}], "records": [], "interval_version": "i" * 64}
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest))
+    (tmp_path / "manifest-version.txt").write_text("v" * 64)
+    monkeypatch.setattr(capture, "DataStore", lambda: SimpleNamespace(
+        get=lambda version: {"raw_sha256": digest(tmp_path / "manifest.json")},
+        verified_path=lambda *args: tmp_path / "manifest.json", resolve=lambda path: {"id": "i" * 64}))
+    monkeypatch.setattr(capture, "read_clean_json", lambda path: {})
+    with pytest.raises(ValueError, match="required membership scope blocked"):
+        capture.load_capture(tmp_path)
+    _, retained, _ = capture.load_capture(tmp_path, evidence_only=True)
+    assert retained["status"] == "blocked"
