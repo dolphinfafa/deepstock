@@ -426,6 +426,11 @@ and baseline headlines; no schema migration or order authority. Independent
 easy-tdx1.20.8 CN source audit adds a contract-versioned data normalizer and
 authenticated /api/data-audits reports shown in /data. Unknown quotation-license
 rights keep previews disabled; SDK is optional/lazy and not a strategy dependency.
+Actual CN audit has six daily sample series within cross-source tolerances,
+but minute start/end semantics remain blocked and no quote freshness test;
+capture70 requests, offline comparison0 new requests. US sizing execution and
+Windows synchronization await the offline20008 tunnel. Old Both results remain
+the latest completed evidence; new plans do not replace them with empty metrics.
 
 The strategy research library at `https://dev-cn-01.yios.cn/deepstock/` is a
 Vue 3 application served by FastAPI. The user-level

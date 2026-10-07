@@ -47,3 +47,29 @@ directory. It verifies all capture hashes, uses retained calendar/data versions
 and never invokes network clients. Keep original errors and actual-request count;
 comparison failures must not trigger provider refetch. Report the MIN_1 label
 hypothesis separately from unchanged clean timestamps, not a silent -1min repair.
+
+## October7 actual result
+
+Capture b9f1cee; offline recovery54b8238. Evidence retained in
+artifacts/research/easy-tdx/20261007-fixed-v1 and20261007-verified-v2. Six
+NONE/QFQ daily series800 rows; two MIN_1 series1600 rows. Source requests70
+including initial reference-error retries; recovery0. One fixed candidate was
+reachable. Quote was stopped by the request ceiling, not successfully tested.
+All15 final bar views are ordered with no raw duplicates;22 SDK snapshots
+registered, all previews disabled. Retained Tushare calendar confirms latest
+complete September30 session and national-holiday closure; no imputation.
+
+Five stocks each665 overlap sessions and ETF799 with zero OHLCV/amount
+exceedances at fixed tolerances. Compare canonical CNY stock turnover rather
+than its retained provider amount auxiliary. Daily result applies only to this
+six-name sample/overlap, not a broad source warranty or strategy admission.
+Both minute series have1200 bars over last5 complete sessions and daily
+aggregation matches at fixed tolerances. Declared start labels miss10 expected
+and add10 end labels per sample;14 non-session start labels across1600 bars.
+Diagnostic minus1minute yields0 missing/unexpected but is not applied to clean
+data. Timestamp semantics remain blocked, independent minute accuracy unproved.
+QFQ lacks point-in-time actions; quote freshness is untested. Do not use these
+as production minute/adjusted/execution data or resume any strategy.
+
+Authenticated /data shows capture/recovery reports and raw/clean metadata.
+Backend/new SDK are independent; no SDK web service or order task was started.

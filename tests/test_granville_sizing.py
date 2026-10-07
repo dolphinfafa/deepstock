@@ -159,3 +159,26 @@ def test_sizing_ingestion_preserves_both_history_and_is_immutable(tmp_path):
             if run:
                 session.delete(run)
             session.commit()
+
+
+def test_new_sizing_plan_keeps_completed_both_evidence_in_latest_display():
+    from deepstock.web.app import _strategy_summary
+    from deepstock.web.ingestion import ingest_catalog
+    from deepstock.web.models import Strategy
+    value = fixture_value()
+    run_id = "granville-synthetic-latest-evidence"
+    with SessionLocal() as session:
+        try:
+            session.add(ResearchRun(id=run_id, strategy_id="granville_stock_portfolio", run_type="granville_stock_entry_episodes",
+                                    status="completed_with_blocks", as_of_date="2026-10-06", details=value))
+            session.commit()
+            ingest_catalog(session)
+            display = _strategy_summary(session, session.get(Strategy, "granville_stock_portfolio"))
+            assert display["latest_run"]["id"] == run_id
+            assert set(display["market_results"]) == {"US", "CN"}
+        finally:
+            session.rollback()
+            run = session.get(ResearchRun, run_id)
+            if run:
+                session.delete(run)
+            session.commit()

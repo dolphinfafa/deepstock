@@ -238,3 +238,12 @@ CLI: python -m scripts.run_granville_us_sizing --data-dir ... --baseline-dir ...
 --output-dir ...; server publication uses --us-summary and --history-publication.
 Run from clean committed source, pin source/config/input fingerprints before and
 after. Separate easy-tdx CN audit is not a data source for this experiment.
+
+October7 implementation/verification is ready but real US v3 results are pending:
+the quantitative computer's20008 relay listener was absent and three SSH checks
+returned connection refused. No Windows pull/test or licensed-data experiment
+occurred, no alternative-node/synthetic substitution, no new outcome published.
+Restore the quantitative computer/FRPC, then clean pull, local tests, four-case
+runner and summary-only publication. Keep old US/CN/v2 evidence visible.
+Catalog as_of remains October6 (latest completed evidence), while October7
+planning appears in progress; a newer empty plan must not displace real metrics.
