@@ -372,3 +372,24 @@ September29; WBA sample in that post-removal range is empty. A sample availabili
 probe does not certify a complete universe. Formal CLI
 --verify-provider-metadata captures raw local security/watchlist metadata with
 restricted version/hash and returns aggregate classification only; no bars.
+
+Formal Windows audit at clean0b6e8bb confirms allfour sizing cases have26 tail
+sessions,20 zero-position days startingSeptember1, and1 tail buy fill (from the
+last known prior close). Audit statusblocked is the expected data conclusion,
+not a failed CLI.17 input references, source fingerprint retained; native
+security metadata version
+ac644a1ba22e7feef206cbe30bdfa6a5f09b312fe311077976f288a69fdda037,
+rawSHA25ee524f3fcc32150b9b14fc5e63f19e11b37ef12d003404f05932df29a32e39.
+Only13122-byte summary copied to server
+artifacts/research/granville-stock-nodes/US-20261007-readiness-v1.json,
+SHA2c67433d32d2da603e3d19153c4846dff323b6a6b18f620d396e048f056c2ca5,
+both nodes verified. No price downloads or performance reruns occurred.
+
+Both nodes passed276 tests (server83.55s, Windows50.69s), frontend build and
+authenticated production warning/report smoke passed. Repeat notice ingestion0;
+no new research run displaces performance history. Original v1/v2/v3 hashes
+unchanged. Livefalse/killtrue remain. Completion of this audit/gate work does
+NOT mean corrected membership/OHLC or full WBA proceeds were obtained. Next:
+new immutable complete daily-member/universe capture, then required raw/adjusted
+OHLC and a separately identified fixed data-correction rerun. Do not reuse
+v3's535-name count as a proof of complete refreshed historical membership.
