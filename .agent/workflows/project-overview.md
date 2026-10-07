@@ -428,9 +428,14 @@ authenticated /api/data-audits reports shown in /data. Unknown quotation-license
 rights keep previews disabled; SDK is optional/lazy and not a strategy dependency.
 Actual CN audit has six daily sample series within cross-source tolerances,
 but minute start/end semantics remain blocked and no quote freshness test;
-capture70 requests, offline comparison0 new requests. US sizing execution and
-Windows synchronization await the offline20008 tunnel. Old Both results remain
-the latest completed evidence; new plans do not replace them with empty metrics.
+capture70 requests, offline comparison0 new requests. The20008 tunnel later
+recovered: clean fa1f84c pull, Windows265 tests passed, four real US sizing cases
+completed and both baseline ledgers independently verified. Shrink base CAGR
+3.86% / MDD-13.56% versus fixed12.32% / -17.89%; shrink stress CAGR-1.78%.
+This reduces exposure, not demonstrated risk-adjusted improvement. Verified
+summary-only publication20261007-risk-shrink-v3-restored becomes latest; original
+headlines,24 cases/WBA blocks,v2 and CN history remain. New plans must not hide
+completed evidence. Full licensed ledgers stay Windows; no orders or promotion.
 
 The strategy research library at `https://dev-cn-01.yios.cn/deepstock/` is a
 Vue 3 application served by FastAPI. The user-level

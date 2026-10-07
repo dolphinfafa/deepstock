@@ -161,24 +161,56 @@ def test_sizing_ingestion_preserves_both_history_and_is_immutable(tmp_path):
             session.commit()
 
 
-def test_new_sizing_plan_keeps_completed_both_evidence_in_latest_display():
+@pytest.fixture
+def catalog_only_session():
+    # Display regressions must not depend on whichever real publications happen
+    # to exist in this node's ignored artifacts directory.
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+    from deepstock.web.database import Base
+    from deepstock.web.ingestion import ingest_catalog
+    engine = create_engine("sqlite:///:memory:")
+    try:
+        Base.metadata.create_all(engine)
+        with Session(engine) as session:
+            ingest_catalog(session)
+            yield session
+    finally:
+        engine.dispose()
+
+
+def test_new_sizing_plan_keeps_completed_both_evidence_in_latest_display(catalog_only_session):
     from deepstock.web.app import _strategy_summary
     from deepstock.web.ingestion import ingest_catalog
     from deepstock.web.models import Strategy
     value = fixture_value()
     run_id = "granville-synthetic-latest-evidence"
-    with SessionLocal() as session:
-        try:
-            session.add(ResearchRun(id=run_id, strategy_id="granville_stock_portfolio", run_type="granville_stock_entry_episodes",
-                                    status="completed_with_blocks", as_of_date="2026-10-06", details=value))
-            session.commit()
-            ingest_catalog(session)
-            display = _strategy_summary(session, session.get(Strategy, "granville_stock_portfolio"))
-            assert display["latest_run"]["id"] == run_id
-            assert set(display["market_results"]) == {"US", "CN"}
-        finally:
-            session.rollback()
-            run = session.get(ResearchRun, run_id)
-            if run:
-                session.delete(run)
-            session.commit()
+    session = catalog_only_session
+    session.add(ResearchRun(id=run_id, strategy_id="granville_stock_portfolio", run_type="granville_stock_entry_episodes",
+                            status="completed_with_blocks", as_of_date="2026-10-06", details=value))
+    session.commit()
+    ingest_catalog(session)
+    display = _strategy_summary(session, session.get(Strategy, "granville_stock_portfolio"))
+    assert display["latest_run"]["id"] == run_id
+    assert set(display["market_results"]) == {"US", "CN"}
+
+
+def test_completed_sizing_publication_replaces_older_evidence_not_baseline_headline(catalog_only_session):
+    from deepstock.web.app import _strategy_summary
+    from deepstock.web.ingestion import ingest_catalog
+    from deepstock.web.models import Strategy
+    session = catalog_only_session
+    old, new = fixture_value(), sizing_fixture()
+    for run_id, as_of, value, run_type in [
+        ("granville-synthetic-old-evidence", "2026-10-06", old, "granville_stock_entry_episodes"),
+        ("granville-synthetic-completed-sizing", "2026-10-07", new, "granville_stock_us_sizing"),
+    ]:
+        session.add(ResearchRun(id=run_id, strategy_id="granville_stock_portfolio", run_type=run_type,
+                                status="completed_with_blocks", as_of_date=as_of, details=value))
+    session.commit()
+    ingest_catalog(session)
+    display = _strategy_summary(session, session.get(Strategy, "granville_stock_portfolio"))
+    assert display["latest_run"]["id"] == "granville-synthetic-completed-sizing"
+    assert display["market_results"]["US"]["sizing_experiment"] == new["market_results"]["US"]["sizing_experiment"]
+    assert display["market_results"]["US"]["metrics"] == old["market_results"]["US"]["metrics"]
+    assert display["market_results"]["CN"]["current_experiment_status"] == "not_rerun_historical_evidence"

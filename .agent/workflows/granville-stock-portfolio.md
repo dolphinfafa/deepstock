@@ -247,3 +247,54 @@ Restore the quantitative computer/FRPC, then clean pull, local tests, four-case
 runner and summary-only publication. Keep old US/CN/v2 evidence visible.
 Catalog as_of remains October6 (latest completed evidence), while October7
 planning appears in progress; a newer empty plan must not displace real metrics.
+
+### v3 result after quantitative-node recovery
+
+The20008 tunnel recovered. DESKTOP-ORNLESD/admin had a clean worktree; ff-only
+pull reached fa1f84c and dedicated Python3.12.14 passed265 tests (75.77s).
+Four real US cases completed from clean fa1f84c, unchanged535-name inputs and
+436 evaluation sessions. Both base/stress baseline daily and trade fields match
+their original SHA-verified ledgers. No invalid-volatility candidate was admitted;
+maximum entry target remains16%. No CN rerun or result-based parameter change.
+
+| US sizing / cost | Cumulative | CAGR | MDD | Sharpe | Annual turnover | Mean exposure |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| fixed16% / base | 22.26% | 12.32% | -17.89% | 0.58 | 31.74 | 75.24% |
+| fixed16% / stress | 4.66% | 2.67% | -18.40% | 0.23 | 31.83 | 75.25% |
+| shrink only / base | 6.77% | 3.86% | -13.56% | 0.33 | 22.67 | 53.58% |
+| shrink only / stress | -3.06% | -1.78% | -14.17% | -0.05 | 22.76 | 53.69% |
+
+Mean cash rises from24.76% to46.42% in base; direct cost/initial capital falls
+from5.65% to3.95%, but this is an amount ratio, not compounded return drag.
+Buy fills remain349 base /350 stress under both sizing policies. Lower exposure
+and turnover do not imply fewer entry/exit events. The smaller drawdown comes
+with substantially less return and lower Sharpe: this seen-sample diagnostic
+does not establish a better strategy. Neither case beats SPY's17.48% CAGR;
+the80%-initial SPY comparison is not dynamically risk/cash matched.
+
+Windows-only ledger comparison also matches date/symbol/action/reason sequences
+between sizing policies at each cost. Base shrinks250 of349 buys; stress251
+of350. Base mean target11.39%, median11.92%, minimum2.44%. This sizes the same
+observed trade events differently; it does not improve entry or exit timing.
+
+Pre-split2025 base returns are -3.88% fixed / -3.41% shrink; retrospective2026
+slice +27.21% / +10.54%. Both slices were already seen, and the latter has only
+186 sessions; reference annualization is not genuinely unseen OOS evidence.
+Shrink stress-minus-base cumulative -9.8319pp decomposes into additional direct
+cost5.6277pp and changed-path gross PnL-4.2042pp using the actual cash identity,
+not a tradable zero-cost counterfactual or identical stress/base fills.
+
+Windows full ledgers/source snapshots remain under
+artifacts/research/granville-stock-nodes/US-20261007-sizing-v3-restored/.
+Only market_summary.json (479298 bytes, SHA256
+ef778421041838c2ee55ec51b832583cdb97fdb89759b6209441ff9350a97d91) was copied.
+Server immutable publication/report:
+artifacts/research/granville-stock-sizing/20261007-risk-shrink-v3-restored/.
+Baseline headlines, original24 cases/two WBA blocks, v2 and Both/CN history
+remain. The real October7 publication becomes latest; the catalog's historical
+October6 placeholder does not create a competing empty October7 run.
+
+Keep research-only. Next requirements remain longer point-in-time history,
+verified terminal proceeds, industry and real-share/tax/settlement accounting.
+Any new entry/holding/filter change requires a separate fixed experiment, not
+post-hoc selection from these four results. No new observer, Paper or Live orders.
