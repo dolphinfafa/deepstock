@@ -244,8 +244,9 @@ def analyse_existing(source, output):
             f = read_clean_csv(version)
             if "cal_date" not in f:
                 continue
-            dates = pd.to_datetime(f.loc[pd.to_numeric(f.is_open).eq(1), "cal_date"], format="mixed")
-            if dates.min() <= pd.Timestamp("2023-01-01") and dates.max() >= pd.Timestamp(original["as_of_date"]):
+            all_dates = pd.to_datetime(f.cal_date, format="mixed")
+            dates = all_dates.loc[pd.to_numeric(f.is_open).eq(1)]
+            if all_dates.min() <= pd.Timestamp("2023-01-01") and all_dates.max() >= pd.Timestamp(original["as_of_date"]):
                 sessions = pd.DatetimeIndex(dates.loc[dates <= pd.Timestamp(original["latest_complete_session"])].sort_values().unique())
                 report["calendar_version"] = version
                 break
