@@ -452,6 +452,18 @@ def dashboard(
     }
 
 
+@app.get("/api/data-audits")
+def data_audits(_auth=Depends(_auth_dependency)):
+    # Fixed report directory, authenticated, no client-supplied paths or strategy attribution.
+    reports = []
+    for path in sorted((settings.project_root / "artifacts/research/easy-tdx").glob("*/publication.json"), reverse=True)[:10]:
+        value = json.loads(path.read_text(encoding="utf-8"))
+        if value.get("scope") != "independent_CN_data_audit_no_strategy":
+            continue
+        reports.append({key: value.get(key) for key in ["id", "as_of_date", "status", "sdk_version", "actual_requests", "threshold_exceedances", "report_md", "data_versions"]})
+    return {"reports": reports}
+
+
 @app.get("/api/data")
 def data_list(market: str | None = None, provider: str | None = None, node: str | None = None, status: str | None = None,
               offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100),

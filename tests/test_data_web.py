@@ -8,11 +8,13 @@ from deepstock.web.data_catalog import register_manifest
 
 def test_data_authentication_and_limit_guards(client):
     assert client.get("/api/data").status_code == 401
+    assert client.get("/api/data-audits").status_code == 401
     headers, _ = _login(client)
     assert client.get("/api/data?limit=101", headers=headers).status_code == 422
     assert client.get("/api/data/not-a-version/preview", headers=headers).status_code == 404
     result = client.get("/api/data", headers=headers)
     assert result.status_code == 200 and "items" in result.json()
+    assert "reports" in client.get("/api/data-audits", headers=headers).json()
 
 
 def test_preview_versions_raw_flags_and_no_arbitrary_paths(client, tmp_path, monkeypatch):

@@ -2,11 +2,13 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api'
+import MarkdownBlock from '../components/MarkdownBlock.vue'
 
 const route = useRoute(), router = useRouter()
 const data = ref<any>(null), detail = ref<any>(null), preview = ref<any>(null), error = ref('')
 const market = ref(''), provider = ref(''), node = ref(''), status = ref(''), layer = ref('clean')
 const offset = ref(0), rowOffset = ref(0)
+const audits = ref<any[]>([])
 
 async function load() {
   try {
@@ -32,13 +34,14 @@ watch(offset, load)
 watch(() => route.query.version, showDetail)
 watch(layer, () => { rowOffset.value = 0; loadPreview() })
 watch(rowOffset, loadPreview)
-onMounted(async () => { await load(); await showDetail() })
+onMounted(async () => { await load(); await showDetail(); try { audits.value = (await api<{ reports: any[] }>('/data-audits')).reports } catch (reason: any) { error.value = reason.message } })
 </script>
 
 <template>
   <div class="page-wrap">
     <header class="page-header"><div><div class="eyebrow">DATA LINEAGE & QUALITY</div><h1>数据中心</h1><p>原始快照保留证据，清洗版本记录变更，回测入口绑定版本。未知行情不会被插值补造。</p></div><span class="asof">{{ data?.total || 0 }} 个版本</span></header>
     <div v-if="error" class="form-error">{{ error }}</div>
+    <section v-if="audits.length" class="panel"><h2>独立数据源质量研究</h2><p>easy-tdx仅验证A股数据，不属于葛兰威尔或其他策略。许可未确认的行情不开放行预览。</p><details v-for="audit in audits" :key="audit.id"><summary>{{ audit.as_of_date }} · easy-tdx {{ audit.sdk_version }} · {{ audit.status }} · {{ audit.actual_requests }}次请求 · {{ audit.threshold_exceedances }}项超阈值</summary><MarkdownBlock :content="audit.report_md" /></details></section>
     <section class="toolbar data-filters">
       <select v-model="market"><option value="">全部市场</option><option value="US">美股</option><option value="CN">A股</option><option value="Both">Both</option></select>
       <select v-model="provider"><option value="">全部来源</option><option v-for="p in data?.providers" :key="p">{{ p }}</option></select>

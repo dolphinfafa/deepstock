@@ -215,3 +215,26 @@ Both nodes passed244 tests and frontend production build passed. No winner
 promotion, new observer task, Paper or live permission. Future one-dimension
 experiments need their own fixed spec; do not silently tune v2 after this null
 result. Remaining terminal/history/industry/settlement gates are unchanged.
+
+## October 7 fixed US-only sizing v3
+
+config/granville_us_sizing_v3.json preregisters only risk shrink: target16% ×
+min(1, point-in-time eligible pool median20-session adjusted-return volatility /
+stock volatility), ddof0, immediately preceding close. Median uses historical
+membership, ready indicators, original liquidity gate and finite positive vol;
+not only entry signals or chosen names. Invalid/zero volatility blocks and is
+logged. Low-volatility names never exceed16%; residual stays zero-yield cash.
+No daily rebalancing/adds; original5 slots/80% entry cap/ranks/signals/time_7/
+stops/cooldown/costs unchanged. Same535 pool/registered versions/warm-up/evaluation.
+
+Four US cases: fixed16% / shrink × base / stress. Both baseline ledger hashes
+and every old daily/trade field must reproduce before comparisons. Licensed bars
+and full ledgers stay Windows. Original24/v2 cases remain. CN historical evidence
+is preserved under Both and explicitly not rerun. API extends
+market_results.US.sizing_experiment; original headline never promoted by result.
+No migration, genuinely unseen OOS, complete504+252 window or Paper/Live claim.
+
+CLI: python -m scripts.run_granville_us_sizing --data-dir ... --baseline-dir ...
+--output-dir ...; server publication uses --us-summary and --history-publication.
+Run from clean committed source, pin source/config/input fingerprints before and
+after. Separate easy-tdx CN audit is not a data source for this experiment.

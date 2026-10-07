@@ -1,0 +1,23 @@
+{
+  "strategy_id": "granville_stock_portfolio",
+  "experiment_id": "granville-us-sizing-v3-20261007",
+  "base_config": "config/granville_portfolio_v1.json",
+  "history_publication": "artifacts/research/granville-stock-optimizations/20261006-entry-episodes-v2/publication.json",
+  "market": "US",
+  "variant": "trend_pullback",
+  "exit_policy": "time_7",
+  "entry_policy": "signal_level",
+  "sizing_policies": ["fixed_16pct", "volatility_shrink_only"],
+  "principal_sizing_policy": "fixed_16pct",
+  "cost_cases": ["base", "stress"],
+  "volatility_sessions": 20,
+  "volatility_ddof": 0,
+  "formula": "0.16 * min(1, eligible_pool_median_volatility / stock_volatility)",
+  "information_cutoff": "Immediately preceding close; 20 contiguous adjusted daily returns, no filling. Median uses historical membership, signal readiness and original liquidity gate, finite positive volatility, not entry signals or winning candidates.",
+  "invalid_volatility_policy": "Record and block entry; do not substitute a default or impute.",
+  "unchanged_rules": "Original 535-name historical pool and registered clean versions; 2024-01-02 warm-up, 2025-01-02 to 2026-09-29 evaluation; ranks, entries, time_7 exits, stops, cooldown, costs, cash yield zero. Five slots, 80% entry gross cap, no adding or daily rebalancing. Unallocated cash stays cash.",
+  "evidence_scope": "Previously seen history, retrospective single-change diagnostic; zero complete 504+252 windows. Keep all four US cases and historical Both evidence. CN is not rerun.",
+  "selection_policy": "Reproduce and hash-verify both original ledgers before comparison. Never promote an outcome winner or replace baseline headline metrics.",
+  "paper_authorized": false,
+  "live_authorized": false
+}

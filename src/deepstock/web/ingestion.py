@@ -641,5 +641,6 @@ def ingest_all(session: Session) -> dict[str, Any]:
         "reclean": reruns,
         "granville_stocks": ingest_granville_stock_runs(session, settings.project_root),
         "granville_optimization": ingest_granville_optimization_runs(session, settings.project_root),
+        "granville_sizing": ingest_granville_stock_runs(session, settings.project_root, subdirectory="granville-stock-sizing", sizing=True),
         "datasets": ingest_datasets(session, settings.project_root),
     }

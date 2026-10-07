@@ -53,6 +53,7 @@ watch(() => live.revision, load)
       <article v-for="(result, market) in strategy.market_results" :key="market" class="panel">
         <div class="section-title"><div><small>{{ marketLabel(String(market)) }} · {{ result.currency }}</small><h2>{{ result.symbol }} · 独立回测</h2></div></div>
         <p>固定主展示：{{ result.principal_variant }}<template v-if="result.principal_exit_policy"> / {{ result.principal_exit_policy }}</template> · 基础成本 · 报告区间</p>
+        <p v-if="result.current_experiment_status === 'not_rerun_historical_evidence'">A股本轮未回测，以下沿用10月6日历史证据。</p>
         <div v-if="result.metrics" class="metric-list">
           <div><span>年化收益率</span><strong>{{ pct(result.metrics.annualized_return) }}</strong></div>
           <div><span>累计收益</span><strong>{{ pct(result.metrics.total_return) }}</strong></div>
@@ -68,6 +69,16 @@ watch(() => live.revision, load)
         <p v-if="result.principal_exit_policy">股票池：{{ result.universe_count }} 只历史成员；最多5仓。{{ result.diagnostics.walk_forward_status === 'insufficient_history_for_504_plus_252_sessions' ? '样本不足504+252日，尚无完整滚动验证窗口。' : '' }}</p>
         <small>单边佣金 {{ result.cost_basis.commission_bps }}bp（最低 {{ result.cost_basis.minimum_commission }} {{ result.currency }}）+滑点 {{ result.cost_basis.slippage_bps }}bp；压力滑点 {{ result.cost_basis.stress_slippage_bps }}bp。现金利息0。<br />{{ result.cost_basis.price_model }}<br />回溯诊断留出不等于前瞻OOS；当前仅研究，不下单。</small>
         <div class="table-wrap"><table><thead><tr><th>全部固定候选</th><th v-if="result.principal_exit_policy">退出规则</th><th>成本</th><th>年化</th><th>回撤</th><th v-if="result.principal_exit_policy">状态</th></tr></thead><tbody><tr v-for="item in result.cases" :key="`${item.variant}-${item.exit_policy || ''}-${item.cost_case}`"><td>{{ item.variant }}</td><td v-if="result.principal_exit_policy">{{ item.exit_policy }}</td><td>{{ item.cost_case }}</td><td>{{ pct(item.periods.full?.annualized_return) }}</td><td>{{ pct(item.periods.full?.maximum_drawdown) }}</td><td v-if="result.principal_exit_policy" :title="item.blocking_reason">{{ item.status === 'blocked' ? item.blocking_reason : '完成' }}</td></tr></tbody></table></div>
+        <section v-if="result.sizing_experiment">
+          <h3>美股单项实验：只缩减高波动仓位</h3>
+          <p>新仓 = 16% × min(1, 合资格股票池20日波动中位数 / 个股20日波动)。只使用前收盘信息，低波动不加仓，余款留现金；入场、7日退出、排序与成本不变。不按赢家替换主展示。</p>
+          <div class="table-wrap"><table><thead><tr><th>仓位方案</th><th>成本</th><th>累计</th><th>年化</th><th>Sharpe</th><th>回撤</th><th>年换手</th><th>均暴露 / 现金</th><th>成本/初始资金</th></tr></thead><tbody>
+            <tr v-for="item in result.sizing_experiment.cases" :key="`${item.sizing_policy}-${item.cost_case}`">
+              <td>{{ item.sizing_policy === 'fixed_16pct' ? '原16%基线' : '高波动缩仓' }}</td><td>{{ item.cost_case }}</td><td>{{ pct(item.periods.full?.total_return) }}</td><td>{{ pct(item.periods.full?.annualized_return) }}</td><td>{{ item.periods.full?.sharpe_ratio?.toFixed(2) ?? '—' }}</td><td>{{ pct(item.periods.full?.maximum_drawdown) }}</td><td>{{ item.periods.full?.annualized_turnover?.toFixed(2) ?? '—' }}</td><td>{{ pct(item.periods.full?.average_exposure) }} / {{ pct(item.average_cash_fraction) }}</td><td>{{ item.status === 'blocked' ? item.blocking_reason : pct(item.diagnostics?.cash_identity.direct_cost_initial_capital_ratio) }}</td>
+            </tr>
+          </tbody></table></div>
+          <small>4组全部保留，基础/压力基线均经旧账本SHA及逐日逐笔复现验证。历史已见，零完整滚动验证窗口；分段、费用与风险定仓明细见报告。仅研究。</small>
+        </section>
         <section v-if="result.optimization">
           <h3>单项优化：同一信号区间不重复开仓</h3>
           <p>只改变重复入场规则，其他参数不变。全部对照保留，主指标仍为原基线；以下是已见历史诊断，不是前瞻OOS。</p>

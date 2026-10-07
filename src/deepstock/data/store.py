@@ -215,6 +215,9 @@ def clean_dividends(frame: pd.DataFrame):
 
 
 def clean_frame(frame: pd.DataFrame, metadata: dict) -> tuple[pd.DataFrame, pd.DataFrame, dict, str]:
+    if metadata.get("endpoint") == "easy_tdx_bars":
+        from .easy_tdx import clean_tdx_frame
+        return clean_tdx_frame(frame, metadata)
     if metadata.get("endpoint") == "fund_div" or metadata.get("kind") == "dividends":
         return clean_dividends(frame)
     if metadata.get("endpoint") == "dividend" or metadata.get("kind") == "stock_dividends":

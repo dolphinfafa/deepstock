@@ -34,6 +34,10 @@ removed the separate ETF MA-swing strategy on October 6; keep its immutable
 historical evidence and shared helpers, not its registration or page. Never
 pool USD/CNY returns. Entry-episode v2 is a single-change diagnostic, not winner
 promotion or authority for orders.
+US risk-shrink v3 changes sizing only, keeps Both/CN historical evidence and
+fixed original headlines; see granville-stock-portfolio.md. easy-tdx is an
+independent CN data-source audit, not a strategy input; read
+easy-tdx-data-audit.md for its pinned SDK/build/request/license boundaries.
 
 ### Think Before Act
 

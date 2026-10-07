@@ -420,6 +420,13 @@ the wider ARC module/data gates are still unresolved.
 
 ## Key Decisions
 
+October7: US-only Granville shrink-sizing diagnostic extends the existing Both
+research detail with four fixed cases while preserving original/v2/CN history
+and baseline headlines; no schema migration or order authority. Independent
+easy-tdx1.20.8 CN source audit adds a contract-versioned data normalizer and
+authenticated /api/data-audits reports shown in /data. Unknown quotation-license
+rights keep previews disabled; SDK is optional/lazy and not a strategy dependency.
+
 The strategy research library at `https://dev-cn-01.yios.cn/deepstock/` is a
 Vue 3 application served by FastAPI. The user-level
 `deepstock-dashboard.service` runs Uvicorn on `127.0.0.1:15001`; NGINX is the

@@ -113,6 +113,8 @@ def make_panel(bars, calendar, membership, market, signal_rule, portfolio_rule, 
     lookback = portfolio_rule["relative_strength_sessions"]
     panels["strength"] = panels["adjusted_close"] / panels["adjusted_close"].shift(lookback) - 1
     panels["average_turnover"] = panels["turnover"].rolling(portfolio_rule["liquidity_sessions"], min_periods=portfolio_rule["liquidity_sessions"]).mean()
+    # Close-indexed; entry reads i-1, never the fill day's return.
+    panels["sizing_volatility"] = panels["adjusted_close"].pct_change(fill_method=None).rolling(20, min_periods=20).std(ddof=0)
     tax = pd.DataFrame(0., index=dates, columns=symbols)
     action_audit = []
     rounding_moves = []
@@ -177,11 +179,23 @@ def signal_episodes(signal):
     return np.cumsum(signal & ~prior, axis=0)
 
 
-def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullback", exit_policy="time_7", stress=False, *, entry_policy="signal_level"):
+def sizing_reference(panel, config, market, close_index):
+    """Point-in-time pool median, not ranked/ultimately bought names."""
+    v = panel.values
+    vol = v["sizing_volatility"][close_index]
+    eligible = panel.eligible[close_index] & panel.signals["ready"][close_index]
+    eligible &= v["average_turnover"][close_index] >= config["markets"][market]["minimum_average_turnover"]
+    eligible &= np.isfinite(vol) & (vol > 0)
+    return (float(np.median(vol[eligible])) if eligible.any() else np.nan), int(eligible.sum())
+
+
+def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullback", exit_policy="time_7", stress=False, *, entry_policy="signal_level", sizing_policy="fixed_16pct"):
     if variant not in VARIANTS or exit_policy not in {"time_7", "trend_only"} or market not in {"US", "CN"}:
         raise ValueError("Unknown fixed candidate")
     if entry_policy not in {"signal_level", "once_per_episode"}:
         raise ValueError("Unknown entry episode policy")
+    if sizing_policy not in {"fixed_16pct", "volatility_shrink_only"} or (sizing_policy != "fixed_16pct" and market != "US"):
+        raise ValueError("Unknown sizing policy or non-US experiment")
     cfg = config["markets"][market]
     if not 0 < config["initial_position_target"] <= config["single_entry_ceiling"] <= config["gross_entry_ceiling"] <= 1 or config["max_positions"] != 5:
         raise ValueError("Invalid fixed portfolio entry caps")
@@ -205,7 +219,7 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
     chosen = np.flatnonzero((dates >= pd.Timestamp(config["evaluation_start"])) & (dates <= pd.Timestamp(config["evaluation_end"])))
     if not len(chosen) or chosen[0] == 0:
         raise PortfolioDataError("Evaluation/warm-up unavailable")
-    daily, trades = [], []
+    daily, trades, sizing_audit = [], [], []
     for i in chosen:
         day = dates[i]
         fee = slippage_cash = tax = traded = 0.
@@ -278,6 +292,8 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
         if entry_policy == "once_per_episode":
             candidate &= ~repeated
         ranked = sorted(np.flatnonzero(candidate), key=lambda j: (-v["strength"][i - 1, j], panel.symbols[j]))
+        reference, reference_count = sizing_reference(panel, config, market, i - 1) if sizing_policy == "volatility_shrink_only" else (np.nan, 0)
+        invalid_sizing = 0
         for j in ranked:
             if (units > 1e-10).sum() >= config["max_positions"]:
                 break
@@ -291,7 +307,19 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
                 continue
             current_held = np.flatnonzero(units > 1e-10)
             invested = float(np.dot(units[current_held], marks_open[current_held])) if len(current_held) else 0.
-            budget = min(cash, config["initial_position_target"] * opening_nav, config["gross_entry_ceiling"] * opening_nav - invested)
+            target = config["initial_position_target"]
+            vol = v["sizing_volatility"][i - 1, j] if sizing_policy == "volatility_shrink_only" else np.nan
+            if sizing_policy == "volatility_shrink_only":
+                if not np.isfinite(reference) or reference <= 0 or not np.isfinite(vol) or vol <= 0:
+                    blocked += 1
+                    invalid_sizing += 1
+                    sizing_audit.append({"date": str(day.date()), "symbol": panel.symbols[j], "signal_date": str(dates[i - 1].date()),
+                                         "status": "blocked_invalid_volatility", "target_weight": None,
+                                         "volatility": float(vol) if np.isfinite(vol) else None,
+                                         "pool_median": float(reference) if np.isfinite(reference) else None, "pool_count": reference_count})
+                    continue
+                target *= min(1., reference / vol)
+            budget = min(cash, target * opening_nav, config["gross_entry_ceiling"] * opening_nav - invested)
             raw_execution = v["open"][i, j] * (1 + slip)
             buy_rate = (cfg["commission_bps"] + cfg["transfer_bps"]) / 10000
             affordable = max(0., (budget - cfg["minimum_commission"]) / (raw_execution * (1 + buy_rate)))
@@ -300,6 +328,11 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
             if shares <= 0:
                 blocked += 1
                 continue
+            sizing_audit.append({"date": str(day.date()), "symbol": panel.symbols[j], "signal_date": str(dates[i - 1].date()),
+                                 "status": "filled", "target_weight": target,
+                                 "volatility": float(vol) if np.isfinite(vol) else None,
+                                 "pool_median": float(reference) if np.isfinite(reference) else None, "pool_count": reference_count,
+                                 "opening_nav": opening_nav, "budget": budget})
             ratio = v["adjusted_open"][i, j] / v["open"][i, j]
             qty = shares / ratio
             execution = v["adjusted_open"][i, j] * (1 + slip)
@@ -343,6 +376,8 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
                       "same_episode_candidates": int(repeated.sum()),
                       "suppressed_same_episode_candidates": int(repeated.sum()) if entry_policy == "once_per_episode" else 0,
                       "maximum_holding_sessions": max((i - entry_day[j] + 1 for j in held), default=0), "pending_exits": len(pending)})
+        # Preserve all historical columns and the baseline trade schema.
+        daily[-1].update(invalid_sizing_candidates=invalid_sizing, cash_fraction=cash / nav)
         previous_nav = nav
     frame = pd.DataFrame(daily).set_index("date")
     summary = summarize(frame)
@@ -350,4 +385,6 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
                     "stale_position_marks": int(frame.stale_position_marks.sum()), "dividend_tax": float(frame.dividend_tax.sum()),
                     "maximum_holding_sessions": int(frame.maximum_holding_sessions.max()), "pending_exits_at_end": int(frame.pending_exits.iloc[-1]),
                     "quantity_unit": "analytical_total_return_units_not_broker_shares"})
+    summary.update(sizing_policy=sizing_policy, sizing_audit=sizing_audit,
+                   average_cash_fraction=float(frame.cash_fraction.mean()), invalid_sizing_candidates=int(frame.invalid_sizing_candidates.sum()))
     return frame, pd.DataFrame(trades, columns=["date", "symbol", "action", "signal_date", "reason", "analytical_units", "entry_raw_shares_reference", "analytical_execution_price", "charges", "slippage", "held_sessions", "cash_after", "signal_episode"]), summary
