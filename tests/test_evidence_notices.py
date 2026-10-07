@@ -25,17 +25,21 @@ def test_notice_only_matches_affected_input_version_and_strategy():
     assert details == original
 
 
-def test_notice_report_is_append_only_and_does_not_replace_performance_run(tmp_path):
+@pytest.mark.parametrize("notice_index", [0, 1, 2])
+def test_notice_report_is_append_only_and_does_not_replace_performance_run(tmp_path, monkeypatch, notice_index):
+    from dataclasses import replace
     import json
+    import deepstock.web.app as webapp
     from deepstock.web.ingestion import ingest_catalog
     from deepstock.web.app import _strategy_summary, report_detail
     catalog = json.loads((ROOT / "config/strategy_catalog.json").read_text(encoding="utf-8"))
     write_json(tmp_path / "config/catalog.json", catalog)
     notice_config = json.loads((ROOT / "config/research_evidence_notices.json").read_text(encoding="utf-8"))
-    notice_config["notices"] = notice_config["notices"][:1]
+    notice_config["notices"] = [notice_config["notices"][notice_index]]
     notice = notice_config["notices"][0]
     path = tmp_path / "config/research_evidence_notices.json"
     write_json(path, notice_config)
+    monkeypatch.setattr(webapp, "settings", replace(webapp.settings, project_root=tmp_path))
     engine = create_engine("sqlite:///:memory:")
     try:
         Base.metadata.create_all(engine)

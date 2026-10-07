@@ -486,3 +486,16 @@ membership capture. Current public package documentation describes repetition
 of previous closes for price padding, not a sufficient missing-member guarantee.
 Resolve that semantic question with documented provider evidence before changing
 an admission policy; sending support requests requires user direction.
+
+Native diagnostic completed at clean c8eb883, package1.0.77. Canonical NONE
+responses match retained required-period observations; ALLMARKETDAYS returns
+all168 missing security-dates as0, with no overlapping-value differences.
+Six raw responses and exact gap lists stay local. No missing-day truth is
+certified and neither old nor new diagnostic manifests admit a strategy input.
+Price-free summary8470 bytes copied toserver, SHA
+15d95da8d718fc16c492398810157cdff7624d9e0bed157f3a94af5989f1129b,
+bothnodesverified. Support draft: docs/research/norgate-membership-semantics-request.md,
+not sent. WBA closing8-K locator0001193125-25-190603/d87240d8k.htm is confirmed
+by SEC submissions metadata, but archive403 prevents content verification;
+it is not evidence of full paid proceeds or contingent-right valuation.
+New standalone semantics report never replaces impaired performance evidence.
