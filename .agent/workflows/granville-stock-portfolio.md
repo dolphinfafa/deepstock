@@ -462,3 +462,9 @@ Before fixed-rule correction: resolve non-quote-day member semantics/independent
 index-event evidence; do not loosen gates merely to produce returns. If external
 support coordination or an imputation-policy change is necessary, obtain user
 direction first. Complete data collection alone grants no trading permission.
+
+Release40caaf5: server/Windows290 tests passed (86.63s/122.30s),6527 recent
+price-free version manifests published. Authenticated production report/progress
+smokepassed; new report is standalone,26 original research runs/latest sizing
+evidence and original market_results remain unchanged. AHL/tail and livefalse/
+killtrue gates remain. No engine rerun, valid new metrics, observer or orders.
