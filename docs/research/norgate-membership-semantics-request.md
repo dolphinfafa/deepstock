@@ -1,7 +1,10 @@
 # Norgate membership semantics — support request draft
 
-Status: draft only; **not sent**. Sending it requires user authorization. Do not
-attach licensed raw bars, daily member rows, account details or credentials.
+Status: explicitly authorized by the user on 2026-10-08; **not sent yet**.
+Send one email only, with no licensed raw bars, daily member rows, account details
+or credentials. Preserve the original approved body below; exclude the internal
+references from the email. Official contact address verified from the contact
+page: `support@norgatedata.com`.
 
 Suggested subject: Historical S&P 500 indicator on non-quote days — NONE vs ALLMARKETDAYS
 
