@@ -91,3 +91,13 @@ equity means unavailable; research freezes are not resumed to fabricate metrics.
 CSI300 now owns its independent code/data/environment/scheduler under
 `strategies/cn/auction`; Darwen is a retained one-time migration source only.
 See `csi300-opening-auction.md`. No broker work is part of this migration.
+
+October7 source-audit recovery: generic inventory now honors explicit market
+in bounded ancestor manifests, including nested stock-export prices directories.
+Older misclassified US/Massive versions/blocks are retained, not edited. Audit
+references pin already registered hash-matching CN/Tushare versions directly;
+an incorrect generic alias is not evidence that A-share prices failed XNYS.
+Stock exports retain original thousand-CNY amount as an auxiliary field beside
+canonical CNY turnover; cross-source audits select documented turnover, never
+fit a ratio to outcomes. Offline audit recovery validates capture hashes and
+makes zero new requests. No old stock manifest or raw price is rewritten.

@@ -44,7 +44,20 @@ def reference(symbol):
     path = ROOT / "artifacts/data/granville-stocks-cn-20261006-v1/prices" / (symbol + ".csv.gz")
     if symbol == "510300.SH":
         path = ROOT / "artifacts/data/granville-cn-20261006-v4/daily.csv"
-    return read_clean_csv(path), DataStore().resolve(path)["id"]
+    # Pin an already registered, hash-matching CN/Tushare version. An old
+    # generic inventory alias must not turn A-share evidence into XNYS data.
+    store = DataStore()
+    checksum = digest(path)
+    candidates = []
+    for mp in store.manifests():
+        m = store.get(mp.parent.name)
+        if (m["market"] == "CN" and m["provider"] == "Tushare" and m["status"] == "ready"
+            and m["source_sha256"] == checksum and Path(m["source_path"]).resolve() == path.resolve()):
+            candidates.append(m)
+    if not candidates:
+        raise ValueError("No registered hash-matching independent CN/Tushare reference")
+    chosen = sorted(candidates, key=lambda m: (m["rules"], m["imported_at_utc"], m["id"]))[-1]
+    return read_clean_csv(chosen["id"]), chosen["id"]
 
 
 def run(output):
@@ -126,11 +139,16 @@ def run(output):
                         if period == "DAILY":
                             item["coverage"] = daily_coverage(f, sessions)
                             if adjustment == "NONE":
-                                ref, ref_version = reference(symbol)
-                                item["reference_version"] = ref_version
-                                result, diff = compare_daily(f, ref, symbol)
-                                item["cross_source"] = result
-                                comparisons.extend([{**d, "comparison": "Tushare_daily"} for d in diff])
+                                try:
+                                    ref, ref_version = reference(symbol)
+                                    item["reference_version"] = ref_version
+                                    result, diff = compare_daily(f, ref, symbol)
+                                    item["cross_source"] = result
+                                    comparisons.extend([{**d, "comparison": "Tushare_daily"} for d in diff])
+                                except Exception as e:
+                                    # A reference/analysis failure is not a failed
+                                    # provider request; never redownload for it.
+                                    item["cross_source"] = {"status": "blocked_reference", "error": str(e)}
                         else:
                             item["minute_audit"] = minute_audit(f, sessions[-5:])
                             daily = datasets.get((symbol, "DAILY", "NONE"))
@@ -178,6 +196,10 @@ def run(output):
     if capture_code_provenance()["source_sha256"] != code["source_sha256"]:
         raise ValueError("Source changed during audit; cannot publish")
     report["data_versions"] = list(dict.fromkeys([*report["data_versions"], *[r["version"] for r in input_evidence()["data_versions"]]]))
+    return write_report(report, comparisons, output)
+
+
+def write_report(report, comparisons, output):
     pd.DataFrame(comparisons, columns=["comparison", "symbol", "date", "field", "tdx", "reference", "difference", "tolerance"]).to_csv(output / "discrepancies.csv", index=False)
     write_json(output / "quality_report.json", report)
     lines = ["# easy-tdx：独立A股小样本数据审计", "", f"状态：{report['status']}；实际请求{report['actual_requests']}/70（含握手、分页、重试）。",
@@ -192,11 +214,104 @@ def run(output):
     return report
 
 
+def analyse_existing(source, output):
+    """Recover comparison only, preserving the completed capture and every failure."""
+    from copy import deepcopy
+    code = capture_code_provenance()
+    if code["tracked_dirty"]:
+        raise ValueError("Committed clean analysis source required")
+    original = json.loads((source / "publication.json").read_text(encoding="utf-8"))
+    if original.get("scope") != "independent_CN_data_audit_no_strategy":
+        raise ValueError("Not an independent easy-tdx capture")
+    for name, checksum in original["artifact_hashes"].items():
+        if digest(source / name) != checksum:
+            raise ValueError("Immutable capture artifact differs")
+    output.mkdir(parents=True, exist_ok=False)
+    report = deepcopy(original)
+    for key in ["report_md", "artifact_hashes"]:
+        report.pop(key, None)
+    report.update(id="easy-tdx-" + output.name, status="completed_with_findings",
+                  capture_provenance=original["code_provenance"], code_provenance=code,
+                  source_publication_hash=digest(source / "publication.json"),
+                  offline_reanalysis=True, new_provider_requests=0,
+                  recovery_note="Reference lookup recovery uses existing CN/Tushare registered hash-matching versions, not the misclassified generic alias. Source provider amount remains unmodified; compare normalized CNY turnover, not its auxiliary thousand-CNY column. Original capture errors/70-request ceiling/quote failure retained.")
+    # Calendar was captured/registered during the original run. Recovery must
+    # never acquire a new calendar (or any data) over the network.
+    sessions = None
+    for version in original["data_versions"]:
+        m = DataStore().get(version)
+        if m.get("kind") == "calendar" and m["provider"] == "Tushare":
+            f = read_clean_csv(version)
+            if "cal_date" not in f:
+                continue
+            dates = pd.to_datetime(f.loc[pd.to_numeric(f.is_open).eq(1), "cal_date"], format="mixed")
+            if dates.min() <= pd.Timestamp("2023-01-01") and dates.max() >= pd.Timestamp(original["as_of_date"]):
+                sessions = pd.DatetimeIndex(dates.loc[dates <= pd.Timestamp(original["latest_complete_session"])].sort_values().unique())
+                report["calendar_version"] = version
+                break
+    if sessions is None:
+        raise ValueError("Retained registered calendar required; no recovery network fallback")
+    differences, datasets = [], {}
+    for item in report["items"]:
+        if not item.get("version") or item["status"] != "ready":
+            continue
+        item["capture_attempts"] = item.pop("attempts")
+        f = read_clean_csv(item["version"])
+        symbol, period, adjustment = item["symbol"], item["period"], item["adjustment"]
+        key = (symbol, period, adjustment)
+        if key in datasets:
+            try:
+                pd.testing.assert_frame_equal(f, datasets[key], check_dtype=False)
+                item["repeat_stability"] = "identical"
+            except AssertionError:
+                item["repeat_stability"] = "changed_retain_both_versions"
+        else:
+            datasets[key] = f
+        if period == "DAILY":
+            item["coverage"] = daily_coverage(f, sessions)
+            if adjustment == "NONE":
+                ref, version = reference(symbol)
+                report["data_versions"].append(version)
+                item["reference_version"] = version
+                result, diff = compare_daily(f, ref, symbol)
+                item["cross_source"] = result
+                item["reference_amount_field"] = "turnover_CNY" if "turnover" in ref else "amount_CNY"
+                differences.extend([{**d, "comparison": "Tushare_daily"} for d in diff])
+        else:
+            item["minute_audit"] = minute_audit(f, sessions[-5:])
+            q = item["minute_audit"]
+            if q["missing_minutes"] or q["unexpected_minutes"]:
+                # Test a label hypothesis separately; do not alter clean bars.
+                shifted = f.copy()
+                shifted["timestamp"] = pd.to_datetime(shifted.timestamp) - pd.Timedelta(minutes=1)
+                check = minute_audit(shifted, sessions[-5:])
+                item["label_diagnostic"] = {"status": "blocked_timestamp_semantics",
+                                            "hypothesis": "Returned MIN_1 labels appear to be right endpoints despite SDK bar_time=start; -1min is diagnostic only, clean values unchanged.",
+                                            "hypothetical_minus_one_minute_missing": len(check["missing_minutes"]),
+                                            "hypothetical_minus_one_minute_unexpected": len(check["unexpected_minutes"])}
+            daily = datasets.get((symbol, "DAILY", "NONE"))
+            if daily is not None:
+                result, diff = compare_daily(aggregate_minutes(f, sessions[-5:]), daily, symbol)
+                item["minute_vs_daily_internal_consistency"] = result
+                differences.extend([{**d, "comparison": "internal_minute_daily"} for d in diff])
+    report["threshold_exceedances"] = len(differences)
+    report["data_versions"] = list(dict.fromkeys(report["data_versions"]))
+    report["usability"] = {"daily": "Only fixed-sample raw OHLCV comparisons; not long-history/action/point-in-time-universe acceptance",
+                           "minute": "blocked_timestamp_semantics_and_no_independent_minute_reference",
+                           "QFQ": "not_point_in_time_action_verified_no_strategy_admission",
+                           "quote": "not_tested_request_budget_exhausted_no_new_requests"}
+    if capture_code_provenance()["source_sha256"] != code["source_sha256"]:
+        raise ValueError("Analysis source changed")
+    return write_report(report, differences, output)
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--output-dir", type=Path, required=True)
+    p.add_argument("--analyse-existing", type=Path, help="Offline recovery: reuse immutable capture; no new requests")
     a = p.parse_args()
-    print(json.dumps({k: v for k, v in run(a.output_dir).items() if k in {"status", "actual_requests", "threshold_exceedances"}}))
+    result = analyse_existing(a.analyse_existing, a.output_dir) if a.analyse_existing else run(a.output_dir)
+    print(json.dumps({k: v for k, v in result.items() if k in {"status", "actual_requests", "threshold_exceedances"}}))
 
 
 if __name__ == "__main__":

@@ -105,8 +105,11 @@ def compare_daily(actual, reference, symbol):
     """No scale fitting. Tick/rounding tolerance is fixed before outcomes."""
     tick = .001 if symbol == "510300.SH" else .01
     ref = reference.copy()
-    if "turnover" in ref and "amount" not in ref:
-        ref = ref.rename(columns={"turnover": "amount"})
+    if "turnover" in ref:
+        # Deepstock stock exports retain the provider's original `amount`
+        # (thousands CNY) alongside normalized `turnover` (CNY). Select the
+        # documented canonical field, never fit a scaling ratio to outcomes.
+        ref["amount"] = ref["turnover"]
     both = actual.merge(ref, on="date", suffixes=("_tdx", "_reference"), validate="one_to_one")
     differences = []
     for field in ["open", "high", "low", "close", "volume", "amount"]:

@@ -69,6 +69,16 @@ def test_cross_source_tolerance_never_fits_a_volume_ratio():
     assert actual.volume.iloc[0] == 100000
 
 
+def test_stock_reference_selects_documented_cny_turnover_not_auxiliary_provider_amount():
+    actual = pd.DataFrame({"date": ["2026-09-28"], "open": [10.], "high": [10.], "low": [10.], "close": [10.], "volume": [1000.], "amount": [10000.]})
+    reference = actual.copy()
+    reference["turnover"] = reference.amount
+    reference["amount"] = reference.amount / 1000
+    result, diffs = compare_daily(actual, reference, "000001.SZ")
+    assert result["threshold_exceedances"] == 0 and not diffs
+    assert reference.amount.iloc[0] == 10
+
+
 def test_budget_counts_setup_pages_retries_and_hard_stops():
     now = [0.]
     slept = []
@@ -81,3 +91,35 @@ def test_budget_counts_setup_pages_retries_and_hard_stops():
     assert len(b.events) == 3 and slept == [1., 1.]
     with pytest.raises(DataQualityError, match="budget"):
         b.consume("host", "hidden_retry")
+
+
+def test_offline_recovery_uses_retained_versions_and_never_calls_network(tmp_path, monkeypatch):
+    from scripts import audit_easy_tdx as cli
+    from deepstock.data.store import write_json
+    store = DataStore(tmp_path)
+    source = tmp_path / "capture"
+    source.mkdir()
+    bars_path = source / "bars.csv"
+    raw = raw_bars().iloc[:1].copy()
+    raw["datetime"] = "2026-09-30 00:00:00"
+    raw.to_csv(bars_path, index=False)
+    bars = store.import_file(bars_path, metadata("DAILY"))
+    cal_path = source / "calendar.csv"
+    pd.DataFrame({"cal_date": ["2023-01-01", "2026-09-30", "2026-10-07"], "is_open": [0, 1, 0]}).to_csv(cal_path, index=False)
+    cal = store.import_file(cal_path, {"market": "CN", "provider": "Tushare", "kind": "calendar"})
+    write_json(source / "publication.json", {"scope": "independent_CN_data_audit_no_strategy", "code_provenance": {},
+               "as_of_date": "2026-10-07", "latest_complete_session": "2026-09-30", "sdk_version": "1.20.8",
+               "actual_requests": 70, "artifact_hashes": {}, "data_versions": [bars["id"], cal["id"]],
+               "items": [{"symbol": "000001.SZ", "period": "DAILY", "adjustment": "NONE", "status": "ready", "version": bars["id"], "attempts": []}]})
+    monkeypatch.setattr(cli, "DataStore", lambda: store)
+    monkeypatch.setattr(cli, "read_clean_csv", lambda version: pd.read_csv(store.verified_path(store.get(version))))
+    monkeypatch.setattr(cli, "reference", lambda symbol: (pd.read_csv(store.verified_path(bars)), bars["id"]))
+    monkeypatch.setattr(cli, "capture_code_provenance", lambda: {"tracked_dirty": False, "source_sha256": "test"})
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Offline recovery cannot connect/download")
+    monkeypatch.setattr(cli, "make_client", forbidden)
+    monkeypatch.setattr(cli, "calendar", forbidden)
+    result = cli.analyse_existing(source, tmp_path / "recovery")
+    assert result["new_provider_requests"] == 0 and result["actual_requests"] == 70
+    assert result["threshold_exceedances"] == 0 and result["calendar_version"] == cal["id"]
+    assert result["items"][0]["cross_source"]["matched_sessions"] == 1

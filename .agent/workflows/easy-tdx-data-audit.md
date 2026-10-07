@@ -41,3 +41,9 @@ artifacts/research/easy-tdx/<unique-run>. Raw/clean versions register to DataSto
 and authenticated /data; restricted=true, previews disabled. Independent quality
 reports use /api/data-audits and /data, not a strategy/report attached to
 Granville, ARC, or paused tail momentum. Failures are evidence, not rerouted data.
+
+Recovery CLI adds --analyse-existing <completed-capture> and a fresh output
+directory. It verifies all capture hashes, uses retained calendar/data versions
+and never invokes network clients. Keep original errors and actual-request count;
+comparison failures must not trigger provider refetch. Report the MIN_1 label
+hypothesis separately from unchanged clean timestamps, not a silent -1min repair.
