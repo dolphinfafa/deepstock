@@ -59,3 +59,16 @@ def test_all_strategy_annualized_slots_and_cohorts_never_fake_cagr(client):
     assert auction["annualization"]["value"] is None
     tail = next(r for r in rows if r["id"] == "cn_etf_tail_momentum")
     assert tail["annualization"]["value"] is None
+
+
+def test_native_member_contract_accepts_bounded_policy_not_raw_payload(client):
+    body = {"id": "d" * 64, "node": "quant-computer", "market": "US", "provider": "Norgate",
+            "source_name": "synthetic-member-policy.csv", "preview_allowed": False, "status": "ready", "rows": 1,
+            "quality": {"issues": []}, "contract": {"kind": "historical_membership_daily", "index_name": "S&P 500 Current & Past",
+                "padding": "NONE", "unknown_policy": "No inferred membership", "reused_verified_price_only": False}}
+    headers = {"Authorization": "Bearer test-node-token"}
+    assert client.post("/api/agent/research/data-versions", headers=headers, json=[body]).status_code == 200
+    invalid = {**body, "id": "e" * 64, "contract": {**body["contract"], "native_rows": [{"price": 123}]}}
+    assert client.post("/api/agent/research/data-versions", headers=headers, json=[invalid]).status_code == 422
+    auth, _ = _login(client)
+    assert client.get(f"/api/data/{body['id']}/preview", headers=auth).json()["rows"] == []

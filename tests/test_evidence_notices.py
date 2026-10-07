@@ -32,6 +32,7 @@ def test_notice_report_is_append_only_and_does_not_replace_performance_run(tmp_p
     catalog = json.loads((ROOT / "config/strategy_catalog.json").read_text(encoding="utf-8"))
     write_json(tmp_path / "config/catalog.json", catalog)
     notice_config = json.loads((ROOT / "config/research_evidence_notices.json").read_text(encoding="utf-8"))
+    notice_config["notices"] = notice_config["notices"][:1]
     notice = notice_config["notices"][0]
     path = tmp_path / "config/research_evidence_notices.json"
     write_json(path, notice_config)

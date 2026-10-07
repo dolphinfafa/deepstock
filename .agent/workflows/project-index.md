@@ -43,6 +43,10 @@ member intervals stopAugust21 while prices continueSeptember29. Preserve old
 ledgers with version-matched quality notices, not as valid comparison evidence.
 New collection/entrances reject missing membership coverage; never extend old
 intervals or relabel unknown eligibility as false. See the portfolio workflow.
+Fresh native acquisition covers the1305-code current/past list but individual
+required-date gaps still block, even when aggregate positive coverage passes.
+Full OHLC inventory is evidence acquisition, never a workaround to strategy
+input gates. Quote-life boundaries require source metadata, not guessed zeros.
 
 ### Think Before Act
 

@@ -53,6 +53,10 @@ time_7 principal CAGR is +12.32% US / -6.38% CN versus ETF +17.48% / +8.67%.
 US slippage stress is material; CN drawdown is worse than its benchmark. Zero
 full rolling windows and unresolved execution/action/sector gates forbid any
 promotion to Paper. See `granville-stock-portfolio.md` for all cases/limitations.
+Important subsequent correction: the preceding US numbers are now retained
+only as impaired historical audit output. Member coverage endedAugust21 while
+prices endedSeptember29; replay consistency did not prove valid inputs. They
+are not current full-period performance conclusions; independent CN is unchanged.
 
 The entry-episode v2 optimization separately registers just one change: one
 successful entry per symbol per continuous true close-signal run. Original
@@ -64,6 +68,9 @@ zero-cost returns. No new regime switching, order schedule or Paper authority.
 The eight v2 comparisons completed with no performance change: same-episode
 successful reentries were already absent. Preserve that null finding; the
 baseline remains displayed, alongside diagnostics and all historical blocks.
+US v2/v3 comparisons share that impaired input and must not be used to conclude
+an optimization succeeded/failed. Version-matched warnings retain the original
+reports; fresh collection still needs all individual coverage gates to pass.
 
 The implemented architecture uses a FastAPI control plane, SQLite/SQLAlchemy,
 Alembic migrations, a Vue 3 research library, scheduled artifact ingestion and
@@ -199,6 +206,14 @@ The former Windows node `DESKTOP-S31222F` (the study computer, SSH FRP port
 20007) retains its local historical files but no longer runs Deepstock market
 tasks. Its Deepstock scheduled tasks are disabled, while its FRP startup task
 remains enabled.
+
+October7/8 native US membership acquisition completed the frozen1305-code
+historical list. Quote-life evidence excludes261 pre2005 terminals and a future
+October1 IPO. September29 has503 positive members, but BIGGQ/SBNY/YELLQ have
+10/30/128 required-date gaps in the native quote-indexed member response. Unknown
+membership stays unknown; no corrected-performance claim. Full unpadded raw and
+TOTALRETURN OHLC acquisition is a separate Windows-local evidence inventory,
+not automatic strategy admission. See granville-stock-portfolio.md/data-layers.md.
 
 Its TWS API listener currently binds to all interfaces on port 7497; the user
 has configured the TWS trusted-IP allowlist to `127.0.0.1`. Keep this allowlist

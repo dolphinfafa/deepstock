@@ -437,3 +437,28 @@ codes and querying NONE/TOTALRETURN with no padding. It does not mark any
 strategy input ready or weaken the normal load_capture gate. This permits
 parallel completion of price evidence while membership/terminal unknowns
 remain. Full licensed rows stay local; only hashes/counts/status leave Windows.
+
+Full OHLC inventory completed at clean9413bfc: all1305 frozen codes processed,
+1043 in-range securities/4133033 clean rows,262 provider-verified quote lives
+outside the request (261 old terminals + VYLR future IPO),zero acquisition/row
+cleaning failures. Historical observed-span missing price sessions12693 remain
+unfilled; this is not complete-history certification. Native required coverage
+still blocks3 codes/168 security-dates, and WBA full proceeds still unknown.
+No portfolio engine or corrected-return publication ran.
+
+Inventory manifest34b0e6f4a55dfb8eded0dffd3bcf3784b67066a35f0a1c4a9981e3d70d719f5f,
+SHA8333f1e571a4238eea8f646a1b1fe1cc978512f71ab874c6a0b13d8ad6f7c1dc,
+Windowsartifacts/research/norgate/stock-ohlc-native-20261008-v1/.
+Only3678 aggregate bytes copied to server
+artifacts/research/granville-data-readiness/20261008-native-capture-v1/;
+membership summarySHA294bc7a7e477e20e44bb2af063d032b3373ae220946266dba8d05d3d64e65fb9,
+OHLC summarySHA6ac6fc73c8c84748b621b61d3314e20472adb37d05e3e18f9e768fbb94312a8d,
+both nodes verified. New standalone data-readiness report links only new manifest
+versions and cannot displace the latest performance run. Catalog progress
+distinguishes inventory completion from blocked strategy admission. Metadata
+publication allows bounded no-padding/index/unknown policies, never raw payloads;
+`publish_data_catalog --since <aware-ISO-UTC>` limits transfer to recent versions.
+Before fixed-rule correction: resolve non-quote-day member semantics/independent
+index-event evidence; do not loosen gates merely to produce returns. If external
+support coordination or an imputation-policy change is necessary, obtain user
+direction first. Complete data collection alone grants no trading permission.

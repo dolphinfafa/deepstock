@@ -112,3 +112,14 @@ Historical readiness failures attach append-only notices by input version,
 separate from immutable result/report bytes; corrected versions do not inherit
 an unrelated old notice. Official terminal press releases stay evidence-only,
 not executable quotes, complete payout valuations or guessed settlement dates.
+
+Native-member acquisition retains an entire frozen current/past historical
+watchlist, security lifetimes and raw unpadded daily indicators. Positive spans
+split at unknown exchange dates; no missing value becomes0. A necessary aggregate
+presence check alone cannot admit a dataset with individual required-date gaps.
+Quote lifetimes wholly before/after the request are excluded only with retained
+provider metadata (not an empty response). A full OHLC **inventory** may explicitly
+read blocked membership for evidence acquisition without relaxing strategy input
+gates. Its raw NONE and adjusted TOTALRETURN responses, clean exports and
+manifests are versioned locally. Inventory status/cleaning readiness must not be
+mislabelled as full PIT/terminal/accounting readiness or a completed backtest.

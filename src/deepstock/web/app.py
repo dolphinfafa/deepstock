@@ -528,7 +528,7 @@ def publish_data_versions(body: list[dict[str, Any]], _node=Depends(_node_depend
         if not isinstance(manifest.get("id"), str) or len(manifest["id"]) != 64 or any(c not in "0123456789abcdef" for c in manifest["id"]):
             raise HTTPException(422, "Invalid data version")
         contract = manifest.get("contract", {})
-        allowed_contract = {"market", "provider", "restricted", "adjustment", "price_adjustment", "total_return_adjustment", "retrieved_at_utc", "volume_unit", "amount_unit", "timezone", "license_note", "origin", "upstream_versions", "endpoint", "kind"}
+        allowed_contract = {"market", "provider", "restricted", "adjustment", "price_adjustment", "total_return_adjustment", "retrieved_at_utc", "volume_unit", "amount_unit", "timezone", "license_note", "origin", "upstream_versions", "endpoint", "kind", "index_name", "padding", "unknown_policy", "reused_verified_price_only"}
         if not isinstance(contract, dict) or set(contract).difference(allowed_contract) or len(json.dumps(manifest)) > 100000:
             raise HTTPException(422, "Only bounded data contracts, not raw payloads, are accepted")
         if set(manifest).difference({"id", "node", "market", "provider", "source_name", "source_sha256", "raw_sha256", "origin", "imported_at_utc", "rules", "contract", "preview_allowed", "status", "kind", "rows", "raw_rows", "quality", "data_start", "data_end", "clean_sha256"}):
