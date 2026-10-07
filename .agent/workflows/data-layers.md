@@ -123,3 +123,5 @@ read blocked membership for evidence acquisition without relaxing strategy input
 gates. Its raw NONE and adjusted TOTALRETURN responses, clean exports and
 manifests are versioned locally. Inventory status/cleaning readiness must not be
 mislabelled as full PIT/terminal/accounting readiness or a completed backtest.
+`audit_norgate_membership_gaps` retains diagnostic member probes separately;
+padding agreement never certifies missing-day truth or changes admission.

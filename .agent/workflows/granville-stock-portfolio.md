@@ -468,3 +468,21 @@ price-free version manifests published. Authenticated production report/progress
 smokepassed; new report is standalone,26 original research runs/latest sizing
 evidence and original market_results remain unchanged. AHL/tail and livefalse/
 killtrue gates remain. No engine rerun, valid new metrics, observer or orders.
+
+## Non-quote-day evidence diagnosis
+
+`python -m scripts.audit_norgate_membership_gaps --capture-dir <native-capture>
+--output-dir <new-directory> [--probe-provider]` is evidence acquisition only.
+It verifies the retained full capture, rechecks its failed records using the
+current lifetime validator, and keeps all original manifest/errors unchanged.
+Restricted exact missing-date records stay on Windows; summary counts/hashes
+may leave that node. The optional probe requests only canonical S&P500 member
+indicators with NONE/ALLMARKETDAYS, retaining both responses and comparing them
+to existing observations. No OHLC, index assumption, imputation or backtest runs.
+Even identical observed-date values and complete padded gap responses never
+prove that a missing day's state is an independent historical observation.
+The diagnostic always has backtest_admitted=false and cannot be a new usable
+membership capture. Current public package documentation describes repetition
+of previous closes for price padding, not a sufficient missing-member guarantee.
+Resolve that semantic question with documented provider evidence before changing
+an admission policy; sending support requests requires user direction.
