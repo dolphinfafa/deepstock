@@ -11,6 +11,8 @@ def annualization_payload(session, run):
     if "auction" in run.strategy_id:
         return {**unavailable, "reason": "现有指标为逐批次收益，不能当作连续账户年化", "scope": "forward"}
     if run.details.get("market_results"):
+        if set(run.details["market_results"]) == {"US"}:
+            return {**unavailable, "reason": "本轮仅美股独立年化；A股未重跑，历史结果见原报告", "scope": "separate_markets"}
         return {**unavailable, "reason": "两市场独立计年化，不合并USD/CNY净值；见各市场结果", "scope": "separate_markets"}
     if run.status not in {"complete", "completed", "ok"}:
         return {**unavailable, "reason": "需要更多数据或尚未完成合格回测"}

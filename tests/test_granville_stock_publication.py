@@ -81,3 +81,109 @@ def test_cross_node_config_requires_same_parameters_not_same_newline_bytes(tmp_p
     write_json(paths["CN"], modified)
     with pytest.raises(ValueError, match="different market/config"):
         cli.publish(paths["US"], paths["CN"], tmp_path / "invalid", config_path)
+
+
+def correction_fixture(tmp_path):
+    from deepstock.data.membership_contract import load_effective_membership_contract
+    cfg = json.loads((Path(__file__).resolve().parents[1] / "config/granville_portfolio_v1.json").read_text())
+    write_json(tmp_path / "config/granville_portfolio_v1.json", cfg)
+    value = fixture_value()
+    value["id"] = "granville-stocks-synthetic-correction"
+    value["config"] = cfg
+    value["publication_scope"] = "US_effective_membership_correction_v1"
+    value["market_results"].pop("CN")
+    us = value["market_results"]["US"]
+    us.update(config=deepcopy(cfg), membership_contract=load_effective_membership_contract()[0],
+              fresh_membership_capture_version="a" * 64, price_inventory_version="b" * 64)
+    return value
+
+
+def test_separate_us_correction_preserves_old_run_and_blocked_candidates(tmp_path):
+    value = correction_fixture(tmp_path)
+    us = value["market_results"]["US"]
+    blocked = next(c for c in us["cases"] if c["variant"] == "deviation_reversal" and c["exit_policy"] == "trend_only")
+    blocked.update(status="blocked", periods={}, blocking_reason="synthetic unknown terminal proceeds")
+    value["status"] = "completed_with_blocks"
+    write_json(tmp_path / "artifacts/research/granville-stocks/correction/publication.json", value)
+    old_id = "synthetic-old-cn-preservation"
+    with SessionLocal() as session:
+        original = {"market_results": {"CN": {"metrics": {"annualized_return": -.05}}}}
+        session.add(ResearchRun(id=old_id, strategy_id=value["strategy_id"], run_type="synthetic", status="completed", details=deepcopy(original)))
+        session.commit()
+        try:
+            assert ingest_granville_stock_runs(session, tmp_path) == {"runs": 1}
+            assert ingest_granville_stock_runs(session, tmp_path) == {"runs": 0}
+            new = session.get(ResearchRun, value["id"])
+            assert new.run_type == "granville_stock_us_effective_correction"
+            assert set(new.details["market_results"]) == {"US"}
+            assert len(new.details["market_results"]["US"]["cases"]) == 12
+            assert session.get(ResearchRun, old_id).details == original
+            from deepstock.web.annualization import annualization_payload
+            assert "A股未重跑" in annualization_payload(session, new)["reason"]
+        finally:
+            session.rollback()
+            report = session.get(ResearchReport, value["id"] + "-report")
+            if report:
+                session.delete(report)
+                session.flush()
+            for run_id in [value["id"], old_id]:
+                run = session.get(ResearchRun, run_id)
+                if run:
+                    session.delete(run)
+            session.commit()
+
+
+@pytest.mark.parametrize("mutation", ["unflagged", "stale_cn", "changed_config", "unknown_contract", "missing_case", "detailed_audit"])
+def test_us_correction_requires_exact_scope_config_contract_and_all_cases(tmp_path, mutation):
+    value = correction_fixture(tmp_path)
+    if mutation == "unflagged":
+        value.pop("publication_scope")
+    elif mutation == "stale_cn":
+        value["market_results"]["CN"] = fixture_value()["market_results"]["CN"]
+    elif mutation == "changed_config":
+        value["config"]["initial_capital"] += 1
+    elif mutation == "unknown_contract":
+        value["market_results"]["US"]["membership_contract"] = {}
+    elif mutation == "missing_case":
+        value["market_results"]["US"]["cases"].pop()
+    else:
+        value["market_results"]["US"]["diagnostics"] = {"sizing_audit": []}
+    write_json(tmp_path / "artifacts/research/granville-stocks/correction/publication.json", value)
+    with SessionLocal() as session:
+        with pytest.raises(ValueError):
+            ingest_granville_stock_runs(session, tmp_path)
+        session.rollback()
+
+
+def test_correction_publisher_keeps_us_alone_and_provenance(tmp_path, monkeypatch):
+    from scripts import run_granville_portfolio as cli
+    value = correction_fixture(tmp_path)
+    us = value["market_results"]["US"]
+    us.update(market="US", status="completed", config_hash="a" * 64, data_versions=[], input_exclusions=[], code_provenance={"base_commit": "synthetic"})
+    source = tmp_path / "market_summary.json"
+    write_json(source, us)
+    monkeypatch.setattr(cli, "render_report", lambda value: "# Synthetic correction only")
+    result = cli.publish_corrected_us(source, tmp_path / "published", tmp_path / "config/granville_portfolio_v1.json")
+    assert set(result["market_results"]) == {"US"} and result["code_version"] == "synthetic"
+    assert result["publication_scope"] == "US_effective_membership_correction_v1"
+    us["config"]["initial_capital"] += 1
+    write_json(source, us)
+    with pytest.raises(ValueError, match="fixed config"):
+        cli.publish_corrected_us(source, tmp_path / "invalid", tmp_path / "config/granville_portfolio_v1.json")
+
+
+def test_export_replaces_per_entry_audits_by_aggregate_counts_without_mutation():
+    from scripts.export_granville_portfolio_summary import aggregate_summary
+    value = fixture_value()["market_results"]["US"]
+    value["diagnostics"] = {"sizing_audit": [{"status": "filled", "date": "synthetic", "budget": 123},
+                                               {"status": "capacity_blocked", "symbol": "synthetic"}]}
+    value["cases"][0]["diagnostics"] = deepcopy(value["diagnostics"])
+    original = deepcopy(value)
+    result = aggregate_summary(value)
+    assert value == original
+    assert "sizing_audit" not in result["diagnostics"]
+    audit = result["diagnostics"]["sizing_audit_summary"]
+    assert audit["rows"] == 2 and audit["statuses"] == {"filled": 1, "capacity_blocked": 1}
+    assert len(audit["content_sha256"]) == 64
+    assert result["cases"][0]["diagnostics"]["sizing_audit_summary"] == audit
+    assert "budget" not in json.dumps(result) and "capacity_blocked" in json.dumps(result)

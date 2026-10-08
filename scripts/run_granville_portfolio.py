@@ -197,7 +197,8 @@ def run(market, data_dir, benchmark_path, output, config_path, benchmark_version
 
 
 def render_report(value):
-    lines = ["# 葛兰威尔多股票组合：美股与A股", "", value["summary"], "",
+    correction = value.get("publication_scope") == "US_effective_membership_correction_v1"
+    lines = ["# 葛兰威尔多股票组合：美股有效日成员修正" if correction else "# 葛兰威尔多股票组合：美股与A股", "", value["summary"], "",
              "预先指定主展示 trend_pullback / time_7。最多5只，每个新仓目标16%，开仓总暴露上限80%；价格漂移不强制调仓。",
              "按前收盘126日强度排序，只补空位，不按每日排名换仓。先卖后买，失败卖出不释放仓位或现金。",
              "三类入场 × 两类固定退出 × 基础/10bp滑点压力 = 每市场12组，全部保留，不按收益挑选赢家。",
@@ -207,6 +208,12 @@ def render_report(value):
              "使用复权经济收益分析单位，不是实际股数/分红到账/税务结算执行复刻。CN固定扣除持仓除息现金分红20%，不重复添加复权分红现金；US个人预扣/资本利得税未计。",
              "US历史S&P500区间；CN滞后月末CSI300快照代理，不能声称精确每日成员或首见发布时间。无历史行业上限证据。",
              "共同评估2025-01-02—2026-09-29；2026-01-02后仅回溯诊断，不是前瞻OOS。样本不足504+252，不虚构Walk-Forward窗口。", ""]
+    if correction:
+        us = value["market_results"]["US"]
+        lines += ["本轮仅重跑美股原v1的12组，不重跑或复制A股，不重跑v2/v3优化。旧报告/账本及其数据缺陷告警仍保留；本报告不是对旧绩效的追认。",
+                  "新版成员为供应商按生效日评估的ALLMARKETDAYS序列，不含公告日期；股票价格仍为NONE，不填充报价。",
+                  f"成员版本 `{us['fresh_membership_capture_version']}`；价格库存版本 `{us['price_inventory_version']}`。",
+                  f"新固定区间输入SHA `{us['dataset_manifest_sha256']}`；起始代码 `{us['code_provenance']['base_commit']}`。", ""]
     for market, result in value["market_results"].items():
         lines += [f"## {market} · {result['universe_count']}只历史成员 · {result['currency']}", "",
                   "|入场 / 退出 / 成本|累计|年化|Sharpe|回撤|年化换手|平均暴露|成交成本金额（含税）|", "|---|---:|---:|---:|---:|---:|---:|---:|"]
@@ -235,6 +242,27 @@ def render_report(value):
               "所有未完成候选保留阻塞原因；未知价不插值，真实终止证券缺兑付证据不得虚构成交。",
               "下一步需更长点时历史、退市/合并兑付、历史行业分类、真实股数/结算账本以及前瞻验证；新实验另行固定，不能从本轮反选参数。",
               "本次仅研究，未创建影子任务、Paper订单或实盘权限。"]
+    if correction:
+        us = value["market_results"]["US"]
+        completed = [c for c in us["cases"] if c["status"] == "completed"]
+        negative = sum(c["periods"]["full"]["total_return"] < 0 for c in completed)
+        lines += ["", "## 本轮判断（不选参）", "",
+                  f"12组中{len(completed)}组完成、{12-len(completed)}组阻塞；完成组中{negative}组累计为负。失败组没有补造净值。",
+                  "报价入口通过不等于公司行动/实盘账本全部完备。允许的入池前暖期缺报价保持NaN，连续指标就绪前不产生信号。"]
+        for gap in us.get("data_audit", {}).get("pre_eligibility_incomplete_warmup", []):
+            lines += [f"{gap['symbol']}：{gap['missing_sessions']}个入池前暖期缺报价日（{gap['first']}—{gap['last']}），首个成员生效日{gap['first_eligible']}；没有补造价格。"]
+        if us["metrics"]:
+            m = us["metrics"]
+            stress = next(c for c in us["cases"] if (c["variant"], c["exit_policy"], c["cost_case"]) == ("trend_pullback", "time_7", "stress"))
+            full, matched = us["benchmark_metrics"], us["matched_benchmark_metrics"]
+            lines += [f"固定主候选年化{m['annualized_return']:.2%}，100% SPY基准{full['annualized_return']:.2%}，80%初始暴露基准{matched['annualized_return']:.2%}；",
+                      f"相应回撤为{m['maximum_drawdown']:.2%} / {full['maximum_drawdown']:.2%} / {matched['maximum_drawdown']:.2%}，Sharpe为{m['sharpe_ratio']:.2f} / {full['sharpe_ratio']:.2f} / {matched['sharpe_ratio']:.2f}。",
+                      f"主候选年化换手{m['annualized_turnover']:.2f}、平均暴露{m['average_exposure']:.2%}，累计佣金与滑点{m['commission']+m['slippage']:.2f} USD。成本金额不等于复利收益损失。"]
+            if stress["status"] == "completed":
+                lines += [f"固定10bp压力滑点下，主候选年化降至{stress['periods']['full']['annualized_return']:.2%}，不能忽略成交成本敏感性。"]
+        lines += ["WBA现金/或有权利及结算仍不完整；504+252日窗口为0，2026年留出已见，不是前瞻OOS。",
+                  "后续先补终止兑付、历史行业/上市资格与长历史固定滚动验证，再讨论单项改进；当前不改参数、不晋升、不进入Paper。",
+                  "完整逐日/逐笔账本和定仓明细留在量化电脑。网页只发布聚合指标、计数、固定输入版本及源结果哈希。"]
     return "\n".join(lines) + "\n"
 
 
@@ -265,6 +293,33 @@ def publish(us_path, cn_path, output, config_path):
     return value
 
 
+def publish_corrected_us(us_path, output, config_path):
+    """Separate US evidence; never attach stale CN or pick another principal."""
+    cfg = fixed_config(config_path)
+    us = json.loads(us_path.read_text(encoding="utf-8"))
+    from deepstock.data.membership_contract import load_effective_membership_contract
+    contract, _ = load_effective_membership_contract()
+    if (us.get("market") != "US" or us.get("config") != cfg or us.get("membership_contract") != contract or
+            not us.get("fresh_membership_capture_version") or not us.get("price_inventory_version")):
+        raise ValueError("Corrected US publication needs fixed config and effective/inventory provenance")
+    if any("sizing_audit" in d for d in [us.get("diagnostics", {}), *(c.get("diagnostics", {}) for c in us["cases"])]):
+        raise ValueError("Export aggregate summary first; per-entry audits stay on licensed node")
+    output.mkdir(parents=True, exist_ok=False)
+    value = {"id": "granville-stocks-" + output.name, "strategy_id": cfg["strategy_id"], "status": us["status"],
+             "publication_scope": "US_effective_membership_correction_v1", "market_results": {"US": us},
+             "as_of_date": datetime.now(timezone.utc).date().isoformat(), "data_start": cfg["evaluation_start"], "data_end": cfg["evaluation_end"],
+             "config": cfg, "config_hash": digest(config_path), "code_version": us["code_provenance"]["base_commit"],
+             "config_semantic_hash": hashlib.sha256(json.dumps(cfg, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+             "source_config_hashes": {"US": us["config_hash"]}, "source_summary_hashes": {"US": digest(us_path)},
+             "summary": "仅美股有效日成员修正：原v1的12组及真实阻塞全部保留，主展示不变；A股未重跑，旧报告不改写。仅回溯研究，未授权交易。",
+             "data_versions": us["data_versions"], "input_exclusions": us["input_exclusions"]}
+    shutil.copyfile(us_path, output / "US-market_summary.json")
+    value["report_md"] = render_report(value)
+    (output / "report.md").write_text(value["report_md"], encoding="utf-8")
+    write_json(output / "publication.json", value)
+    return value
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--market", choices=["US", "CN"])
@@ -273,10 +328,15 @@ def main():
     parser.add_argument("--benchmark-version", help="Pin a registered US benchmark; no alias fallback")
     parser.add_argument("--us-summary", type=Path)
     parser.add_argument("--cn-summary", type=Path)
+    parser.add_argument("--corrected-us-summary", type=Path, help="Separate effective-member v1 correction; do not merge stale CN")
     parser.add_argument("--config", type=Path, default=ROOT / "config/granville_portfolio_v1.json")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "artifacts/research/granville-stocks" / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:6]))
     args = parser.parse_args()
-    if args.us_summary and args.cn_summary:
+    if args.corrected_us_summary:
+        if args.us_summary or args.cn_summary or args.market:
+            parser.error("US correction cannot merge markets or launch a new run")
+        result = publish_corrected_us(args.corrected_us_summary, args.output_dir, args.config)
+    elif args.us_summary and args.cn_summary:
         result = publish(args.us_summary, args.cn_summary, args.output_dir, args.config)
     elif args.market and args.data_dir and args.benchmark:
         result = run(args.market, args.data_dir, args.benchmark, args.output_dir, args.config, args.benchmark_version)

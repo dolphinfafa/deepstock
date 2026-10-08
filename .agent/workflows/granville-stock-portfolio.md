@@ -619,3 +619,28 @@ provenance. Do not change fixed v1 parameters, select from OOS, extend windows,
 rerun CN or promote old v2/v3 results. A new US correction is separate evidence,
 not a retroactive replacement of any earlier report. All12 candidates and real
 blocks must be reported. License-limited prices and full ledgers stay Windows.
+
+`scripts.export_granville_portfolio_summary` replaces root/case per-entry
+sizing_audit rows with aggregate counts/statuses and content hashes, binding
+the original immutable result SHA and exporter provenance. Export on Windows
+before transfer; full entry audits and daily/trade CSVs remain on that node.
+`run_granville_portfolio --corrected-us-summary <aggregate-export>` publishes
+an explicit US_effective_membership_correction_v1 with exactly12 original v1
+cases, exact effective contract/config and unchanged principal. The ingester
+rejects unmarked single-market inputs, stale CN merges, altered parameters,
+omitted candidates or detailed sizing rows. New US research is independent;
+CN and impaired prior v1/v2/v3 remain historical, not revalidated. The dashboard
+labels US-only correction and links historical reports instead of copying CN.
+
+Real input preparation and fixed run used clean eac144d.538 required members,
+365088 sliced rows,688 source sessions,0 preparation failures; input manifest
+SHAd7b4ce580a309b66c5e5869fdde28a35e933c407a89b951477dd7bce46f1d681.
+Panel passed with SW82 pre-eligibility warmup NaN sessions, no fill or waiver.
+12 terminal securities remain subject to held-proceeds guards. The original
+12-case US run produced10 completed and2 WBA-blocked cases;8 completed cases
+are negative. Fixed principal trend_pullback/time_7/base:29.21% cumulative,
+15.96% annualized,-17.89% drawdown,Sharpe0.70,33.40 annualized turnover,
+79.19% average exposure. Stress annualized5.63%.100%SPY17.48%/-18.76%,
+80%initial-SPY14.14%/-15.12%; no convincing cost/risk-adjusted advantage.
+436 evaluation sessions,0 complete504+252 windows; retrospective holdout is
+not OOS. Do not promote, optimize from these outcomes, or rerun CN/v2/v3.
