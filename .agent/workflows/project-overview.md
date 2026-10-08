@@ -72,6 +72,13 @@ US v2/v3 comparisons share that impaired input and must not be used to conclude
 an optimization succeeded/failed. Version-matched warnings retain the original
 reports; fresh collection still needs all individual coverage gates to pass.
 
+October8 user-forwarded Norgate support evidence permits an explicit,
+hash-pinned effective-member ALLMARKETDAYS contract, distinct from the old
+native NONE captures. It covers constituent effective dates, not announcement
+dates or executable padded prices. Licensed responses stay Windows; only
+reconciliation counts, hashes and metadata are published. Terminal, industry
+and real-account gates remain separate, with no restoration of old US returns.
+
 The implemented architecture uses a FastAPI control plane, SQLite/SQLAlchemy,
 Alembic migrations, a Vue 3 research library, scheduled artifact ingestion and
 backups, and a Windows-local IBKR execution agent. The workflow is:

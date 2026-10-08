@@ -33,16 +33,14 @@ def load_capture(folder, *, evidence_only=False):
         verify_effective_evidence(store, manifest["provider_reply_version"], contract)
     if not evidence_only and (manifest["status"] != "required_scope_observed" or manifest["failures"]):
         raise ValueError("Full-watchlist required membership scope blocked")
-    mapping = read_clean_json(folder / "membership-native.json")
-    if store.resolve(folder / "membership-native.json")["id"] != manifest["interval_version"]:
-        raise ValueError("Captured membership interval version changed")
+    mapping = read_clean_json(folder / "membership-native.json", version=manifest["interval_version"])
     for record in manifest["records"]:
         for key in ["metadata_version", "native_version"]:
             if record.get(key):
                 source = store.get(record[key])
                 store.verified_path(source, "raw")
         if record.get("daily_file"):
-            frame = read_clean_csv(folder / record["daily_file"])
+            frame = read_clean_csv(folder / record["daily_file"], version=record["daily_version"])
             if frame.attrs["data_version"] != record["daily_version"]:
                 raise ValueError("Captured daily indicator version changed")
     return mapping, manifest, version

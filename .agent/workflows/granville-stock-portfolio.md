@@ -566,3 +566,14 @@ prove first-seen/publication time, and does not provide acquired Major Exchange
 Listing/OTC filters or complete WBA proceeds. Old impaired US returns are not
 restored merely by this reply. Fresh licensed-node capture and validation are
 the next evidence step, not a portfolio run, order or new observer task.
+
+Real effective capture completed on clean13d1316: all1305 codes,262 verified
+outside quote lifetimes,0 failures/history member gaps,503 positive members at
+September29. Manifest version9dfdbc3bab952ac8e8f50b620528e6ee9870efc8d0a7f165d60bf21c5e281da8,
+SHA65068d488181592b1208c123c556471a534022fe1f27ca38ba0f9bcdc740a095.
+Native/effective comparison initially refused an alias mismatch: generic
+inventory had re-registered identical membership-native.json bytes with other
+metadata. Native source and retained raw/clean hashes were unchanged. Fix
+reads by explicitly pinned manifest versions, not latest path aliases; changed
+source/snapshots still reject. Never edit aliases, waive gates or repeat native
+acquisition to repair this reader. Final reconciliation/publication follows.

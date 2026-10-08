@@ -184,6 +184,10 @@ def test_offline_full_comparison_verifies_inputs_and_never_admits_strategy(tmp_p
     native_dir, effective_dir = tmp_path / "native", tmp_path / "effective"
     capture.run(native_dir, "2026-08-20", "2026-08-25", "2026-08-20")
     capture.run(effective_dir, "2026-08-20", "2026-08-25", "2026-08-20", effective_membership=True)
+    # Generic inventory can re-register identical bytes with different metadata.
+    # This must not move the capture's declared provenance or edit old artifacts.
+    DataStore(tmp_path).import_file(native_dir / "membership-native.json", {"market": "US", "provider": "Generic"})
+    DataStore(tmp_path).import_file(native_dir / "daily/A.csv.gz", {"market": "US", "provider": "Generic"})
     checksum = digest(native_dir / "manifest.json")
     output = tmp_path / "comparison.json"
     result = audit.run(native_dir, effective_dir, output)

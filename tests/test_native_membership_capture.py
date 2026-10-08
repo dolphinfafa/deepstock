@@ -136,7 +136,7 @@ def test_evidence_only_loading_does_not_admit_blocked_membership(tmp_path, monke
     monkeypatch.setattr(capture, "DataStore", lambda: SimpleNamespace(
         get=lambda version: {"raw_sha256": digest(tmp_path / "manifest.json")},
         verified_path=lambda *args: tmp_path / "manifest.json", resolve=lambda path: {"id": "i" * 64}))
-    monkeypatch.setattr(capture, "read_clean_json", lambda path: {})
+    monkeypatch.setattr(capture, "read_clean_json", lambda path, **kw: {})
     with pytest.raises(ValueError, match="required membership scope blocked"):
         capture.load_capture(tmp_path)
     _, retained, _ = capture.load_capture(tmp_path, evidence_only=True)

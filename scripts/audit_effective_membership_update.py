@@ -59,8 +59,8 @@ def run(native_dir, effective_dir, output):
         prior = previous[symbol]
         if record["assetid"] != prior["assetid"]:
             raise ValueError("Security asset identity changed")
-        old_frame = read_clean_csv(native_dir / prior["daily_file"]) if prior.get("daily_file") else pd.DataFrame()
-        new_frame = read_clean_csv(effective_dir / record["daily_file"]) if record.get("daily_file") else pd.DataFrame()
+        old_frame = read_clean_csv(native_dir / prior["daily_file"], version=prior["daily_version"]) if prior.get("daily_file") else pd.DataFrame()
+        new_frame = read_clean_csv(effective_dir / record["daily_file"], version=record["daily_version"]) if record.get("daily_file") else pd.DataFrame()
         records.append(compare_daily(old_frame, new_frame, calendar, record, fresh["required_start"]))
     changed = [r for r in records if r["old_missing_required_security_dates"] or r["observed_value_differences"] or r["old_observed_dates_absent_in_new"]]
     conflicts = sum(r["observed_value_differences"] + r["old_observed_dates_absent_in_new"] + r["remaining_required_security_dates"] for r in records)

@@ -81,6 +81,51 @@ def test_unknown_prices_not_interpolated_conflicts_quarantined(tmp_path):
         read_clean_csv(source)
 
 
+@pytest.mark.parametrize("kind", ["csv", "json"])
+def test_manifest_pinned_reads_ignore_new_alias_but_reject_changed_source(tmp_path, kind):
+    from deepstock.data.store import read_clean_json
+    store = DataStore(tmp_path)
+    if kind == "csv":
+        source = fixture_file(tmp_path, [{"date": "2024-01-02", "symbol": "A", "adjusted_close": 10}])
+        read = read_clean_csv
+    else:
+        source = tmp_path / "membership-synthetic.json"
+        source.write_text(json.dumps({"A": [{"start": "2024-01-02", "end": "2024-01-02"}]}))
+        read = read_clean_json
+    first = store.import_file(source, {"market": "US", "origin": "derived_provider_export"})
+    newer = store.import_file(source, {"market": "US", "provider": "Generic inventory"})
+    assert newer["id"] != first["id"] and store.resolve(source)["id"] == newer["id"]
+    result = read(source, version=first["id"])
+    if kind == "csv":
+        assert result.attrs["data_version"] == first["id"]
+    else:
+        assert result == {"A": [{"start": "2024-01-02", "end": "2024-01-02"}]}
+    assert first["id"] in {r["version"] for r in input_evidence()["data_versions"]}
+    assert store.resolve(source)["id"] == newer["id"]  # Reading never rewrites aliases.
+    source.write_bytes(b"changed")
+    with pytest.raises(DataQualityError, match="changed from pinned"):
+        read(source, version=first["id"])
+
+
+@pytest.mark.parametrize("layer", ["raw", "clean"])
+def test_pinned_read_checks_immutable_snapshots_even_after_alias_change(tmp_path, layer):
+    source = fixture_file(tmp_path, [{"date": "2024-01-02", "symbol": "A", "adjusted_close": 10}])
+    store = DataStore(tmp_path)
+    original = store.import_file(source, {"market": "US"})
+    store.import_file(source, {"market": "US", "provider": "Generic inventory"})
+    store.verified_path(original, layer).write_bytes(b"changed")
+    with pytest.raises(DataQualityError, match="checksum"):
+        read_clean_csv(source, version=original["id"])
+
+
+@pytest.mark.parametrize("version", ["", "../another-path", "X" * 64])
+def test_invalid_pin_never_falls_back_to_alias(tmp_path, version):
+    source = fixture_file(tmp_path, [{"date": "2024-01-02", "symbol": "A", "adjusted_close": 10}])
+    DataStore(tmp_path).import_file(source, {"market": "US"})
+    with pytest.raises(DataQualityError, match="Invalid pinned"):
+        read_clean_csv(source, version=version)
+
+
 def test_inception_trim_logged_but_internal_missing_sessions_rejected():
     frame = pd.DataFrame({"A": [1, 2, 3], "B": [np.nan, 2, 3]}, index=pd.to_datetime(["2024-01-02", "2024-01-03", "2024-01-04"]))
     assert len(complete_panel(frame)) == 2

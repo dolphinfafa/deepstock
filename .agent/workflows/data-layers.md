@@ -9,6 +9,11 @@ deterministic cleaning and strict research inputs, outside market packages.
 JSON, manifest and quarantined rows. Versions include source/content, node,
 declared contract and cleaning revision. Application SQLite stores version
 metadata and research-input relations through Alembic, not large market arrays.
+When a capture manifest pins a version, use that identity explicitly via
+read_clean_csv/read_clean_json(..., version=...). A later generic inventory
+may update a path alias for identical bytes; it cannot change a capture's
+declared provenance. Pinned reads verify source/raw/clean hashes and status,
+record the pinned input, and never rewrite aliases or accept changed bytes.
 Legacy exports are `legacy_import`; TOTALRETURN is provider-adjusted, not
 unadjusted raw. New exports capture provider responses and upstream versions.
 `clean-v1.6` also recognises fund adjustment factors and dividend event schemas.

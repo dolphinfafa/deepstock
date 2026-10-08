@@ -150,6 +150,17 @@ class DataStore:
         write_json(self._alias(source), {"version": version})
         return result
 
+    def resolve_pinned(self, source: Path, version: str, allow_quarantine: bool = False) -> dict:
+        """Aliases are discovery hints, not authority over a manifest-pinned input."""
+        if not isinstance(version, str) or len(version) != 64 or any(c not in "0123456789abcdef" for c in version):
+            raise DataQualityError("Invalid pinned dataset version")
+        result = self.resolve(version, allow_quarantine=allow_quarantine)
+        source = Path(source).resolve()
+        if not source.exists() or digest(source) != result["source_sha256"]:
+            raise DataQualityError("Source changed from pinned dataset version")
+        self.verified_path(result, "raw")
+        return result
+
     def verified_path(self, manifest: dict, layer: str = "clean") -> Path:
         key = "raw_file" if layer == "raw" else "clean_file"
         name = manifest.get(key)
@@ -433,9 +444,9 @@ def _remember(manifest: dict) -> None:
     _local.inputs[manifest["id"]] = {"version": manifest["id"], "raw_sha256": manifest["raw_sha256"], "clean_sha256": manifest["clean_sha256"], "source_name": manifest["source_name"], "node": manifest["node"]}
 
 
-def read_clean_csv(source: Path | str, allow_quarantine: bool = False, **kwargs) -> pd.DataFrame:
+def read_clean_csv(source: Path | str, allow_quarantine: bool = False, *, version: str | None = None, **kwargs) -> pd.DataFrame:
     store = DataStore(root_for(Path(source)))
-    manifest = store.resolve(source, allow_quarantine=allow_quarantine)
+    manifest = store.resolve_pinned(Path(source), version, allow_quarantine) if version is not None else store.resolve(source, allow_quarantine=allow_quarantine)
     path = store.verified_path(manifest)
     frame = pd.read_csv(path, **kwargs)
     _remember(manifest)
@@ -445,9 +456,9 @@ def read_clean_csv(source: Path | str, allow_quarantine: bool = False, **kwargs)
     return frame.drop(columns=[c for c in frame if c.startswith("_quality") or c == "_raw_row"])
 
 
-def read_clean_json(source: Path) -> dict:
+def read_clean_json(source: Path, *, version: str | None = None) -> dict:
     store = DataStore(root_for(source))
-    manifest = store.resolve(source)
+    manifest = store.resolve_pinned(source, version) if version is not None else store.resolve(source)
     _remember(manifest)
     return json.loads(store.verified_path(manifest).read_text(encoding="utf-8"))
 
