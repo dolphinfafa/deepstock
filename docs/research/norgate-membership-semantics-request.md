@@ -2,7 +2,8 @@
 
 Status: explicitly authorized by the user on 2026-10-08; **one email submitted**
 at 2026-10-08 01:28:11 Asia/Shanghai (2026-10-07 17:28:11 UTC). SMTP accepted it;
-delivery and a provider response are not confirmed. No attachments, licensed raw
+delivery and a response were unconfirmed at submission. A substantive reply
+forwarded by the user is now recorded below. No attachments, licensed raw
 bars, daily member rows, account details or credentials were sent. The exact
 approved body below was sent, excluding internal references. Official contact
 address verified from the contact page: `support@norgatedata.com`.
@@ -97,3 +98,23 @@ the semantics. Provider acknowledgement alone is not missing-day truth: require
 a concrete explanation of how indicators behave across non-quote index changes,
 then separately assess whether a new versioned contract is defensible. Existing
 membership, WBA and trading gates remain blocked.
+
+## User-forwarded reply received on October8
+
+The user supplied Richard Dale's reply dated 2026-10-08 10:00 GMT+11
+(2026-10-07 23:00 UTC / 2026-10-08 07:00 Asia/Shanghai). The original MIME and
+headers are not available; this provenance limitation remains explicit.
+Canonical forwarded text: [provider reply](norgate-membership-provider-reply-20261008.txt),
+LF-text SHA-256 `a25ba40513d74d5877f28e3ba3ad258d7048cbf12eedfd316c34405f8cbb0926`.
+
+The substantive answer confirms effective historical constituent status on
+non-trading dates under ALLMARKETDAYS, including the effective-change question.
+No announcement dates are supplied. Missing prices mean no last-sale-eligible
+trades; this is not permission to manufacture executable prices. Major Exchange
+Listing timeseries is identified for OTC transitions, but has not been acquired
+as a validated input in this workflow.
+
+The reply justifies a new, separately identified member-only contract and
+capture using provider-delivered 0/1 values. It does not edit/admit the old
+NONE capture or diagnostic, resolve terminal accounting, restore old returns
+or authorize orders. No further email is sent or inbox connection configured.

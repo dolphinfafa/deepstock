@@ -125,3 +125,16 @@ manifests are versioned locally. Inventory status/cleaning readiness must not be
 mislabelled as full PIT/terminal/accounting readiness or a completed backtest.
 `audit_norgate_membership_gaps` retains diagnostic member probes separately;
 padding agreement never certifies missing-day truth or changes admission.
+
+October8 provider reply, supplied by the user (not original MIME), explicitly
+confirms ALLMARKETDAYS evaluates historical effective constituent status even
+on non-trading dates. `config/norgate_effective_membership_v1.json` pins the
+canonical LF text hash and package1.0.77. The explicit `--effective-membership`
+collector creates a separate full-watchlist capture using canonical S&P500
+ALLMARKETDAYS and retains the registered reply as provenance. Default native
+NONE capture and old blocked/diagnostic evidence are unchanged. Missing API
+responses still block; never fill them on the client. Observed effective-date
+membership is not announcement/publication-time evidence. Major Exchange
+Listing series is mentioned by support but not yet acquired or a claimed
+OTC-execution filter. No price padding, fabricated trade/activity, terminal
+payment or overall strategy admission follows from this member-only contract.

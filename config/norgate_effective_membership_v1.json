@@ -1,0 +1,14 @@
+{
+  "contract_id": "norgate-effective-membership-v1",
+  "index_name": "S&P 500",
+  "padding": "ALLMARKETDAYS",
+  "package_version": "1.0.77",
+  "semantics": "Historical effective constituent status including non-trading dates; provider evaluated, not client forward-filled",
+  "announcement_dates_available": false,
+  "executable_price_padding_allowed": false,
+  "major_exchange_listing_acquired": false,
+  "reply_source": "User-forwarded support reply text; original MIME and headers not supplied",
+  "reply_at_utc": "2026-10-07T23:00:00+00:00",
+  "reply_path": "docs/research/norgate-membership-provider-reply-20261008.txt",
+  "reply_text_sha256_lf": "a25ba40513d74d5877f28e3ba3ad258d7048cbf12eedfd316c34405f8cbb0926"
+}

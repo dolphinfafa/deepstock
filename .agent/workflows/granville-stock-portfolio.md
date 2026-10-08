@@ -540,3 +540,29 @@ Release65f6abe pushed and clean ff-only pulled on the quantitative node;
 14 targeted sender/alert/notice tests passed1.92s and the worktree stayedclean.
 No real email was sent from Windows. Documentation-only final sync does not
 re-run acquisition, monitoring, backtests or order submission.
+
+## October8 user-forwarded provider reply and effective membership v1
+
+The user supplied Richard Dale's support reply datedOctober8 10:00GMT+11
+(October7 23:00UTC / October8 07:00China). It explicitly states that
+ALLMARKETDAYS evaluates historical constituent status even without trading,
+and provides effective dates, not announcement dates. Canonical reply text is
+saved in docs/research/norgate-membership-provider-reply-20261008.txt with
+LF-text SHA a25ba40513d74d5877f28e3ba3ad258d7048cbf12eedfd316c34405f8cbb0926.
+This is user-forwarded text, not recovered/authenticated MIME or email headers.
+
+config/norgate_effective_membership_v1.json pins this provider guarantee,
+canonical indexS&P500, ALLMARKETDAYS and package1.0.77. The collector's explicit
+--effective-membership option binds registered reply evidence to new daily
+views and a separate manifest; default NONE and all earlier captures/notices
+remain unchanged. Every code from the full current-and-past watchlist stays
+included with verified quote-life boundaries; returned0/1 values are not
+client-imputed. Missing responses still fail the required coverage gate.
+Synthetic tests include a non-trading effective removal (1→0), remaining API
+gaps, altered reply/contract, CRLF checkout and an unreviewed package revision.
+
+The guarantee does not permit missing executable OHLC to be padded, does not
+prove first-seen/publication time, and does not provide acquired Major Exchange
+Listing/OTC filters or complete WBA proceeds. Old impaired US returns are not
+restored merely by this reply. Fresh licensed-node capture and validation are
+the next evidence step, not a portfolio run, order or new observer task.

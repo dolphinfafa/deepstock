@@ -1,0 +1,12 @@
+Richard Dale (Norgate Data)
+Oct 8, 2026, 10:00 GMT+11
+
+ALLMARKETDAYS evaluates historical constituent status even when the stock didn't trade that day.
+Yes.
+The Index Constituent Timeseries is tied to the price time series.  You can use the padding you desire.  No announcement dates are provided - only effective dates are indicated.  OTC transitions are handled by Major Exchange Listing timeseries in the same manner.
+Missing days just means there were no last-sale-eligible trades for that date.  If you want to use padding, you can do so.
+
+Best regards,
+
+Richard Dale, B.Sc. (Hons) Comp Sci
+Norgate Data
