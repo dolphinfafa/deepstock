@@ -27,16 +27,25 @@ def fixed_config(path):
     return cfg
 
 
+def dataset_csv(data_dir, manifest, name):
+    if "input_versions" in manifest:
+        # Missing/invalid pins never fall back to a mutable discovery alias.
+        if name not in manifest["input_versions"]:
+            raise ValueError("Required fixed dataset pin missing: " + name)
+        return read_clean_csv(data_dir / name, version=manifest["input_versions"][name])
+    return read_clean_csv(data_dir / name)
+
+
 def load_stock_inputs(market, data_dir, cfg, rule, config_path):
     """Reuse registered evidence; experiments never rewrite collection identity."""
     manifest = json.loads((data_dir / "manifest.json").read_text(encoding="utf-8"))
     if manifest["market"] != market or manifest["config_hash"] != digest(config_path):
         raise ValueError("Dataset/config identity differs")
-    calendar = pd.DatetimeIndex(pd.to_datetime(read_clean_csv(data_dir / "calendar.csv").date))
-    membership = read_clean_csv(data_dir / "membership.csv.gz")
+    calendar = pd.DatetimeIndex(pd.to_datetime(dataset_csv(data_dir, manifest, "calendar.csv").date))
+    membership = dataset_csv(data_dir, manifest, "membership.csv.gz")
     if manifest["failures"]:
         raise PortfolioDataError(f"Required constituent evidence blocked: {manifest['failures']}")
-    bars = pd.concat([read_clean_csv(data_dir / "prices" / (s + ".csv.gz")) for s in manifest["symbols"]], ignore_index=True)
+    bars = pd.concat([dataset_csv(data_dir, manifest, "prices/" + s + ".csv.gz") for s in manifest["symbols"]], ignore_index=True)
     dividends = suspensions = None
     if market == "CN":
         div_dir = data_dir / manifest.get("dividend_audit_directory", "dividends")
@@ -50,7 +59,7 @@ def load_stock_inputs(market, data_dir, cfg, rule, config_path):
     return panel, manifest
 
 
-def run(market, data_dir, benchmark_path, output, config_path):
+def run(market, data_dir, benchmark_path, output, config_path, benchmark_version=None):
     cfg = fixed_config(config_path)
     output.mkdir(parents=True, exist_ok=False)
     code = capture_code_provenance()
@@ -60,6 +69,7 @@ def run(market, data_dir, benchmark_path, output, config_path):
     config_hash = digest(config_path)
     source_names = ["scripts/run_granville_portfolio.py", "scripts/prepare_granville_stock_data.py",
                     "src/deepstock/strategies/both/granville_portfolio.py", "src/deepstock/strategies/both/granville.py",
+                    "scripts/prepare_granville_us_inventory.py", "scripts/download_norgate_membership.py", "src/deepstock/data/membership_contract.py",
                     "src/deepstock/data/store.py", "src/deepstock/data/stock_actions.py", "src/deepstock/data/membership.py", cfg["signal_config"], "pyproject.toml"]
     code["source_file_hashes"] = {name: digest(ROOT / name) for name in source_names}
     for name in source_names:
@@ -72,8 +82,8 @@ def run(market, data_dir, benchmark_path, output, config_path):
     manifest = json.loads((data_dir / "manifest.json").read_text(encoding="utf-8"))
     if manifest["market"] != market or manifest["config_hash"] != digest(config_path):
         raise ValueError("Dataset/config identity differs")
-    calendar = pd.DatetimeIndex(pd.to_datetime(read_clean_csv(data_dir / "calendar.csv").date))
-    membership = read_clean_csv(data_dir / "membership.csv.gz")
+    calendar = pd.DatetimeIndex(pd.to_datetime(dataset_csv(data_dir, manifest, "calendar.csv").date))
+    membership = dataset_csv(data_dir, manifest, "membership.csv.gz")
     result = {"market": market, "symbol": cfg["markets"][market]["universe"], "currency": cfg["markets"][market]["currency"],
               "principal_variant": cfg["principal_variant"], "principal_exit_policy": cfg["principal_exit_policy"],
               "cost_basis": {**cfg["markets"][market], "price_model": cfg["price_model"]}, "cases": [], "benchmarks": {},
@@ -85,7 +95,7 @@ def run(market, data_dir, benchmark_path, output, config_path):
     try:
         if manifest["failures"]:
             raise PortfolioDataError(f"Required constituent evidence blocked: {manifest['failures']}")
-        bars = pd.concat([read_clean_csv(data_dir / "prices" / (s + ".csv.gz")) for s in manifest["symbols"]], ignore_index=True)
+        bars = pd.concat([dataset_csv(data_dir, manifest, "prices/" + s + ".csv.gz") for s in manifest["symbols"]], ignore_index=True)
         dividends = suspensions = None
         if market == "CN":
             div_dir = data_dir / manifest.get("dividend_audit_directory", "dividends")
@@ -108,7 +118,7 @@ def run(market, data_dir, benchmark_path, output, config_path):
         benchmark_bars = read_clean_csv(benchmark_path / "daily.csv")
         benchmark_div = read_clean_csv(benchmark_path / "dividends.csv")
     else:
-        benchmark_bars = read_clean_csv(benchmark_path)
+        benchmark_bars = read_clean_csv(benchmark_path, version=benchmark_version) if benchmark_version is not None else read_clean_csv(benchmark_path)
         for field in ["open", "high", "low", "close"]:
             benchmark_bars[field] = benchmark_bars["adjusted_" + field]
         benchmark_div = None
@@ -170,6 +180,10 @@ def run(market, data_dir, benchmark_path, output, config_path):
     result["dataset_manifest_sha256"] = dataset_hash
     result["fresh_membership_capture_version"] = manifest.get("fresh_membership_capture_version")
     result["fresh_membership_manifest_sha256"] = manifest.get("fresh_membership_manifest_sha256")
+    result["price_inventory_version"] = manifest.get("price_inventory_version")
+    result["price_inventory_manifest_sha256"] = manifest.get("price_inventory_manifest_sha256")
+    result["membership_contract"] = manifest.get("membership_contract")
+    result["benchmark_version"] = benchmark_bars.attrs.get("data_version")
     result["artifact_hashes"] = {p.name: digest(p) for p in output.glob("*.csv")}
     result["runtime"] = {"numpy": np.__version__, "pandas": pd.__version__}
     refs = [*manifest.get("data_versions", []), *input_evidence()["data_versions"]]
@@ -256,6 +270,7 @@ def main():
     parser.add_argument("--market", choices=["US", "CN"])
     parser.add_argument("--data-dir", type=Path)
     parser.add_argument("--benchmark", type=Path)
+    parser.add_argument("--benchmark-version", help="Pin a registered US benchmark; no alias fallback")
     parser.add_argument("--us-summary", type=Path)
     parser.add_argument("--cn-summary", type=Path)
     parser.add_argument("--config", type=Path, default=ROOT / "config/granville_portfolio_v1.json")
@@ -264,7 +279,7 @@ def main():
     if args.us_summary and args.cn_summary:
         result = publish(args.us_summary, args.cn_summary, args.output_dir, args.config)
     elif args.market and args.data_dir and args.benchmark:
-        result = run(args.market, args.data_dir, args.benchmark, args.output_dir, args.config)
+        result = run(args.market, args.data_dir, args.benchmark, args.output_dir, args.config, args.benchmark_version)
     else:
         parser.error("Need market/data-dir/benchmark, or both market summaries")
     print(json.dumps({"status": result["status"], "output": str(args.output_dir)}, ensure_ascii=False))

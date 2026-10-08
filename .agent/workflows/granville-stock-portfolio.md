@@ -598,3 +598,24 @@ Authenticated production report/progress and effective/reply metadata passed,
 restricted previews empty;17 prior non-catalog runs and21 non-spec reports
 unchanged versus backup. New report is standalone, no new performance run.
 Documentation-only closure does not repeat collection/comparison or send orders.
+
+## Offline combined-input correction (October8)
+
+`python -m scripts.prepare_granville_us_inventory --membership-dir <effective>
+--inventory-dir <native-OHLC> --inventory-version <pinned-manifest-version>
+--output-dir <new-directory>` reuses retained full-list native NONE/TOTALRETURN
+prices without importing Norgate or requesting new data. It verifies frozen
+inventory bytes, the entire native/effective list and asset/quote-life identity,
+each price contract/response lineage and pinned raw/clean snapshots. It slices
+only outside the original v1 source dates; no gaps, survivor substitution or
+fallback downloads. Required securities with errors remain in the manifest.
+The derived manifest pins every calendar/member/price input, retains original
+versions and declares backtest_admitted=false pending the separate panel and
+held-terminal-proceeds gates. Old captures/aliases/results stay unchanged.
+
+The fixed runner honors dataset input pins (missing/invalid pin must reject),
+supports an explicit US --benchmark-version, and records inventory/member/code
+provenance. Do not change fixed v1 parameters, select from OOS, extend windows,
+rerun CN or promote old v2/v3 results. A new US correction is separate evidence,
+not a retroactive replacement of any earlier report. All12 candidates and real
+blocks must be reported. License-limited prices and full ledgers stay Windows.
