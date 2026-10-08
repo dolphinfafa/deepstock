@@ -25,7 +25,7 @@ def test_notice_only_matches_affected_input_version_and_strategy():
     assert details == original
 
 
-@pytest.mark.parametrize("notice_index", [0, 1, 2, 3])
+@pytest.mark.parametrize("notice_index", [0, 1, 2, 3, 4])
 def test_notice_report_is_append_only_and_does_not_replace_performance_run(tmp_path, monkeypatch, notice_index):
     from dataclasses import replace
     import json

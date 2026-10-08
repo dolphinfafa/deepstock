@@ -577,3 +577,17 @@ metadata. Native source and retained raw/clean hashes were unchanged. Fix
 reads by explicitly pinned manifest versions, not latest path aliases; changed
 source/snapshots still reject. Never edit aliases, waive gates or repeat native
 acquisition to repair this reader. Final reconciliation/publication follows.
+
+Reconciliation on clean9629299 completed: full1305-code universe/asset IDs
+match, all old observed dates remain with0 value differences, and the original
+10/30/128 required gaps all have provider-returned0 (168 supplied,0 remaining).
+Member-only required scope is now usable under the new contract; no source or
+alias was rewritten. Comparison summarySHA
+94eda84bb8c266ce7c238fcbf3b093d0d26d4d4f1d24b60035e4d70656675531;
+effective summarySHA17c41e0499e8f6e08455f74ae809d918723c2a8c16b3a8b7e236399c20509893.
+Both nodes match; only those two price-free summaries were copied toserver.
+3396 recent restricted version manifests published with no row previews.
+Full strategy admission remainsfalse, missing prices/WBA accounting unchanged;
+the next step is fixed-period combined-input validation, not OOS selection,
+automatic performance restoration or trading. Standalone reply/readiness
+notice preserves earlier four notices and all impaired historical outputs.

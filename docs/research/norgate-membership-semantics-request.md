@@ -118,3 +118,13 @@ The reply justifies a new, separately identified member-only contract and
 capture using provider-delivered 0/1 values. It does not edit/admit the old
 NONE capture or diagnostic, resolve terminal accounting, restore old returns
 or authorize orders. No further email is sent or inbox connection configured.
+
+Fresh effective-member capture completed at clean `13d1316`, all 1305 historical
+codes retained, zero failures or member-date gaps, 262 metadata-verified
+out-of-range quote lifetimes. New manifest
+`9dfdbc3bab952ac8e8f50b620528e6ee9870efc8d0a7f165d60bf21c5e281da8`, SHA-256
+`65068d488181592b1208c123c556471a534022fe1f27ca38ba0f9bcdc740a095`.
+Offline comparison at `9629299` confirms all 168 formerly absent required
+security-dates returned as 0 and all previously observed dates/values match.
+The member-only gate is resolved for this new contract, not the old capture or
+full strategy. Missing executable prices and WBA accounting remain separate.
