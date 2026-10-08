@@ -48,9 +48,10 @@ required-date gaps still block, even when aggregate positive coverage passes.
 Full OHLC inventory is evidence acquisition, never a workaround to strategy
 input gates. Quote-life boundaries require source metadata, not guessed zeros.
 October8 user-forwarded Norgate reply confirms non-trading-date effective
-membership semantics. An explicit versioned ALLMARKETDAYS member-only capture
-may now be collected; native/old diagnostic versions remain immutable and
-blocked. This does not permit price padding, infer announcement dates or resolve
+membership semantics. A separate versioned ALLMARKETDAYS member-only capture
+passed coverage and native-overlap reconciliation for all1305 codes and the168
+required-date gaps; native/old diagnostic versions remain immutable and blocked.
+This does not permit price padding, infer announcement dates or resolve
 WBA, sector, broker-share/settlement or strategy-level execution gates.
 
 ### Think Before Act

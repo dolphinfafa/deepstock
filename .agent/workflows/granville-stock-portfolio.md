@@ -591,3 +591,10 @@ Full strategy admission remainsfalse, missing prices/WBA accounting unchanged;
 the next step is fixed-period combined-input validation, not OOS selection,
 automatic performance restoration or trading. Standalone reply/readiness
 notice preserves earlier four notices and all impaired historical outputs.
+
+Final publication b4ffc63 pushed and clean ff-only pulledWindows; server329
+tests88.86s and Windows329 tests191.60s passed (111 dependency warnings each).
+Authenticated production report/progress and effective/reply metadata passed,
+restricted previews empty;17 prior non-catalog runs and21 non-spec reports
+unchanged versus backup. New report is standalone, no new performance run.
+Documentation-only closure does not repeat collection/comparison or send orders.
