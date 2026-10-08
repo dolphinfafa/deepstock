@@ -644,3 +644,20 @@ are negative. Fixed principal trend_pullback/time_7/base:29.21% cumulative,
 80%initial-SPY14.14%/-15.12%; no convincing cost/risk-adjusted advantage.
 436 evaluation sessions,0 complete504+252 windows; retrospective holdout is
 not OOS. Do not promote, optimize from these outcomes, or rerun CN/v2/v3.
+
+Publication releasefb9d79e pushed/clean ff-only pulledWindows. Aggregate export
+821753bytes,SHAa5514b1744353840adff7af99db1cec1cdc823cc2322da72287e6826c5e4e381
+matches bothnodes; original full summary9d6ee637... remainsWindows. Temporary
+server detailed-summary copy removed after source/export hash verification;
+no licensed prices or daily/trade CSVs transferred.540 restricted price-free
+versions published. Independent run/report:
+granville-stocks-us-effective-20261008-v1-correction;
+publicationSHA2cd2e4a2d91baff746e7338cb3f30a0167b47457de3e3dd9e2109f85c17a68d5,
+reportSHAe276218f606546fc72bf5e2cc95ec0e6f87430914229c1d107e07d9c872e2a04.
+Repeat ingestion0;2123 linked input versions. Production HTTPS auth401,
+fixed principal/all cases,report exactness,US-only labels,6 restricted empty
+raw/clean previews and served frontend asset bytes passed. All18 pre-existing
+non-catalog runs and23 non-specification reports match the backup;29 total
+runs,34 reports,30780 versions. AHLfrozen,tailpaused,livefalse/killtrue remain.
+Final347 tests passed server102.77s/Windows203.67s (159 dependency warnings).
+Documentation-only closing sync does not rerun data, strategy or orders.
