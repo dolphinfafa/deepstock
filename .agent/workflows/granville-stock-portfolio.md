@@ -704,3 +704,46 @@ checks original source identity/status/metrics/hashes, and is idempotent.
 Strategy detail links this separate report with “仅诊断，未做新回测”. Database
 backup precedes import. Server tests/build → GitHub → clean quant ff-only pull
 is required. No CN rerun, parameter/order/email/schedule or live-gate changes.
+
+### October9 implementation verified; native runtime blocks research execution
+
+Implementation b3532ab was pushed and clean ff-only pulled by the quantitative
+node. Server final regression369 tests110.65s/159 warnings and frontend build
+3.30s passed. Report import also appends one idempotent diagnostic progress
+entry, preserving the original performance run/metrics. Production HTTPS auth,
+12 original cases/2 blocks, old correction report hash and6 empty licensed raw/
+clean previews passed. Livefalse/killtrue/Research-only remain.
+
+PowerShell preflight on Windows independently verified all28 CSV artifact
+hashes in the original corrected market summary (20 case ledgers plus8
+benchmark artifacts), as well as summary9d6ee637..., combined inputd7b4ce58...
+and native price inventory8333f1e.... No price or ledger rows were transferred.
+The new Python audit has NOT run: both direct dedicated Python and Conda launch
+return -1058471934 (0xC0E90002) before any Python code executes. Windows Code
+Integrity events3033/3077 explicitly report Smart App Control blocking the
+unsigned deepstock/python312.dll. python.exe and DLL are NotSigned; the signed
+base Anaconda interpreter starts, but is a different version/environment and
+has not been used to run research or tests. The native checkout remains clean.
+
+A read-only search for a signed same-version official runtime returned
+CondaToSNonInteractiveError for the defaults channels. No channel terms were
+accepted, no runtime/package was replaced, and no Windows security policy was
+changed. The user has been asked to restore an approved dedicated environment
+or confirm the official-channel terms before preparing a safe repair. There
+is no approval response yet. Native focused/full regression, actual ledger/
+history diagnosis, aggregate transfer, pre-publication database backup/import
+and new-report production validation remain pending. Do not publish invented
+results or label the original current12 statuses as new audit outcomes.
+
+After the dedicated runtime is approved and available, clean-pull the latest
+commit and run its tests. Then run the offline audit with ledger/data folders
+`artifacts/research/granville-stocks/run-us-effective-20261008-v1` and
+`artifacts/research/granville-stocks/inputs-us-effective-20261008-v1`, member
+folder `artifacts/research/norgate/membership-effective-20261008-v1`, inventory
+folder `artifacts/research/norgate/stock-ohlc-native-20261008-v1`, inventory pin
+`34b0e6f4a55dfb8eded0dffd3bcf3784b67066a35f0a1c4a9981e3d70d719f5f` and a
+new `artifacts/research/granville-us-audits/<id>` output folder. Transfer only
+its aggregate publication after hash checks; preserve all cycles/prices/
+ledgers locally. Back up before report import and verify unchanged old
+performance, idempotence/auth/empty restricted previews. Native research,
+backtests, downloads, notifications, orders and schedules have not been run.

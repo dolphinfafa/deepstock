@@ -14,7 +14,7 @@ from deepstock.data.store import digest, write_json
 from deepstock.strategies.both.granville_diagnostics import cost_path_attribution
 from deepstock.strategies.us.granville_audit import audit_ledger, verify_metrics
 from deepstock.web.granville_audit_reports import ingest_granville_audit_reports, validate_publication
-from deepstock.web.models import Base, Metric, ResearchReport, ResearchRun, Strategy
+from deepstock.web.models import Base, Metric, ProgressEvent, ResearchReport, ResearchRun, Strategy
 from scripts.audit_granville_us_research import verify_artifact
 
 
@@ -243,6 +243,8 @@ def test_report_only_immutable_idempotent_import_preserves_performance(ledger, t
         assert ingest_granville_audit_reports(session, tmp_path) == {"reports": 0}
         assert session.scalar(select(func.count()).select_from(ResearchRun)) == 1
         assert session.scalar(select(func.count()).select_from(Metric)) == 0
+        assert session.scalar(select(func.count()).select_from(ProgressEvent)) == 1
+        assert session.scalar(select(ProgressEvent)).status == "blocked"
         assert session.get(ResearchRun, value["source_run_id"]).details == before
         assert session.get(ResearchReport, "old-cn").content == "unchanged"
         report = session.get(ResearchReport, value["id"])

@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 
-from deepstock.web.models import ResearchReport, ResearchRun
+from deepstock.web.models import ProgressEvent, ResearchReport, ResearchRun
 
 REPORT_TYPE = "granville_us_ledger_history_audit"
 TOP_KEYS = {"id", "strategy_id", "report_type", "as_of_date", "source_run_id", "source_run_sha256", "source_summary_sha256",
@@ -217,6 +217,13 @@ def ingest_granville_audit_reports(session, root):
                                    title="美股葛兰威尔：成本与退出归因、长历史准入检查（仅诊断）", report_type=REPORT_TYPE,
                                    as_of_date=value["as_of_date"], format="markdown", content=content,
                                    content_hash=checksum, artifact_path=str(path.relative_to(root))))
+        diagnosed = sum(c["status"] == "diagnosed" for c in value["ledgers"]["cases"])
+        failed = sum(c["status"] == "diagnostic_failed" for c in value["ledgers"]["cases"])
+        session.add(ProgressEvent(strategy_id=value["strategy_id"], stage="diagnostic",
+                                  title="成本与退出归因、长历史准入 · 仅诊断，未做新回测",
+                                  detail=f"原12组保留；{diagnosed}组账本完成诊断、{failed}组诊断失败。原兑付阻塞不解除；1305代码长历史输入状态：{value['history']['research_input_status']}，窗口只列覆盖、未运行策略。",
+                                  status="blocked" if failed or value["history"]["research_input_status"] == "blocked" else "done",
+                                  source=REPORT_TYPE))
         count += 1
     session.commit()
     return {"reports": count}
