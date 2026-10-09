@@ -661,3 +661,46 @@ non-catalog runs and23 non-specification reports match the backup;29 total
 runs,34 reports,30780 versions. AHLfrozen,tailpaused,livefalse/killtrue remain.
 Final347 tests passed server102.77s/Windows203.67s (159 dependency warnings).
 Documentation-only closing sync does not rerun data, strategy or orders.
+
+## Existing-ledger cost/exit audit and long-history plan (October9)
+
+New offline entry point `python -m scripts.audit_granville_us_research` takes
+`--ledger-dir`, `--data-dir`, `--membership-dir`, `--inventory-dir`,
+`--inventory-version` and a new `--output-dir`. It reads only pinned retained
+inputs; it does not call the strategy engine, Norgate, downloads or brokers.
+The original corrected US market-summary hash is fixed, the original v1
+configuration and XNYS calendar are checked, and each case's daily/trade hashes,
+summary metrics, cash, fees, units, holding sessions and marked NAV reconcile.
+Money tolerance is USD0.01 absolute, never relative. Failure removes diagnostic
+statistics for that case, not the original case/status. Source WBA blocks stay.
+
+Buy commissions/slippage are allocated to actual sold units. Completed cycles
+are counted once at their final sale date/reason, including all partial sales;
+open cycles retain remaining units/costs and separate realized/unrealized PnL.
+Full/2025/2026-through-September29 account summaries retain continuous NAV.
+Cash-date period fees and final-exit cycle fees have distinct labels. The
+existing ledger/cost-path helpers supply the actual-fill cash identity; stress
+has its own real fills, position paths and terminal marks. No zero-cost CAGR
+or new exit-rule selection is produced.
+
+The same command checks all1305 native/effective historical identities,
+quote-life metadata, unpadded NONE/TOTALRETURN response dates and raw/clean
+snapshots at their original pinned versions. Missing member/quote dates remain
+missing. Within quote life, quote gaps are partitioned into effective-member,
+252-session pre-membership warmup and other dates; outside-life boundaries are
+separate evidence, never executable fills. The initial252 XNYS days are fixed
+warmup, then504 history/252 test/252 step windows are listed with coverage only;
+short final tests are tails. No returns or strategy holdings are computed.
+Member quote/identity failures block research input; listing/sector/terminal
+settlement evidence remains an independent execution limitation. No window is
+claimed to have held terminal names or passed execution validation.
+
+Only `publication.json` aggregate counts/security metadata/versions/hashes may
+move to the server under `artifacts/research/granville-us-audits/<id>/`.
+`position_cycles-restricted.json` and all existing prices/daily/trade ledgers
+remain on the quantitative computer. The importer creates one immutable
+ResearchReport linked to the original correction run, no ResearchRun/Metric,
+checks original source identity/status/metrics/hashes, and is idempotent.
+Strategy detail links this separate report with “仅诊断，未做新回测”. Database
+backup precedes import. Server tests/build → GitHub → clean quant ff-only pull
+is required. No CN rerun, parameter/order/email/schedule or live-gate changes.

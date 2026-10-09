@@ -493,3 +493,14 @@ minutes and creates an online SQLite backup daily with 30-day retention.
 | Historical research data | Massive adjusted daily bars | User subscription; key remains in local `.env` |
 | IBKR market data | Fee-waived account entitlement | Reserved for execution-time validation, not research history |
 | Initial real backtest | Completed, not approved for trading | Five-year window requires robustness and out-of-sample review |
+
+October9 Granville US follow-up adds an offline existing-ledger/history audit,
+not another performance run. Its aggregate-only ResearchReport links the
+October8 effective-member correction; strategy detail exposes the report while
+latest-run metrics and annualization continue to use the same existing run.
+Partial-sale costs/final-exit cohorts and independent base/stress paths are
+reconciled, and the1305-code inventory is checked for2005—September29,2026 with
+fixed252warmup/504history/252test coverage plans. No strategy is run on those
+windows; terminal/listing/sector execution gaps are kept distinct from input
+coverage blocks. See granville-stock-portfolio.md for the entry point, privacy,
+immutability, backup and clean two-node publication process.

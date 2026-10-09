@@ -12,6 +12,7 @@ const route = useRoute()
 const live = useLiveStore()
 const strategy = ref<any>(null)
 const error = ref('')
+const auditReport = computed(() => strategy.value?.reports?.find((report: any) => report.report_type === 'granville_us_ledger_history_audit'))
 const metrics = computed(() => strategy.value?.latest_run?.metrics || [])
 const separateMarkets = computed(() => strategy.value?.annualization?.scope === 'separate_markets')
 
@@ -53,7 +54,12 @@ watch(() => live.revision, load)
     <div v-if="strategy.latest_run?.status === 'paused_missing_data'" class="panel compact-panel"><strong>需要更多数据 · 研究已暂停</strong><p>尚无合格真实行情回测结果。补齐分钟历史、交易日历及公司行动数据后，需你明确要求恢复；当前不会自动下载或回测。</p></div>
     <p v-if="strategy.latest_run?.data_end">最新数据截至 {{ strategy.latest_run.data_end }} · 评估日期 {{ strategy.latest_run.as_of_date }}</p>
     <p v-if="strategy.latest_run?.run_type?.startsWith('tail_momentum_')">{{ strategy.latest_run.summary }}</p>
-    <p v-if="strategy.latest_run?.run_type === 'granville_stock_us_effective_correction'">本轮只用新版有效日成员重跑美股原12组；A股未重跑，结果见原报告。旧美股报告及覆盖缺陷警告保留，不以新版结果追认旧绩效。</p>
+    <p v-if="strategy.latest_run?.run_type === 'granville_stock_us_effective_correction'">关联的有效日成员修正运行保留美股原12组；A股未重跑，结果见原报告。旧美股报告及覆盖缺陷警告保留，不以新版结果追认旧绩效。</p>
+    <section v-if="auditReport" class="panel compact-panel">
+      <strong>成本与退出归因 · 长历史准入检查</strong>
+      <p>仅诊断，未做新回测。原12组与两组WBA阻塞保留；报告展示完整周期退出费用、基础/10bp真实路径差异，以及1305代码覆盖和固定窗口清单。</p>
+      <RouterLink :to="{ path: '/reports', query: { report: auditReport.id } }">查看聚合诊断报告</RouterLink>
+    </section>
     <section v-if="separateMarkets" class="detail-grid">
       <article v-for="(result, market) in strategy.market_results" :key="market" class="panel">
         <div class="section-title"><div><small>{{ marketLabel(String(market)) }} · {{ result.currency }}</small><h2>{{ result.symbol }} · 独立回测</h2></div></div>
