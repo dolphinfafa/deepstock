@@ -84,6 +84,15 @@ The local Codex daemon must be available for reply-state checks; the worker
 never guesses that a session is unanswered while the daemon is unavailable.
 No research/broker/auction schedules or execution email-test gate are changed.
 
+Installed and enabled at 2026-10-12 23:42:37 CST after commit `300545d` was
+pushed and cleanly fast-forwarded on the quantitative computer. Windows
+verification passed 32 tests, with 2 Unix-transport tests skipped, and left
+the checkout clean. Initial service status was `ok`, observing 4 primary
+sessions, with 0 mail submissions and 0 reply bodies read. Activation time
+was set at service installation so the earlier read-only checks do not make
+pre-activation messages eligible. Local deployment evidence is in the private
+`activation.json`; no credentials, mail or runtime state were transferred.
+
 ## Verification and source
 
 Server regression 401 tests/111.07s passed. The 34 targeted mail/transport
