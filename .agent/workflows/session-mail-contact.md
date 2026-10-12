@@ -1,0 +1,106 @@
+# Deepstock session contact
+
+The October 12 user explicitly authorized a persistent rule: when they have not
+replied to the latest Deepstock session message for 30 minutes, email their
+configured owner address, identifying the sender as `deepstock`. They may
+reply through Codex or email. The sender mailbox is shared with other agents;
+only replies to this assistant's own emails may be inspected. This consent
+persists across turns and supersedes the earlier test-only email scope for
+this specific reminder/reply flow. It does not authorize unrelated sends.
+
+## Behavior
+
+The server-only `deepstock-session-mail.service` polls the existing local Codex
+control socket every 30 seconds. Only primary CLI/VSCode sessions with cwd
+exactly this Deepstock workspace are considered; child agents, other projects
+and ephemeral sessions are excluded. The latest completed turn's final
+assistant message starts the 30-minute timer. Progress updates and active turns
+do not create reminders. Only messages completed after bridge activation are
+eligible, so old history is never emailed retroactively.
+
+One email is submitted per completed turn, addressed only to
+`DEEPSTOCK_SESSION_EMAIL_TO`. Both From and Reply-To identify `deepstock` and
+the locally configured sender mailbox. Email contains the session identifier
+and the latest final message (bounded to 6000 characters), with no transcript,
+tool outputs or attachments. The newest Codex user turn cancels the old timer;
+a newly completed assistant turn gets a new timer. No reply means one reminder,
+not repeated 30-minute emails. SMTP claim is committed before submission;
+timeouts/crashes never automatically resubmit an ambiguous send.
+
+Replies are routed to the exact original session using `turn/start` and a
+stable client message identifier. This uses the existing model/permissions;
+the bridge never overrides them. A previously unloaded active session may be
+resumed, but archived/deleted sessions are left suspended. Email text is
+ordinary user input, with quoted/forwarded material carrying no higher
+instruction authority. Sending and RPC submission ambiguity remain visible in
+local state and are never silently replayed. Live gates/order governance remain.
+
+## Shared-mailbox restriction
+
+- Generate an unpredictable Message-ID for each Deepstock reminder and retain
+  the exact originating session/turn mapping before SMTP.
+- Select INBOX read-only. UID searches must be server-side HEADER
+  In-Reply-To/References matches for those stored IDs. No ALL/subject-only
+  search, mailbox header sweep, other-folder scan or full-inbox download.
+- Fetch only the matching candidate's minimal reply/sender headers and size;
+  verify the single configured owner sender and the nearest reply parent.
+  A reply directed to another agent is rejected even if our ID appears earlier
+  in its References. Fetch BODY.PEEK only after this check succeeds, then
+  revalidate the complete message's identity. No marking, moving or deletion.
+- Read no other messages' bodies or attachments. Do not inspect provider
+  support mail or another agent's traffic under this authorization. Plain-text
+  and HTML user replies are converted to bounded text without executing HTML.
+- Unsupported reply-header search stops collection; it does not permit a broad
+  fallback. Repeated UID appearances/message identifiers are deduplicated.
+
+## Configuration and operation
+
+All account addresses/credentials stay in local `.env`, not Git. Existing
+`DEEPSTOCK_SMTP_*` values supply encrypted SMTP; `DEEPSTOCK_IMAP_*` values
+supply encrypted receiving, optionally using separate credentials. Defaults
+fall back to SMTP credentials. `DEEPSTOCK_SESSION_EMAIL_ENABLED=true` and
+`DEEPSTOCK_SESSION_EMAIL_TO` are the explicit local activation/recipient.
+`DEEPSTOCK_CODEX_SOCKET` pins the existing current-user Unix control socket;
+no new public listener or OpenAI API key is introduced.
+
+Runtime state is separate from the app/market databases:
+`artifacts/session-contact/private/state.sqlite3` and `status.json`. Directory
+mode 0700 and files 0600 protect local reminder mappings/reply text. They are Git
+ignored, not research inputs/catalog previews and never copied to Windows.
+
+```bash
+# Config/socket/history check only: no SMTP or IMAP call.
+conda run --no-capture-output -n deepstock python -m scripts.run_session_mail_bridge --check
+# Service status; local status.json reports progress/failure counts.
+systemctl --user status deepstock-session-mail.service
+# Stop the contact rule when explicitly requested.
+systemctl --user disable --now deepstock-session-mail.service
+```
+
+The service template is `config/deepstock-session-mail.service`, enabled only
+on this server. User lingering is already enabled. Mailbox or Codex connection
+failure defers work and records an error class without secrets/message text.
+The local Codex daemon must be available for reply-state checks; the worker
+never guesses that a session is unanswered while the daemon is unavailable.
+No research/broker/auction schedules or execution email-test gate are changed.
+
+## Verification and source
+
+Server regression 401 tests/111.07s passed. The 34 targeted mail/transport
+tests also passed. Synthetic tests cover the 30-minute
+boundary, activation/no retroactive mail, single submission/restart, Codex
+reply cancellation, partial/HTML reply handling, mailbox separation, other
+agent parent rejection, size limits, duplicate email/RPC outcomes and archive
+preservation. A fake Unix control socket tests masking, handshake, notifications,
+ping and fragmented JSON-RPC responses. The real Codex config/socket check
+passed; real IMAP reply-header queries were accepted with zero matches and
+zero body fetches. This setup did not send a test/reminder email or start a
+synthetic Codex turn. First real owner reply will exercise live routing; no
+end-to-end owner reply is falsely claimed before it occurs.
+
+OpenAI Docs was used to confirm the local session interface and supported
+reply routing: [App Server](https://learn.chatgpt.com/docs/app-server).
+The deployment uses its owner-only Unix socket and current CLI 0.162.1 schemas.
+The real completed-turn summary exposes phase `final_answer`; the bridge
+accepts that value as well as `final`. A read-only real-summary observation
+confirmed the waiting state without SMTP/IMAP or starting a Codex turn.

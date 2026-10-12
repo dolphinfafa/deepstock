@@ -1,9 +1,9 @@
 # Mail connectivity verification
 
-SMTP severe-alert delivery is implemented in `deepstock.web.alerts`. Receiving
-via IMAP is currently a manual connectivity check, not a background inbox
-processor. Do not imply that successful login installs an automatic receiver,
-retrieves provider replies or opens a strategy/execution gate.
+SMTP severe-alert delivery is implemented in `deepstock.web.alerts`. The first
+October12 IMAP check was manual. The later user-authorized session contact
+bridge in `session-mail-contact.md` separately installs reply-only reception;
+it never opens a strategy/execution gate or grants access to provider replies.
 
 The October12 user explicitly requested a test after updating local `.env`.
 Server settings use `DEEPSTOCK_SMTP_*` and `DEEPSTOCK_ALERT_EMAIL_TO`. Manual
@@ -20,14 +20,17 @@ that address differs from the IMAP mailbox, add a verification copy to the
 configured receiving mailbox and disclose that in the result. Do not contact
 other third parties or reuse the old one-time Norgate inquiry approval.
 
-Select IMAP INBOX read-only and use BODY.PEEK to preserve read flags. Fetch only
+For that historical connectivity test, INBOX was read-only with BODY.PEEK and
 bounded recent subject/from headers until the unique test identifier matches;
-then fetch that test's body and verify sender/identifier. Do not retrieve
+then the test body/sender were verified. Do not retrieve
 unrelated message bodies, mark messages read, move/delete mail or expunge.
 Aliyun enterprise IMAP in this check rejected SUBJECT/BODY/TEXT UID searches;
 HEADER Subject search did not match the MIME-encoded test subject. UID SEARCH
 ALL plus decoded bounded headers and a refreshed read-only mailbox view found
 the message. Unsupported search is not evidence of failed mail delivery.
+The later shared-mailbox restriction supersedes this header-sweep fallback:
+only server-filtered replies to stored Deepstock Message-IDs may be inspected.
+Never repeat the old whole-inbox header scan under the current authorization.
 
 Separate SMTP acceptance, confirmed IMAP receipt of the verification copy and
 unconfirmed delivery to an external notification address. Preserve an initial
@@ -40,7 +43,8 @@ The dashboard loads settings at process start. After a `.env` change, reload
 `systemctl --user restart deepstock-dashboard.service` when needed for that
 authorized configuration test, then verify service health and login/logout.
 Do not change notification schedules, live/kill controls or email-test gate
-settings merely because a manual transport check passed.
+settings merely because a manual transport check passed. The subsequently
+explicit30-minute session-contact authorization is separate and documented.
 
 ## October12 verified result
 

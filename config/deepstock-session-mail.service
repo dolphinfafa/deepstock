@@ -1,0 +1,15 @@
+[Unit]
+Description=Deepstock user-authorized session email reminders and replies
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/workspaces/zheyang/deepstock
+ExecStart=/opt/miniconda3/bin/conda run --no-capture-output -n deepstock python -m scripts.run_session_mail_bridge
+Restart=on-failure
+RestartSec=15
+UMask=0077
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target

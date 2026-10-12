@@ -69,6 +69,18 @@ Before changing a file, state a three-point plan in the working update.
 Do not report work as complete until an appropriate verification command or
 test has passed.
 
+### Session Contact
+
+October12 user authorized persistent Deepstock session contact: after30
+minutes without a reply to the latest completed session message, send one
+email to the owner address configured locally, with From display name
+`deepstock`. A Codex reply cancels the pending reminder. Matching email replies
+return to the original session. Read `session-mail-contact.md` for the running
+bridge and its strict shared-mailbox boundaries. This authorization persists
+across turns; it is limited to this contact rule and does not permit browsing
+other agents' messages or sending unrelated mail. Do not install a second
+timer, resend a claimed reminder or duplicate the bridge's mailbox polling.
+
 ### Error Handling
 
 When a command fails, inspect its error output, identify the cause, then apply
@@ -193,13 +205,16 @@ milestone/         Daily work records
 | `DEEPSTOCK_SMTP_FROM` | Alert sender address | Provider-approved sender |
 | `DEEPSTOCK_SMTP_SECURITY` | SMTP transport security | `starttls`, `ssl`, or `plain` |
 | `DEEPSTOCK_ALERT_EMAIL_TO` | Alert recipients | Comma-separated addresses in `.env` |
-| `DEEPSTOCK_IMAP_HOST` / `DEEPSTOCK_IMAP_PORT` / `DEEPSTOCK_IMAP_SECURITY` | Manual mailbox connectivity verification | SSL on993; see `mail-connectivity.md` |
-| `DEEPSTOCK_IMAP_USERNAME` / `DEEPSTOCK_IMAP_PASSWORD` | Optional distinct receiving credentials | Manual verification falls back to SMTP credentials when absent |
+| `DEEPSTOCK_IMAP_HOST` / `DEEPSTOCK_IMAP_PORT` / `DEEPSTOCK_IMAP_SECURITY` | Mailbox transport for session replies | SSL on993; see `session-mail-contact.md` |
+| `DEEPSTOCK_IMAP_USERNAME` / `DEEPSTOCK_IMAP_PASSWORD` | Optional distinct receiving credentials | Falls back to SMTP credentials when absent |
+| `DEEPSTOCK_SESSION_EMAIL_ENABLED` / `DEEPSTOCK_SESSION_EMAIL_TO` | Explicitly authorized30-minute session reminders | Disabled by default; recipient kept in local `.env` |
+| `DEEPSTOCK_CODEX_SOCKET` | Owner-only local Codex control socket | Absolute Unix socket path; no public listener |
 
 After changing mail configuration, validate the encrypted SMTP/IMAP paths and
 reload the long-running dashboard process to read the new `.env`. Mail tests
 require explicit user instructions to send; see `mail-connectivity.md` for
-read-only reception, provider search limitations and receipt boundaries.
+the historical connectivity check and `session-mail-contact.md` for the
+subsequently authorized recurring rule and current mailbox restrictions.
 
 ### Common Commands
 
