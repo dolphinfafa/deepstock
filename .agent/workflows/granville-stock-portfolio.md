@@ -747,3 +747,15 @@ its aggregate publication after hash checks; preserve all cycles/prices/
 ledgers locally. Back up before report import and verify unchanged old
 performance, idempotence/auth/empty restricted previews. Native research,
 backtests, downloads, notifications, orders and schedules have not been run.
+
+### October12 runtime recovery and diagnostic resumption
+
+User reports Smart App Control turned off locally. The initial20008 connection
+was absent; the later retry reached clean quantitative checkouta434f67 and
+Python3.12.14 launched successfully (exit0). No runtime/Conda channel changes
+or terms acceptance performed. Native dependency/regression checks precede the
+retained-input audit. Audit report ID/as-of now reflects actual generation UTC
+date, while all scientific input/evaluation dates and the fixed principal stay.
+October9 failure records remain immutable historical facts; no October9 audit
+completion is claimed. Continue aggregate-only report publication and original
+WBA/long-history evidence gates after actual data reconciliation.

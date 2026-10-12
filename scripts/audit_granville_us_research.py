@@ -193,13 +193,14 @@ def run(args):
     if source["fresh_membership_capture_version"] != history["membership_version"] or source["price_inventory_version"] != history["inventory_version"]:
         raise ValueError("History and original correction input identities differ")
     write_json(args.output_dir / "position_cycles-restricted.json", cycles)
-    publication = {"id": "granville-us-ledger-history-20261009-v1", "strategy_id": cfg["strategy_id"],
-                   "report_type": "granville_us_ledger_history_audit", "as_of_date": "2026-10-09",
+    captured_at = datetime.now(timezone.utc)
+    publication = {"id": f"granville-us-ledger-history-{captured_at:%Y%m%d}-v1", "strategy_id": cfg["strategy_id"],
+                   "report_type": "granville_us_ledger_history_audit", "as_of_date": captured_at.date().isoformat(),
                    "source_run_id": SOURCE_RUN, "source_run_sha256": SOURCE_RUN_SHA,
                    "source_summary_sha256": SOURCE_SUMMARY_SHA,
                    "config": cfg, "code_provenance": code,
                    "cycles_sha256": digest(args.output_dir / "position_cycles-restricted.json"),
-                   "captured_at_utc": datetime.now(timezone.utc).isoformat(),
+                   "captured_at_utc": captured_at.isoformat(),
                    "ledgers": ledgers, "history": history, "diagnostic_only": True,
                    "new_backtest": False, "paper_authorized": False, "live_authorized": False}
     validate_publication(publication, cfg)
