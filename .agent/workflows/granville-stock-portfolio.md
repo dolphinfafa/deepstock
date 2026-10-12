@@ -759,3 +759,62 @@ date, while all scientific input/evaluation dates and the fixed principal stay.
 October9 failure records remain immutable historical facts; no October9 audit
 completion is claimed. Continue aggregate-only report publication and original
 WBA/long-history evidence gates after actual data reconciliation.
+
+### October12 actual audit and aggregate publication completed
+
+Native pip check passed; full regression369 tests327.52s/159 warnings passed
+on a434f67. Date-metadata change3383b33 passed focused34 tests server7.05s /
+quant12.81s, then clean ff-only pulled before actual execution. Prior full
+server369-test/frontend build validation remains applicable; no UI change in
+this recovery. Dedicated Python3.12.14 is restored without environment,
+channel, terms or security-policy changes by the agent.
+
+Retained-input audit completed from clean3383b33 in
+`artifacts/research/granville-us-audits/20261012-v1/` on the quantitative node.
+All10 completed original ledgers reconcile withinUSD0.01,0 diagnostic failures;
+the2 originalWBA blocked cases remain source_blocked. Principal base has365
+closed cycles,5 unclosed positions; time/signal/stop exits231/98/36. Its
+commission/slippage areUSD3001.12/3001.11. Time exits account forUSD3811.00
+of closed-cycle fees; signal exitsUSD1546.18, stopsUSD595.81; unclosed entry
+feesUSD49.24 remain separate.3 gross-positive time-exit cycles become
+nonpositive after fees. These are realized-cycle attributions, not a new
+exit-rule test or a replacement for account return.
+
+Principal actual stress-minus-base cumulative net return is-19.2686 percentage
+points: extra direct costs8.1910pp plus path gross-PnL decline11.0776pp.
+Actual paths differ (365/366 closed cycles); no zero-cost CAGR is inferred.
+2025 base account return-3.8841%;2026 throughSeptember29+34.4313%; full
++29.2099% remains the original result, not newly generated performance.
+
+All1305 historical securities checked over5469 XNYS sessions;262 quote
+lifetimes wholly outside scope. Identity/snapshot verification failures0 and
+unknown membership dates0, but14 effective-member quote gaps remain across
+BIIB4,FRCB2,REGN1,SBNY2,SIVBQ-2024113,SOV-2009011,VRTX1. Pre-member warmup
+gaps156 and other within-life quote gaps12525 remain unchanged. Research
+input statusblocked; no interpolation, lifetime extension or security removal.
+Plan has18 full504/252/252 windows plus177-session tail, after initial252
+warmup.10 full windows have member quote gaps; other windows are coverage
+checked with execution evidence pending, never validated strategy windows.
+330 historical effective-member terminal securities lack separate full
+proceeds evidence; actual holdings were not evaluated. Historical listing,
+sector, actual shares/action/tax/settlement and announcement-time evidence
+remain independent limitations; current2WBA blocks are unchanged.
+
+Only aggregatepublication.json (1785420bytes,
+SHA3234b05f39f742f1d4ac00445253a1722678df7b0ca8f2afff9ffc0e045aa69f)
+transferred and matched both nodes. Prices, daily/trade ledgers and restricted
+cycles remain Windows. Backup
+`artifacts/app/backups/granville-us-ledger-history-20261012-v1/deepstock-20261012-135725.sqlite3`
+passed integrity check before report import. Immutable report
+`granville-us-ledger-history-20261012-v1` links the original US correction;
+contentSHAc4926193e58f5ddeb65cd175b4b96c75046dd229cfb2736079497cd62a6be829.
+First import1 report/1 diagnostic progress; repeat0. No new performance run or
+metric. All33 old runs,230 metric values (historical rows also byte-for-byte),
+38 old reports,8503 input relations and32168 existing data versions preserved.
+Existing5-minute catalog ingestion refreshes catalog row IDs/timestamps; content
+and values compared separately, schedules unchanged. A concurrent auction
+capture adds an unrelated data version; no audit market data was transferred.
+Production HTTPS report/strategy links, exact old reportSHA, login/logout401,
+6 empty restricted raw/clean previews and served frontend bytes passed.
+Research-only,livefalse/killtrue remain. No backtest, download, CN work,
+parameter, broker, order, email or schedule change was performed.
