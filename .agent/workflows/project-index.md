@@ -193,6 +193,13 @@ milestone/         Daily work records
 | `DEEPSTOCK_SMTP_FROM` | Alert sender address | Provider-approved sender |
 | `DEEPSTOCK_SMTP_SECURITY` | SMTP transport security | `starttls`, `ssl`, or `plain` |
 | `DEEPSTOCK_ALERT_EMAIL_TO` | Alert recipients | Comma-separated addresses in `.env` |
+| `DEEPSTOCK_IMAP_HOST` / `DEEPSTOCK_IMAP_PORT` / `DEEPSTOCK_IMAP_SECURITY` | Manual mailbox connectivity verification | SSL on993; see `mail-connectivity.md` |
+| `DEEPSTOCK_IMAP_USERNAME` / `DEEPSTOCK_IMAP_PASSWORD` | Optional distinct receiving credentials | Manual verification falls back to SMTP credentials when absent |
+
+After changing mail configuration, validate the encrypted SMTP/IMAP paths and
+reload the long-running dashboard process to read the new `.env`. Mail tests
+require explicit user instructions to send; see `mail-connectivity.md` for
+read-only reception, provider search limitations and receipt boundaries.
 
 ### Common Commands
 
