@@ -180,13 +180,18 @@ FRPC connects to `frps.yios.cn:443` and registers remote port20008. Use the
 FRPS SSH jump host so the target loopback address is reached from FRPS:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 -J root@frps.yios.cn \
+ssh -o BatchMode=yes -o ConnectTimeout=8 -o IdentitiesOnly=yes \
+  -o 'ProxyCommand=ssh -o BatchMode=yes -o ConnectTimeout=8 -o IdentitiesOnly=yes -i /home/zheyang/.ssh/lq_1101 -W %h:%p root@frps.yios.cn' \
   -p 20008 -i /home/zheyang/.ssh/lq_1101 admin@127.0.0.1 'hostname'
 ```
 
-The target `-i` option does not configure the jump host's identity. Jump-host
-root credentials must be available separately in local SSH config/ssh-agent.
-Keep private keys local. A failure at `root@frps.yios.cn` is a jump-host
+Both jump-host root and Windows admin logins were verified with the existing
+local `/home/zheyang/.ssh/lq_1101` private key on October13. ProxyCommand above
+explicitly supplies it for each connection, without changing SSH config. If
+using `-J root@frps.yios.cn` instead, configure that host's IdentityFile in
+local SSH config or load it in ssh-agent: the target `-i` option alone does not
+configure the jump host's identity. Keep private keys local. A failure at
+`root@frps.yios.cn` is a jump-host
 authentication failure; it does not test the Windows admin account or prove
 FRPC offline. Direct loopback on xnous-dev-01 and the unverified dashboard
 hostname are not established FRP endpoints.
