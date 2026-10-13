@@ -52,13 +52,35 @@ configure_database(_TEST_DATABASE_URL)
 
 
 @pytest.fixture(scope="module", autouse=True)
-def initialized_database() -> None:
-    config = Config(str(settings.project_root / "alembic.ini"))
+def initialized_database():
+    # Web tests use a disposable database and must not ingest a machine's real
+    # licensed inventory/publications without their version-matched source runs.
+    # Copy only tracked static inputs; runtime importers retain all production gates.
+    source_root = settings.project_root
+    input_root = _TEST_DIR / 'inputs'
+    (input_root / 'config').mkdir(parents=True, exist_ok=True)
+    for source in (source_root / 'config').glob('*.json'):
+        shutil.copy2(source, input_root / 'config' / source.name)
+    catalog = json.loads((source_root / 'config/strategy_catalog.json').read_text(encoding='utf-8'))
+    for strategy in catalog['strategies']:
+        relative = strategy['spec_path']
+        destination = input_root / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_root / relative, destination)
+    isolated_settings = replace(settings, project_root=input_root)
+    patches = pytest.MonkeyPatch()
+    patches.setattr(importlib.import_module('deepstock.web.app'), 'settings', isolated_settings)
+    patches.setattr(importlib.import_module('deepstock.web.ingestion'), 'settings', isolated_settings)
+    config = Config(str(source_root / "alembic.ini"))
     config.set_main_option("sqlalchemy.url", _TEST_DATABASE_URL)
     command.upgrade(config, "head")
-    with SessionLocal() as session:
-        ensure_bootstrap_user(session)
-        ingest_all(session)
+    try:
+        with SessionLocal() as session:
+            ensure_bootstrap_user(session)
+            ingest_all(session)
+        yield
+    finally:
+        patches.undo()
 
 
 @pytest.fixture()
