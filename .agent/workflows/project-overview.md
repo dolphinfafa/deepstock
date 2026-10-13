@@ -198,7 +198,13 @@ supports a kill switch. It has no broker dependency and never submits an order;
 the laptop is the only paper TWS connection point.
 
 The active Windows data and execution node is `DESKTOP-ORNLESD` (the
-quantitative computer), reachable through SSH FRP port 20008. It runs Norgate
+quantitative computer), reachable through SSH FRP port 20008. From
+`xnous-dev-01`, use `-J root@frps.yios.cn` to reach `admin@127.0.0.1:20008`
+on the FRPS host; the target identity file is `/home/zheyang/.ssh/lq_1101`.
+FRPC's control endpoint is `frps.yios.cn:443`. The jump-host root identity must
+be configured separately; see project-index.md. The October13 corrected-route
+attempt reached the jump host but failed its root authentication, leaving
+Windows authentication and native validation pending. It runs Norgate
 Data Updater and TWS Paper locally. TWS Paper API connectivity is verified on
 `127.0.0.1:7497` with the order-disabled read-only probe; the probe returned
 server time, account summary, positions, and open-order completion without

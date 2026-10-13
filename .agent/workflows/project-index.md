@@ -175,6 +175,22 @@ is `D:\\workspace\\deepstock`, and its dedicated Python environment is
 `D:\\workspace\\conda-envs\\deepstock`. It is not an editing workspace. Never
 modify its checked-out project files directly.
 
+The October13 user correction establishes the SSH route from `xnous-dev-01`:
+FRPC connects to `frps.yios.cn:443` and registers remote port20008. Use the
+FRPS SSH jump host so the target loopback address is reached from FRPS:
+
+```bash
+ssh -o BatchMode=yes -o ConnectTimeout=8 -J root@frps.yios.cn \
+  -p 20008 -i /home/zheyang/.ssh/lq_1101 admin@127.0.0.1 'hostname'
+```
+
+The target `-i` option does not configure the jump host's identity. Jump-host
+root credentials must be available separately in local SSH config/ssh-agent.
+Keep private keys local. A failure at `root@frps.yios.cn` is a jump-host
+authentication failure; it does not test the Windows admin account or prove
+FRPC offline. Direct loopback on xnous-dev-01 and the unverified dashboard
+hostname are not established FRP endpoints.
+
 `DESKTOP-S31222F` (the study computer) is retired from scheduled Deepstock and
 US-market work. Its Deepstock tasks are disabled; its FRP startup task remains
 enabled for administration and historical-data recovery.
