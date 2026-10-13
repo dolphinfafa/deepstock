@@ -258,3 +258,20 @@ def test_preflight_does_not_create_plans_or_fills(inputs, tmp_path, monkeypatch)
     assert cli.run(SimpleNamespace(publish_only=False, preflight=True), tmp_path) == 0
     value = json.loads((tmp_path / 'latest.json').read_text(encoding='utf-8'))
     assert value['status'] == 'preflight_ready' and value['planned_sessions'] == value['shadow_sessions'] == 0
+
+
+def test_native_schedule_starts_next_morning_and_uses_fixed_observation(tmp_path):
+    from datetime import timedelta
+    from pathlib import Path
+    import xml.etree.ElementTree as ET
+    from scripts.install_granville_shadow_task import NS, task_xml
+    now = datetime(2026, 10, 13, 23, 58, tzinfo=timezone(timedelta(hours=8)))
+    value = ET.fromstring(task_xml(tmp_path, Path('python.exe'), 'HOST\\admin', now))
+    def text(path):
+        return value.find(path, {'t': NS}).text
+    assert text('t:Triggers/t:CalendarTrigger/t:StartBoundary') == '2026-10-14T08:10:00+08:00'
+    assert text('t:Actions/t:Exec/t:Arguments') == '-m scripts.run_scheduled_task granville-shadow'
+    assert text('t:Principals/t:Principal/t:LogonType') == 'InteractiveToken'
+    assert text('t:Settings/t:MultipleInstancesPolicy') == 'IgnoreNew'
+    with pytest.raises(ValueError, match='China timezone'):
+        task_xml(tmp_path, Path('python.exe'), 'HOST\\admin', now.astimezone(timezone.utc))

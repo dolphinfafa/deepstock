@@ -16,8 +16,13 @@ saved capacity. No same-open reentry or forced daily reranking.
 
 Windows daily `Deepstock_Granville_Shadow` at08:10China runs dedicated Python
 through `-m scripts.run_scheduled_task granville-shadow`.07:30defensive and
-07:45ADX actions/times stay unchanged. Serialize executions and require clean
-committed source before capture. Save decisions after the completed XNYS close
+07:45ADX actions/times stay unchanged.
+`python -m scripts.install_granville_shadow_task` uses native schtasks XML,
+backs up an existing same-name task and starts at the next08:10. This avoids
+depending on disabled PowerShell script-file execution; no execution-policy
+change. The admin interactive session is required, matching existing observers.
+Serialize executions and require clean committed source before capture.
+Save decisions after the completed XNYS close
 and before next open; late initial runs publish missed_decision_cutoff with
 zero plans/settlements. `--preflight` checks native data without plans/fills.
 
