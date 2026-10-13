@@ -49,7 +49,7 @@ def test_granville_pause_is_persisted_without_pausing_peer_strategies():
     for strategy in ["arc", "csi300_opening_auction", "adaptive_defensive_etf"]:
         assert research_pause(strategy, ROOT) is None
         require_active_research(strategy, ROOT)
-    catalog = json.loads((ROOT / "config/strategy_catalog.json").read_text())
+    catalog = json.loads((ROOT / "config/strategy_catalog.json").read_text(encoding="utf-8"))
     entry = next(s for s in catalog["strategies"] if s["id"] == "granville_stock_portfolio")
     assert entry["research_status"] == paused["status"]
     assert entry["pause_reason"] == paused["reason"]
@@ -81,13 +81,13 @@ def test_explicit_resumption_requires_registry_change(tmp_path):
     registry.parent.mkdir()
     entry = {"strategy_id": "granville_stock_portfolio", "research_status": "paused_research_review",
              "pause_reason": "synthetic explicit pause"}
-    registry.write_text(json.dumps({"strategies": [entry]}))
+    registry.write_text(json.dumps({"strategies": [entry]}), encoding="utf-8")
     with pytest.raises(ValueError, match="synthetic explicit pause"):
         require_active_research(entry["strategy_id"], tmp_path)
     # Data arriving cannot clear a persisted pause.
-    (tmp_path / "new-evidence.json").write_text("{}")
+    (tmp_path / "new-evidence.json").write_text("{}", encoding="utf-8")
     with pytest.raises(ValueError, match="synthetic explicit pause"):
         require_active_research(entry["strategy_id"], tmp_path)
     entry.pop("research_status")
-    registry.write_text(json.dumps({"strategies": [entry]}))
+    registry.write_text(json.dumps({"strategies": [entry]}), encoding="utf-8")
     require_active_research(entry["strategy_id"], tmp_path)
