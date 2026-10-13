@@ -139,3 +139,11 @@ reminder exactly. Message-ID lookup located one UID; reply-header searches
 returned zero despite the fetched reply's correct headers. Only that verified
 owner reply body was read. No shared-inbox header sweep occurred. The existing
 task adopts this reply so it is not injected a second time into Codex.
+
+The October 13 result was sent once at 08:28:12 CST, along that verified owner
+reply's thread, with SMTP acceptance recorded privately. Final server regression
+passed 414 tests; quantitative regression passed 45 with 2 Unix-only skips.
+Existing service restarted successfully. The actual recovery and result send
+are verified; discovery of the next newly tagged reply and automatic new-turn
+routing still require a live owner reply. Do not claim those were exercised by
+this deliberate adoption of the existing task.
