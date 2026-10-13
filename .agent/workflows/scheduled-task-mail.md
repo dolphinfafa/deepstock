@@ -52,7 +52,9 @@ From/Reply-To display name remains `deepstock`. Each result has a separate
 subject and unpredictable token. Contact state stores its originating session,
 Message-ID and durable claim before SMTP. A crash or ambiguous SMTP outcome
 never automatically resends. Replies follow the existing strict owner/nearest
-parent checks, with no shared-mailbox scans. Original session reminders and
+parent checks. The later October13 authorization permits local read-only
+all-folder header scans; only confirmed unprocessed Deepstock replies download
+bodies, as documented in session-mail-contact.md. Original session reminders and
 email-origin completion results retain their existing rules.
 
 Before deployment, back up private contact state and crontab. Follow server
@@ -73,5 +75,6 @@ timing fields unchanged, Windows action/time retained. The actual09:38 fill
 check (nothing pending, exit0) produced one separate SMTP-accepted message
 at09:38:06CST, while successful high-frequency ingestion remained quiet.
 Production node auth/schema/login/logout/restricted-preview and original
-Granville report/metric invariance checks passed. Provider-side automatic
-reply discovery still fails and is explicitly reported as unreliable.
+Granville report/metric invariance checks passed. At that deployment,
+provider-side automatic reply discovery still failed and was explicitly reported as unreliable. The later incremental-discovery upgrade
+replaces provider reply/subject searching with local UID-based classification.

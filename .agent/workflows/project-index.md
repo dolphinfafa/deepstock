@@ -82,16 +82,22 @@ other agents' messages or sending unrelated mail. Do not install a second
 timer, resend a claimed reminder or duplicate the bridge's mailbox polling.
 Verified October13 owner email adds immediate email delivery of completed
 email-origin tasks; Codex-origin unanswered messages keep the30-minute rule.
-The shared-mailbox boundary remains: discover by our stored association IDs,
-our mailed unpredictable subject token, or an owner-supplied exact reply ID;
-validate owner/nearest parent before body fetch. Never use a generic subject,
-sender/time scan or browse other agents' traffic.
+The subsequent October13 incremental-discovery plan authorizes read-only
+headers in every selectable shared-mailbox folder, including spam/deleted mail.
+Use per-folder UIDVALIDITY/UID cursors and local classification; fetch bodies
+only for confirmed, unprocessed owner replies linked to our stored outbound
+IDs/verified chains. Unknown parents, subject-only matches and cross-session
+conflicts remain pending. Other agents' bodies never enter this flow. Receiving
+continues while Codex is offline, and archived/deleted sessions stay suspended.
+This supersedes the former narrow server-side search-only restriction.
 The second verified October13 reply adds separate scheduled-task result
 emails. Read `scheduled-task-mail.md`: the provisional `results` scope
 suppresses only successful high-frequency collection/ingestion, pending owner
 preference; task times/parameters/quotas stay fixed. Only aggregate receipts
-cross nodes. The provider has now missed a real tagged reply too: automatic
-reply discovery is degraded, not verified healthy; exact owner IDs still work.
+cross nodes. The provider missed real reply headers and tagged subject searches;
+local UID scanning now replaces that discovery mechanism. Preserve the two previously
+adopted replies' deduplication records. Live new-turn validation must use a new
+actual reply, never replay an already handled task.
 
 ### Error Handling
 

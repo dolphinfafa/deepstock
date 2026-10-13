@@ -9,7 +9,7 @@ import signal
 import time
 
 from deepstock.codex_session_client import CodexClient
-from deepstock.session_mail import ContactConfig, send_contact, state_store, synchronize, tick
+from deepstock.session_mail import ContactConfig, receive_replies, send_contact, state_store, synchronize, tick
 from deepstock.scheduled_mail import notify_pending
 
 
@@ -32,6 +32,7 @@ def main():
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     while not stopping:
+        cycle_started = time.monotonic()
         scheduled_sent = 0
         scheduled_error = None
         if not args.check and os.getenv('DEEPSTOCK_SCHEDULED_EMAIL_ENABLED', '').lower() == 'true':
@@ -43,16 +44,20 @@ def main():
                     scope=os.getenv('DEEPSTOCK_SCHEDULED_EMAIL_SCOPE', 'results'))
             except Exception as error:
                 scheduled_error = type(error).__name__
+        # Connect to Codex only after the durable receiving queue is updated.
+        result = {} if args.check else receive_replies(db, config)
         try:
             with CodexClient(socket_path) as codex:
                 if args.check:
                     synchronize(db, config, codex)
                     result = {'status': 'checked', 'smtp_called': False, 'imap_called': False}
                 else:
-                    result = {'status': 'ok', **tick(db, config, codex)}
+                    result.update(status='ok', **tick(db, config, codex, poll=False))
         except Exception as error:
             # Exception text can contain provider credentials or session data.
-            result = {'status': 'deferred', 'error_type': type(error).__name__}
+            result.update(status='deferred', error_type=type(error).__name__)
+        if result.get('mail_error_type') or result.get('mail_scan_errors') or result.get('mail_body_retries'):
+            result['status'] = 'deferred'
         result['at_utc'] = time.time()
         result['scheduled_sent'] = scheduled_sent
         if scheduled_error:
@@ -63,10 +68,8 @@ def main():
         print(json.dumps(result), flush=True)
         if args.once or args.check:
             return 0 if result['status'] in ('checked', 'ok') else 1
-        for _ in range(30):
-            if stopping:
-                break
-            time.sleep(1)
+        while not stopping and time.monotonic() - cycle_started < 30:
+            time.sleep(max(0, min(1, 30 - (time.monotonic() - cycle_started))))
     db.close()
     return 0
 

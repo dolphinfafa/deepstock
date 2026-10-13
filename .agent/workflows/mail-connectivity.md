@@ -28,9 +28,12 @@ Aliyun enterprise IMAP in this check rejected SUBJECT/BODY/TEXT UID searches;
 HEADER Subject search did not match the MIME-encoded test subject. UID SEARCH
 ALL plus decoded bounded headers and a refreshed read-only mailbox view found
 the message. Unsupported search is not evidence of failed mail delivery.
-The later shared-mailbox restriction supersedes this header-sweep fallback:
-only server-filtered replies to stored Deepstock Message-IDs may be inspected.
-Never repeat the old whole-inbox header scan under the current authorization.
+The initial shared-mailbox restriction later superseded this fallback. The
+subsequent October13 incremental-discovery plan now explicitly permits
+read-only local header classification in all folders, with body retrieval
+restricted to confirmed unprocessed Deepstock owner replies. See
+session-mail-contact.md for the current authorization and cursor-based worker;
+the historical manual connectivity test is not a second receiving service.
 
 Separate SMTP acceptance, confirmed IMAP receipt of the verification copy and
 unconfirmed delivery to an external notification address. Preserve an initial

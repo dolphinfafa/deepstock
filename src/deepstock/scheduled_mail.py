@@ -156,7 +156,7 @@ def summarize(result: TaskResult):
 def notify_pending(db, config, sender, *, thread_id: str, scope='results', now=None):
     """Claim in contact state before SMTP; crashes/ambiguous sends never replay."""
     from email.utils import make_msgid
-    from deepstock.session_mail import search_token
+    from deepstock.session_mail import contact_text, search_token
     if scope not in ('results', 'all'):
         raise ValueError('Invalid scheduled email scope')
     now = datetime.now(timezone.utc).timestamp() if now is None else now
@@ -180,6 +180,8 @@ def notify_pending(db, config, sender, *, thread_id: str, scope='results', now=N
                     (result.event_id, mid, thread_id, result.task_id, text, 'sending', now))
                 if claim.rowcount:
                     db.execute('INSERT INTO message_tokens VALUES (?, ?)', (mid, search_token(mid)))
+                    db.execute('INSERT INTO outbound_text VALUES (?, ?)',
+                               (mid, contact_text({'thread_id': thread_id, 'final_text': text}, task_label=TASKS[result.task_id])))
                     db.commit()
                     try:
                         sender(config, {'thread_id': thread_id, 'final_text': text}, mid,

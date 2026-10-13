@@ -146,37 +146,75 @@ def test_from_display_reply_to_and_owner_only_smtp(monkeypatch, config):
 
 
 class Mailbox:
-    def __init__(self, values, searched=None, oversized=()):
+    def __init__(self, values, searched=None, oversized=(), folders=None):
         self.values = values
-        self.searched = list(values) if searched is None else searched
         self.calls = []
         self.body_fetches = []
+        self.header_fetches = []
         self.oversized = oversized
+        self.folders = folders or {'"INBOX"': values}
+        self.validities = {name: 1 for name in self.folders}
+        self.current = '"INBOX"'
+        self.fail_headers = set()
+        self.fail_bodies = set()
+        self.logged_out = False
+
+    def list(self):
+        self.calls.append(('list', ()))
+        return 'OK', [b'(\\HasNoChildren) "/" ' + name.encode() for name in self.folders]
+
+    def select(self, folder, readonly=False):
+        assert readonly
+        assert folder in self.folders
+        self.current = folder
+        self.calls.append(('select', (folder, readonly)))
+        return 'OK', [str(len(self.folders[folder])).encode()]
+
+    def response(self, field):
+        if field == 'UIDVALIDITY':
+            return field, [str(self.validities[self.current]).encode()]
+        assert field == 'UIDNEXT'
+        return field, [str(max([int(v) for v in self.folders[self.current]] or [0]) + 1).encode()]
+
+    def logout(self):
+        self.logged_out = True
 
     def uid(self, operation, *args):
         self.calls.append((operation, args))
+        values = self.folders[self.current]
         if operation == 'search':
-            assert args[1] == 'HEADER'
-            assert args[2] in ('In-Reply-To', 'References', 'Subject', 'Message-ID')
-            if args[2] in ('In-Reply-To', 'References'):
-                assert args[3].startswith('"<deepstock-')
-            return 'OK', [b' '.join(self.searched)]
-        uid, fields = args
-        assert 'BODY.PEEK' in fields
-        raw = self.values[uid]
-        if 'HEADER.FIELDS' in fields:
-            header = raw.split(b'\n\n', 1)[0] + b'\n\n'
-            size = 999999 if uid in self.oversized else len(raw)
-            return 'OK', [(f'1 (RFC822.SIZE {size} BODY[HEADER] {{100}}'.encode(), header), b')']
-        self.body_fetches.append(uid)
-        return 'OK', [(b'1 (BODY[] {100}', raw), b')']
+            assert args[:2] == (None, 'UID')
+            lower, upper = map(int, args[2].split(':'))
+            return 'OK', [b' '.join(uid for uid in values if lower <= int(uid) <= upper)]
+        assert operation == 'fetch'
+        requested, fields = args
+        assert 'BODY.PEEK' in fields and 'UID' in fields
+        results = []
+        for uid in requested.encode().split(b','):
+            if uid not in values:
+                continue
+            raw = values[uid]
+            if 'HEADER.FIELDS' in fields:
+                if (self.current,uid) in self.fail_headers:
+                    return 'NO', []
+                self.header_fetches.append((self.current,uid))
+                header = raw.split(b'\n\n', 1)[0] + b'\n\n'
+                size = 999999 if uid in self.oversized else len(raw)
+                results.append((f'1 (UID {int(uid)} RFC822.SIZE {size} BODY[HEADER] {{100}}'.encode(), header))
+            else:
+                self.body_fetches.append(uid)
+                if (self.current,uid) in self.fail_bodies:
+                    return 'NO', []
+                results.append((f'1 (UID {int(uid)} BODY[] {{100}}'.encode(), raw))
+            results.append(b')')
+        return 'OK', results
 
 
 def test_shared_mailbox_only_matching_reply_body_read_and_deduplicated(db, config):
     prepare(db, config)
-    mailbox = Mailbox({b'1': mail(reply_to='<another-agent@example.test>'),
-                       b'2': mail(sender='other@example.test>'),
-                       b'3': mail(), b'4': mail(reply_to=None)})
+    mailbox = Mailbox({b'1': mail(reply_to='<another-agent@example.test>', message_id='<other1@example.test>'),
+                       b'2': mail(sender='other@example.test>', message_id='<other2@example.test>'),
+                       b'3': mail(), b'4': mail(reply_to=None, message_id='<other4@example.test>')})
     assert poll_replies(db, config, mailbox) == 1
     assert mailbox.body_fetches == [b'3']
     assert poll_replies(db, config, mailbox) == 0
@@ -201,14 +239,17 @@ def test_oversized_message_body_not_fetched(db, config):
     assert mailbox.body_fetches == []
 
 
-def test_imap_search_failure_has_no_broad_fallback(db, config):
+def test_uid_search_failure_is_visible_without_advancing_cursor(db, config):
     prepare(db, config)
-    class Unsupported:
+    class Unsupported(Mailbox):
         def uid(self, operation, *args):
             assert operation == 'search'
             return 'BAD', [b'Unsupported search']
-    with pytest.raises(RuntimeError, match='broad scan forbidden'):
-        poll_replies(db, config, Unsupported())
+    mailbox = Unsupported({b'3': mail()})
+    assert poll_replies(db, config, mailbox) == 0
+    saved = db.execute('SELECT last_uid,last_error FROM mail_folders').fetchone()
+    assert saved['last_uid'] == 0 and saved['last_error'] == 'RuntimeError'
+    assert mailbox.body_fetches == []
 
 
 def test_direct_reply_has_priority_over_old_reference():
@@ -270,23 +311,13 @@ def test_archived_session_not_resumed_by_email(db, config):
     assert codex.calls == []
 
 
-class UnindexedReplyHeaders(Mailbox):
-    def uid(self, operation, *args):
-        if operation == 'search' and args[2] in ('In-Reply-To', 'References'):
-            self.calls.append((operation, args))
-            return 'OK', [b'']
-        return super().uid(operation, *args)
-
-
-def test_owner_supplied_exact_identity_recovers_legacy_reply_once(db, config):
+def test_history_recovers_legacy_reply_without_owner_hint_or_header_search(db, config):
     prepare(db, config)
-    register_reply_hint(db, '<owner-reply@example.test>', '<deepstock-a@example.test>')
-    mailbox = UnindexedReplyHeaders({b'3': mail()})
+    mailbox = Mailbox({b'3': mail()})
     assert poll_replies(db, config, mailbox) == 1
     assert poll_replies(db, config, mailbox) == 0
     assert mailbox.body_fetches == [b'3']
-    assert any(args[2:] == ('Message-ID', '"<owner-reply@example.test>"')
-               for op, args in mailbox.calls if op == 'search')
+    assert all(args[1] == 'UID' for op,args in mailbox.calls if op == 'search')
 
 
 def test_unknown_parent_and_search_injection_not_registered(db):
@@ -305,17 +336,11 @@ def test_random_subject_candidates_still_require_owner_and_exact_nearest_parent(
     mid = '<deepstock-a@example.test>'
     db.execute('INSERT INTO message_tokens VALUES (?, ?)', (mid, search_token(mid)))
     db.commit()
-    mailbox = UnindexedReplyHeaders({b'3': mail(**value)})
+    mailbox = Mailbox({b'3': mail(**value)})
     assert poll_replies(db, config, mailbox) == expected
     assert mailbox.body_fetches == ([b'3'] if expected else [])
-    assert any(args[2:] == ('Subject', f'"{search_token(mid)}"') for op, args in mailbox.calls if op == 'search')
+    assert all(args[1] == 'UID' for op, args in mailbox.calls if op == 'search')
 
-
-def test_legacy_messages_do_not_acquire_unmailed_subject_tokens(db, config):
-    prepare(db, config)
-    mailbox = UnindexedReplyHeaders({b'3': mail()})
-    assert poll_replies(db, config, mailbox) == 0
-    assert not any(args[2] == 'Subject' for op, args in mailbox.calls if op == 'search')
 
 
 def test_active_codex_turn_defers_reply_without_claim(db, config):
@@ -367,14 +392,6 @@ def test_reply_to_our_completion_is_accepted(db, config):
     mid = db.execute('SELECT message_id FROM completions').fetchone()[0]
     value = mail(reply_to=mid, refs='<deepstock-a@example.test>', message_id='<owner-second@example.test>')
     mailbox = Mailbox({b'7': value})
-    # This fake transport allows completion IDs in association searches.
-    original = mailbox.uid
-    def accept_completion(operation, *args):
-        if operation == 'search':
-            mailbox.calls.append((operation, args))
-            return 'OK', [b'7']
-        return original(operation, *args)
-    mailbox.uid = accept_completion
     assert poll_replies(db, config, mailbox) == 1
     assert db.execute('SELECT count(*) FROM replies').fetchone()[0] == 2
 
@@ -396,20 +413,6 @@ def test_completion_formatter_keeps_ascii_token_and_standard_reply_headers(monke
     assert search_token(mid).encode() in sent[0].as_bytes().split(b'\n\n')[0]
     assert sent[0]['From'] == 'deepstock <agents@example.test>'
 
-
-def test_unsupported_reply_header_search_uses_only_saved_random_token(db, config):
-    prepare(db, config)
-    mid = '<deepstock-a@example.test>'
-    db.execute('INSERT INTO message_tokens VALUES (?, ?)', (mid, search_token(mid)))
-    db.commit()
-    class Unsupported(Mailbox):
-        def uid(self, operation, *args):
-            if operation == 'search' and args[2] in ('In-Reply-To', 'References'):
-                return 'BAD', []
-            return super().uid(operation, *args)
-    mailbox = Unsupported({b'3': mail()})
-    assert poll_replies(db, config, mailbox) == 1
-    assert mailbox.body_fetches == [b'3']
 
 
 def test_completion_turn_found_beyond_latest_page(db, config):

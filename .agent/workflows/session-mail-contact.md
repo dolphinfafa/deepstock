@@ -1,168 +1,129 @@
 # Deepstock session contact
 
-The October 12 user explicitly authorized a persistent rule: when they have not
-replied to the latest Deepstock session message for 30 minutes, email their
-configured owner address, identifying the sender as `deepstock`. They may
-reply through Codex or email. The sender mailbox is shared with other agents;
-only replies to this assistant's own emails may be inspected. This consent
-persists across turns and supersedes the earlier test-only email scope for
-this specific reminder/reply flow. It does not authorize unrelated sends.
-The verified October 13 owner reply adds: Codex-origin messages retain the
-30-minute unanswered reminder; an email-origin task receives its completed
-result immediately by email, once, in the same thread.
-The second verified reply authorizes separate scheduled-task result messages;
-see [scheduled-task-mail.md](scheduled-task-mail.md) for receipt scope and
-deployment. Their replies obey this same mailbox boundary.
+The October 12 authorization enables one reminder after 30 minutes without a
+reply to the latest completed Deepstock session message. The sender display
+name is `deepstock`, and the recipient is the locally configured owner.
+The verified October 13 replies add immediate results for email-origin tasks
+and separate scheduled-task results; see [scheduled-task-mail.md](scheduled-task-mail.md).
 
-## Behavior
+The subsequent October 13 incremental-discovery plan explicitly authorizes
+read-only access to every selectable shared-mailbox folder, including spam and
+deleted mail. This supersedes the former INBOX-only association/token-search
+restriction. Other agents' messages receive local header classification only.
+Only confirmed, unprocessed Deepstock owner replies have their bodies fetched
+or their text submitted to the model. Mail and credentials remain server-only.
 
-The server-only `deepstock-session-mail.service` polls the existing local Codex
-control socket every 30 seconds. Only primary CLI/VSCode sessions with cwd
-exactly this Deepstock workspace are considered; child agents, other projects
-and ephemeral sessions are excluded. The latest completed turn's final
-assistant message starts the 30-minute timer. Progress updates and active turns
-do not create reminders. Only messages completed after bridge activation are
-eligible, so old history is never emailed retroactively.
+## Receiving and attribution
 
-One email is submitted per completed turn, addressed only to
-`DEEPSTOCK_SESSION_EMAIL_TO`. Both From and Reply-To identify `deepstock` and
-the locally configured sender mailbox. Email contains the session identifier
-and the latest final message (bounded to 6000 characters), with no transcript,
-tool outputs or attachments. The newest Codex user turn cancels the old timer;
-a newly completed assistant turn gets a new timer. No reply means one reminder,
-not repeated 30-minute emails. SMTP claim is committed before submission;
-timeouts/crashes never automatically resubmit an ambiguous send. New outbound
-messages include a stored unpredictable ASCII `ds-...` subject token tied to
-their Message-ID, because this provider does not reliably search reply headers.
+The existing `deepstock-session-mail.service` checks mail every 30 seconds,
+independently of Codex availability. It lists all folders and selects each with
+IMAP EXAMINE (readonly=True). It fetches minimal From, Message-ID, In-Reply-To,
+References and Subject headers plus UID and size using BODY.PEEK. No messages
+are marked read, moved, deleted or expunged. Subjects are only a local hint;
+full subjects and other senders' addresses are not saved in the classification
+store. Reply-header and subject search indexes are no longer required.
 
-Email-origin turn IDs are persisted separately. After the corresponding turn
-completes, its final answer is sent at the next poll (no 30-minute wait), with
-In-Reply-To pointing to the owner reply and References retaining the chain.
-It does not also get a delayed reminder. Completed email turns are located
-even if newer Codex turns precede them. Busy sessions queue incoming email
-until idle; they are not interrupted. Completion SMTP claims use the same
-no-automatic-retry rule. Replies to completion emails are also eligible.
+Initial history is scanned in batches of 100 headers per folder per cycle.
+Each folder has a durable UIDVALIDITY, UID high-water mark and history boundary.
+An explicit bounded UID range discovers later arrivals; a successful batch
+commits its header records and cursor together. Interruptions resume from the
+last committed batch. UIDVALIDITY changes reset that folder's cursor and
+locations; Message-ID deduplication survives. Copied/moved messages share a
+single classification and body-processing record across folders. Missing
+Message-IDs remain pending; conflicting identities are quarantined.
 
-Replies are routed to the exact original session using `turn/start` and a
-stable client message identifier. This uses the existing model/permissions;
-the bridge never overrides them. A previously unloaded active session may be
-resumed, but archived/deleted sessions are left suspended. Email text is
-ordinary user input, with quoted/forwarded material carrying no higher
-instruction authority. Sending and RPC submission ambiguity remain visible in
-local state and are never silently replayed. Live gates/order governance remain.
+Routing starts with outbound reminder/completion/scheduled Message-IDs saved
+before SMTP and already confirmed owner reply chains. Validate exactly one
+From address equal to DEEPSTOCK_SESSION_EMAIL_TO. Prefer In-Reply-To; only when
+that header is absent use the nearest (last) References parent. All direct
+parents must be confirmed. Multiple confirmed links pointing to different
+sessions remain pending even if one is a direct parent. A historical Deepstock
+reference cannot override an unconfirmed nearest parent or another agent's
+reply. Subject-only matches, unknown parents, invalid identities and cycles
+retain reasons for local review. Owner hints never bypass header validation.
 
-## Shared-mailbox restriction
+Out-of-order chains are resolved from stored headers when their parents become
+known, without repeated header/body downloads. Initial history recovers only
+unprocessed replies with this explicit stored Deepstock association evidence.
+Confirmed bodies are bounded to 256 KiB and resulting text to 24,000 characters.
+Full-message identity is checked again after BODY.PEEK retrieval. Body failures
+retain retry state with a 60-second backoff; queued/rejected bodies are not read
+again. An exact repeat of sufficiently substantial quoted parent text is
+removed using saved outbound/reply text. New and inline replies, unquoted text
+and uncertain quotations survive; HTML is converted without executing it.
 
-- Generate an unpredictable Message-ID for each Deepstock reminder and retain
-  the exact originating session/turn mapping before SMTP.
-- Select INBOX read-only. Candidate discovery is limited to server-side HEADER
-  In-Reply-To/References matches for stored outbound IDs, the exact unpredictable
-  subject token actually mailed for that outbound message, or an exact reply
-  Message-ID supplied by the owner and pinned to an existing outbound parent.
-  A generic subject, sender or time search is forbidden, as are ALL, header
-  sweeps, other-folder scans and full-inbox downloads. Subject tokens never
-  substitute for reply association: owner and nearest-parent validation still
-  precede every body fetch. Legacy mail has no retroactively invented token.
-- Fetch only the matching candidate's minimal reply/sender headers and size;
-  verify the single configured owner sender and the nearest reply parent.
-  A reply directed to another agent is rejected even if our ID appears earlier
-  in its References. Fetch BODY.PEEK only after this check succeeds, then
-  revalidate the complete message's identity. No marking, moving or deletion.
-- Read no other messages' bodies or attachments. Do not inspect provider
-  support mail or another agent's traffic under this authorization. Plain-text
-  and HTML user replies are converted to bounded text without executing HTML.
-- Unsupported reply-header search may use only the narrow identities above;
-  if all authorized searches fail, collection stops. No broad fallback.
-  Repeated UID appearances/message identifiers are deduplicated.
+## Queue and existing sending rules
 
-## Configuration and operation
+Confirmed replies first enter the private SQLite queue. Codex being offline
+never prevents receiving. Busy/error/unavailable sessions preserve the queue;
+archived/deleted sessions remain suspended. Only an eligible idle primary
+CLI/VSCode session in this exact workspace can receive a reply. An unloaded
+session is resumed and its status rechecked. At most one email turn starts per
+session per cycle, in queue order, through the existing turn/start interface.
+The stable client message ID is derived from the reply Message-ID. Model and
+permission settings are inherited. Quoted/forwarded email carries no system or
+developer authority. A submission claim is committed before RPC; a crash,
+disconnect or ambiguous response never triggers an automatic replay.
 
-All account addresses/credentials stay in local `.env`, not Git. Existing
-`DEEPSTOCK_SMTP_*` values supply encrypted SMTP; `DEEPSTOCK_IMAP_*` values
-supply encrypted receiving, optionally using separate credentials. Defaults
-fall back to SMTP credentials. `DEEPSTOCK_SESSION_EMAIL_ENABLED=true` and
-`DEEPSTOCK_SESSION_EMAIL_TO` are the explicit local activation/recipient.
-`DEEPSTOCK_CODEX_SOCKET` pins the existing current-user Unix control socket;
-no new public listener or OpenAI API key is introduced.
+The latest completed post-activation Codex-origin final message starts the
+30-minute timer; a later Codex turn cancels it. Each turn gets at most one
+reminder, not repeating mail every 30 minutes. Email-origin completion turns
+are tracked across pages and send their final answer immediately in the same
+mail thread, with no delayed reminder. Separate scheduled results retain their
+existing scope, recipient, timing and durable receipts. Every SMTP claim is
+saved before submission; sending/failed_or_ambiguous outcomes never retry
+without explicit resolution. Existing subject tokens remain in outgoing mail
+for compatibility but are not used to attribute incoming replies.
 
-Runtime state is separate from the app/market databases:
-`artifacts/session-contact/private/state.sqlite3` and `status.json`. Directory
-mode 0700 and files 0600 protect local reminder mappings/reply text. They are Git
-ignored, not research inputs/catalog previews and never copied to Windows.
+## State and operation
+
+Credentials and addresses remain in local ignored .env. Existing
+DEEPSTOCK_SMTP_* and DEEPSTOCK_IMAP_* values supply encrypted, certificate-
+validated SMTP/IMAP. DEEPSTOCK_SESSION_EMAIL_ENABLED=true enables the bridge;
+DEEPSTOCK_CODEX_SOCKET pins the current-user local Unix control socket. There
+is no second receiver, polling timer, public listener or model API key.
+
+The private store is artifacts/session-contact/private/state.sqlite3, with
+0700 directories and 0600 files. Before upgrading an existing database, the
+migration creates a timestamped SQLite backup and verifies its integrity.
+Legacy replies are seeded as body-processed records, preserving their queue,
+turn mappings, client identifiers and submission states. The two previously
+adopted replies must never be downloaded or submitted again.
+
+mail_folders stores cursors/errors, mail_messages stores classification,
+confirmation reasons and body state, and mail_locations stores folder/UID
+occurrences. outbound_text saves the exact outgoing text for conservative
+quote removal. These augment the existing reminders/replies/completions and
+scheduled_messages tables; the app/market databases are separate.
+
+status.json reports local_uid_scan as the discovery method, folder/history/error
+counts, pending confirmations, body retries, queued replies and SMTP/RPC
+ambiguity. It does not claim a live new-turn test merely from successful polling.
+Errors report class names only, never provider exception text or message data.
 
 ```bash
-# Config/socket/history check only: no SMTP or IMAP call.
+# Config/socket/history check; no SMTP or IMAP calls.
 conda run --no-capture-output -n deepstock python -m scripts.run_session_mail_bridge --check
-# Service status; local status.json reports progress/failure counts.
 systemctl --user status deepstock-session-mail.service
-# Stop the contact rule when explicitly requested.
-systemctl --user disable --now deepstock-session-mail.service
 ```
 
-The service template is `config/deepstock-session-mail.service`, enabled only
-on this server. User lingering is already enabled. Mailbox or Codex connection
-failure defers work and records an error class without secrets/message text.
-The local Codex daemon must be available for reply-state checks; the worker
-never guesses that a session is unanswered while the daemon is unavailable.
-No research/broker/auction schedules or execution email-test gate are changed.
+Deploy with server tests -> GitHub -> clean quantitative-computer ff-only pull
+and native validation. Runtime mail/state/backups stay only on the server.
+Restart the existing service after validation. Preserve all research, broker,
+auction and scheduled-task settings and trading gates.
 
-Installed and enabled at 2026-10-12 23:42:37 CST after commit `300545d` was
-pushed and cleanly fast-forwarded on the quantitative computer. Windows
-verification passed 32 tests, with 2 Unix-transport tests skipped, and left
-the checkout clean. Initial service status was `ok`, observing 4 primary
-sessions, with 0 mail submissions and 0 reply bodies read. Activation time
-was set at service installation so the earlier read-only checks do not make
-pre-activation messages eligible. Local deployment evidence is in the private
-`activation.json`; no credentials, mail or runtime state were transferred.
+## Verification history
 
-## Verification and source
+Before this upgrade, the provider missed both reply-header queries and the
+unpredictable subject token on two real owner replies. Exact owner-supplied IDs
+recovered them; both were adopted into their existing active turns, avoiding
+duplicate tasks. Two immediate result emails were SMTP-accepted. These are
+historical recovery facts, not successful automatic discovery evidence.
 
-Server regression 401 tests/111.07s passed. The 34 targeted mail/transport
-tests also passed. Synthetic tests cover the 30-minute
-boundary, activation/no retroactive mail, single submission/restart, Codex
-reply cancellation, partial/HTML reply handling, mailbox separation, other
-agent parent rejection, size limits, duplicate email/RPC outcomes and archive
-preservation. A fake Unix control socket tests masking, handshake, notifications,
-ping and fragmented JSON-RPC responses. The real Codex config/socket check
-passed; real IMAP reply-header queries were accepted with zero matches and
-zero body fetches. This setup did not send a test/reminder email or start a
-synthetic Codex turn. First real owner reply will exercise live routing; no
-end-to-end owner reply is falsely claimed before it occurs.
-
-OpenAI Docs was used to confirm the local session interface and supported
-reply routing: [App Server](https://learn.chatgpt.com/docs/app-server).
-The deployment uses its owner-only Unix socket and current CLI 0.162.1 schemas.
-The real completed-turn summary exposes phase `final_answer`; the bridge
-accepts that value as well as `final`. A read-only real-summary observation
-confirmed the waiting state without SMTP/IMAP or starting a Codex turn.
-
-October 13 actual reply verification: the owner supplied the specific reply's
-Message-ID, In-Reply-To and References. Its parent matched the stored 00:18
-reminder exactly. Message-ID lookup located one UID; reply-header searches
-returned zero despite the fetched reply's correct headers. Only that verified
-owner reply body was read. No shared-inbox header sweep occurred. The existing
-task adopts this reply so it is not injected a second time into Codex.
-
-The October 13 result was sent once at 08:28:12 CST, along that verified owner
-reply's thread, with SMTP acceptance recorded privately. Final server regression
-passed 414 tests; quantitative regression passed 45 with 2 Unix-only skips.
-Existing service restarted successfully. The actual recovery and result send
-are verified; discovery of the next newly tagged reply and automatic new-turn
-routing still require a live owner reply. Do not claim those were exercised by
-this deliberate adoption of the existing task.
-
-The second reply (Date08:43:13CST, replying to the08:28 result) was located
-using its owner-supplied exact Message-ID and adopted into the current active
-turn without a duplicate Codex submission. It retains the mailed unpredictable
-token, but reply-header and token subject searches still return OK/zero;
-native SUBJECT/TEXT searches are rejected. Exact known raw MIME subject and
-encoded-token fragments also return zero. Only verified matching bodies were
-read. Thus the first result's delivery and exact-ID receipt recovery are
-confirmed, while automatic discovery remains unreliable on this provider.
-
-`status.json` now records `reply_discovery=provider_search_unreliable` when a
-verified hinted reply is missed by automatic association/token queries; an
-empty OK search is not a healthy live-receiving check. No broad fallback is
-permitted. Restoring automatic reception needs provider-side search repair or
-a configured receiving service with working narrow association/token search.
-Do not claim a dedicated mailbox alone repairs this provider's search behavior.
+The new synthetic tests cover history/incremental scanning, transactional
+rollback/restart, UIDVALIDITY changes, cross-folder copies/moves, out-of-order
+chains, same/different-session parents, foreign senders, identity conflicts,
+body failures, legacy migration, conservative quoting and offline/busy/archive
+queue behavior. Live verification outcomes are recorded in milestone/2026-10-13.md
+only after they occur. A fresh owner's automatic session injection requires a
+new actual reply; existing processed replies are not replayed to test it.

@@ -166,22 +166,23 @@ def test_scheduled_mail_replies_use_existing_owner_parent_filter(db, config):
     mid='<deepstock-scheduled@example.test>'
     db.execute('INSERT INTO scheduled_messages VALUES (?,?,?,?,?,?,?)',
         ('a'*32,mid,'thread-a','auction-report','aggregate','sent',NOW.timestamp()));db.commit()
-    mailbox=Mailbox({b'1':mail(reply_to=mid), b'2':mail(reply_to='<another-agent@example.test>')})
+    mailbox=Mailbox({b'1':mail(reply_to=mid), b'2':mail(reply_to='<another-agent@example.test>',message_id='<other@example.test>')})
     assert poll_replies(db,config,mailbox)==1
     assert mailbox.body_fetches==[b'1']
     register_reply_hint(db,'<owner-exact@example.test>',mid)
 
 
-def test_verified_hint_exposes_provider_search_false_negative(db,config):
+def test_provider_header_search_is_no_longer_needed(db,config):
     from test_session_mail import Mailbox, mail, prepare
     prepare(db,config)
     register_reply_hint(db,'<owner-reply@example.test>','<deepstock-a@example.test>')
     class BrokenSearch(Mailbox):
         def uid(self, operation, *args):
-            if operation=='search' and args[2]!='Message-ID': return 'OK',[b'']
+            if operation=='search' and args[1]=='HEADER': return 'OK',[b'']
             return super().uid(operation,*args)
     assert poll_replies(db,config,BrokenSearch({b'1':mail()}))==1
-    assert db.execute("SELECT value FROM settings WHERE key='reply_search_false_negative'").fetchone()[0]==1
+    from deepstock.mail_discovery import diagnostics
+    assert diagnostics(db)['reply_discovery']=='local_uid_scan'
 
 
 def test_bridge_scheduled_mail_runs_while_codex_unavailable(config,monkeypatch):
@@ -195,6 +196,7 @@ def test_bridge_scheduled_mail_runs_while_codex_unavailable(config,monkeypatch):
     monkeypatch.setenv('DEEPSTOCK_CODEX_SOCKET',str(config.root/'unavailable.sock'))
     monkeypatch.setattr(bridge.ContactConfig,'load',lambda:config)
     monkeypatch.setattr(bridge.signal,'signal',lambda *_:None)
+    monkeypatch.setattr(bridge,'receive_replies',lambda *_:{'replies_received':0})
     monkeypatch.setattr('sys.argv',['bridge','--once'])
     calls=[]
     monkeypatch.setattr(bridge,'send_contact',lambda *a,**k:calls.append(k))
