@@ -19,6 +19,10 @@ from scripts.rerun_clean_research import capture_code_provenance
 from deepstock.strategies.cn.auction.forward import _command_lock
 
 
+class PlanCutoffMissed(ValueError):
+    pass
+
+
 def completed_session(now):
     cal=xcals.get_calendar('XNYS',start=POLICY['source_start'],end=str(now.date()))
     sessions=cal.sessions
@@ -29,7 +33,7 @@ def require_before_next_open(day, now):
     cal=xcals.get_calendar('XNYS',start=day,end=str((pd.Timestamp(day)+pd.Timedelta(days=15)).date()))
     following=cal.sessions[cal.sessions>pd.Timestamp(day)]
     if pd.Timestamp(now)>=cal.session_open(following[0]):
-        raise ValueError('Plan finished after next session open; no backdated prospective plan')
+        raise PlanCutoffMissed('Plan finished after next session open; no backdated prospective plan')
 
 
 def capture(folder, day, code):
@@ -150,8 +154,11 @@ def run(args, root):
                 require_before_next_open(day,ready)
                 status=advance(db,prices.index,prices,targets,input_hash,ready.isoformat())
         except (ValueError,KeyError,RuntimeError) as error:
-            status='settlement_blocked' if isinstance(error,SettlementBlocked) else 'input_blocked'
-            failures=max(1,failures)
+            if isinstance(error,PlanCutoffMissed):
+                status='missed_decision_cutoff'
+            else:
+                status='settlement_blocked' if isinstance(error,SettlementBlocked) else 'input_blocked'
+                failures=max(1,failures)
             write_json(folder/'blocked.json',{'reason':str(error)[:250],'code':code})
         value=bundle(db,day,input_hash,status,failures)
         write_json(root/'latest.json',value)

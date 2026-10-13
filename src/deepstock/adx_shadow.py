@@ -229,7 +229,7 @@ def validate_bundle(value):
         raise ValueError('Future capture')
     if pd.Timestamp(item.data_date).date()>datetime.now(timezone.utc).date():
         raise ValueError('Future data')
-    if item.status not in ('recorded','already_recorded','input_blocked','settlement_blocked'):
+    if item.status not in ('recorded','already_recorded','input_blocked','settlement_blocked','missed_decision_cutoff'):
         raise ValueError('Unexpected shadow status')
     keys={'total_return','max_drawdown','sharpe','transaction_cost','turnover'}
     for summary in item.summaries.values():

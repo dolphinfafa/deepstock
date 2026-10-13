@@ -85,6 +85,21 @@ def test_plan_must_finish_before_next_exchange_open():
         require_before_next_open('2026-10-12',datetime(2026,10,13,13,30,tzinfo=timezone.utc))
 
 
+def test_late_run_does_not_claim_input_gap_or_create_plan(tmp_path,monkeypatch):
+    from scripts import run_adx_shadow as cli
+    from types import SimpleNamespace
+    def missed(*_):raise cli.PlanCutoffMissed('missed')
+    monkeypatch.setattr(cli,'require_before_next_open',missed)
+    monkeypatch.setattr(cli,'capture_code_provenance',lambda:{'tracked_dirty':False,'source_sha256':'b'*64})
+    monkeypatch.setattr(cli,'capture',lambda *_:pytest.fail('Late run must not acquire/backdate'))
+    published=[];monkeypatch.setattr(cli,'publish',published.append)
+    assert cli.run(SimpleNamespace(publish_only=False),tmp_path)==0
+    assert published[0]['status']=='missed_decision_cutoff'
+    assert published[0]['coverage_failures']==0 and published[0]['sessions']==0
+    db=open_state(tmp_path/'state.sqlite3')
+    assert db.execute('SELECT count(*) FROM plans').fetchone()[0]==0
+
+
 def test_bundle_cannot_export_prices_or_claim_review_early(tmp_path):
     db=open_state(tmp_path/'state.sqlite3');value=bundle(db,'2026-10-12','a'*64)
     value['review_ready']=True

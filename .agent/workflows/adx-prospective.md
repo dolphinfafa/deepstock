@@ -20,7 +20,9 @@ and settlement together, charge initial entry and recover retry reports from
 SQLite. Missing daily plans end a segment without fabricated returns; an
 unresolved held quote cannot disappear through reset. Save prospective
 route-age, rebalance and account-risk state. Late runs never backdate plans.
-Missing inputs produce blocked receipts.
+Missing inputs produce input_blocked; missing held prices produce
+settlement_blocked. A late plan produces missed_decision_cutoff with no
+invented input failures or prospective plan.
 
 Authenticated POST /api/agent/research/adx-shadow enforces fixed policy,
 count/review gates, finite metrics, immutable successful same-date evidence

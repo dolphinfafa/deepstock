@@ -33,5 +33,5 @@ def ingest(session,value):
         artifact_path='artifacts/adx_node/latest.json',content_hash=hashlib.sha256(text.encode()).hexdigest()))
     session.add(ProgressEvent(id=digest[:32],strategy_id='arc',stage='prospective',title='ADX前瞻对照',
         detail=f"截至{item.data_date}：{item.sessions}/126个结算日，{item.switches}/4次切换，{item.status}；输入阻塞{item.coverage_failures}。",
-        status='blocked' if item.coverage_failures else 'current',source='adx_node',occurred_at=item.captured_at_utc))
+        status='current' if item.status in ('recorded','already_recorded') else 'blocked',source='adx_node',occurred_at=item.captured_at_utc))
     return {'status':'published','report_id':report_id}

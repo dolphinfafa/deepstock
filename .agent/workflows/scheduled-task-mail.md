@@ -32,7 +32,9 @@ selection.
 Server tasks queue locally. The existing session-mail service drains that
 queue every poll, independently of Codex socket or IMAP availability. Windows
 keeps its scheduler action, now invoking the same core pipeline through the
-receipt wrapper. Windows publishes only its defensive-observation receipt to
+receipt wrapper. The October13 complete-route follow-up adds a separate
+ADX task at07:45China while preserving the defensive07:30action. Windows
+publishes only allowlisted defensive-observation and adx-shadow receipts to
 `/api/agent/scheduled-results` with the existing node token. The endpoint
 requires node authentication, rejects extra fields/nonfinite stats/unexpected
 tasks/future timestamps and immutable-ID conflicts. Identical receipts are
