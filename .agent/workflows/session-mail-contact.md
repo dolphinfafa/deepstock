@@ -135,5 +135,13 @@ classified to its original session, and delivered through one new Codex turn
 without an owner-supplied hint. Private state shows delivered, exactly one
 reply-turn link, and a queued/body-processed classification. Later service
 cycles show zero repeat receipt/submission; both previously adopted replies
-remain preserved. This closes the fresh-reply receiving/routing check. Native
-quantitative-computer clean pull/tests remain pending while SSH is unavailable.
+remain preserved. This closes the fresh-reply receiving/routing check.
+
+October13 native deployment validation completed after explicitly passing the
+existing key to both the FRPS jump host and Windows target. The clean
+quantitative checkout fast-forwarded from8f77a04 to6a20885 throughGitHub.
+Dedicated WindowsPython3.12.14 full regression passed463 tests, with2 Unix-only
+skips and159 existing warnings, in44.74s; the checkout remained clean. No mail,
+credentials or server-private state were transferred. Together with server465
+tests and the real original-session injection, this completes the planned
+incremental-discovery implementation and deployment verification.
