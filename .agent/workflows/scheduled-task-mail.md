@@ -65,3 +65,13 @@ The receipt wrapper must start to capture a task outcome. A machine/interpreter
 outage that prevents startup, or a killed process before receipt persistence,
 does not produce a completion receipt. This flow does not claim an independent
 machine-availability monitor.
+
+Verified deploymentOctober13: server434/full tests, native432/full tests with
+2 Unix-only skips; frontend build passed. Both checkouts cleanly synchronized
+throughGitHub. Backups passed;17 server cron command lines updated with all
+timing fields unchanged, Windows action/time retained. The actual09:38 fill
+check (nothing pending, exit0) produced one separate SMTP-accepted message
+at09:38:06CST, while successful high-frequency ingestion remained quiet.
+Production node auth/schema/login/logout/restricted-preview and original
+Granville report/metric invariance checks passed. Provider-side automatic
+reply discovery still fails and is explicitly reported as unreliable.
