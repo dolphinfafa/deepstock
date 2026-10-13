@@ -15,6 +15,7 @@ from deepstock.data.store import ROOT, digest, input_evidence, read_clean_csv, w
 from deepstock.strategies.both.granville import VARIANTS, run_granville, summarize, walk_forward
 from deepstock.strategies.both.granville_portfolio import PortfolioDataError, make_panel, run_stock_portfolio
 from deepstock.data.terminal_events import load_events
+from deepstock.research_control import require_active_research
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.rerun_clean_research import capture_code_provenance
@@ -61,6 +62,7 @@ def load_stock_inputs(market, data_dir, cfg, rule, config_path):
 
 
 def run(market, data_dir, benchmark_path, output, config_path, benchmark_version=None):
+    require_active_research("granville_stock_portfolio", ROOT)
     cfg = fixed_config(config_path)
     output.mkdir(parents=True, exist_ok=False)
     code = capture_code_provenance()

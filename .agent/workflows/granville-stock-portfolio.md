@@ -838,3 +838,43 @@ Production HTTPS report/strategy links, exact old reportSHA, login/logout401,
 6 empty restricted raw/clean previews and served frontend bytes passed.
 Research-only,livefalse/killtrue remain. No backtest, download, CN work,
 parameter, broker, order, email or schedule change was performed.
+
+## October13 research pause after short-period diagnosis
+
+Latest user direction: advance beyond long-history validation or pause. The
+selected action is to pause new Granville research, rather than repeatedly
+query the same missing quote/terminal evidence. Registry and catalog persist
+`paused_research_review`; execution remains `research_only_no_orders`.
+This supersedes previous next-step instructions while paused, for both markets.
+
+The existing corrected US publication SHA
+`2cd2e4a2d91baff746e7338cb3f30a0167b47457de3e3dd9e2109f85c17a68d5`
+and reconciled audit SHA
+`3234b05f39f742f1d4ac00445253a1722678df7b0ca8f2afff9ffc0e045aa69f`
+were checked locally. All10 completed cases retain valid short-period ledgers,
+the2 WBA source blocks remain. No new backtest or new performance was generated.
+Principal CAGR15.96% falls to5.63% at stress costs; turnover33.40 and Sharpe0.70
+do not establish robust superiority. The19.2686pp stress-minus-base cumulative
+return loss includes8.1910pp extra direct cost and11.0776pp actual position-path
+gross-PnL decline. It is not a19.27pp annualized loss or a pure fee deduction.
+
+Principal repeated same-signal successful entries are0 in both cost cases;
+repeating entry-episode optimization lacks a new premise. Base time exits231
+have positive realized net PnLUSD155946.12; signal exits98/stop exits36 have
+negative realized PnLUSD63258.37/USD64961.59. These outcome groups cannot prove
+that disabling exits or changing the7-day rule improves performance. Open
+positions, continuous NAV and all cases remain separate/preserved. The2025
+loss and2026 gain do not constitute independent out-of-sample evidence.
+
+No new parameter search, Granville-specific collection/preparation, long-history
+gap checking or WBA source re-query while paused. Main portfolio, preparation,
+readiness/source/ledger audit entrances now check the existing research pause
+before input reads, provider imports or output creation; v2/v3 already respect
+it. Shared Norgate/market collectors, ADX, auction and mail are not paused.
+Historical publication/re-ingestion/viewing remains available; no evidence is
+deleted or rewritten. No Paper/Live promotion.
+
+Resume only on explicit user direction, with new verifiable research grounds
+and a separately fixed single-change hypothesis/input/case set/stop criterion.
+Long history need not be the next research target, but incomplete windows cannot
+be presented as validated performance. New data alone does not clear the pause.

@@ -82,6 +82,9 @@ def test_fresh_collector_uses_new_full_pool_not_535_and_retains_price_version(tm
     (previous / "manifest.json").write_text(json.dumps({"market": "US", "source_start": cfg["source_start"], "source_end": cfg["evaluation_end"]}))
     monkeypatch.setattr(collector, "ROOT", tmp_path)
     (tmp_path / "config").mkdir()
+    (tmp_path / "config/strategy_registry.json").write_text(json.dumps({
+        "strategies": [{"strategy_id": "granville_stock_portfolio", "execution_status": "research_only_no_orders"}]
+    }))
     (tmp_path / "config/granville_portfolio_v1.json").write_text("{}")
     mapping = {s: [{"start": cfg["source_start"], "end": cfg["evaluation_end"]}] for s in ["A", "NEW"]}
     manifest = {"source_start": cfg["source_start"], "source_end": cfg["evaluation_end"], "required_start": cfg["source_start"],

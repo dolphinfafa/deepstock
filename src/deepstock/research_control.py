@@ -15,3 +15,9 @@ def research_pause(strategy_id: str, project_root: Path) -> dict | None:
         return {"strategy_id": strategy_id, "status": status or "paused_frozen",
                 "reason": entry.get("pause_reason", "Research is frozen; explicit user resumption is required")}
     return None
+
+
+def require_active_research(strategy_id: str, project_root: Path) -> None:
+    paused = research_pause(strategy_id, project_root)
+    if paused:
+        raise ValueError(f"Research paused ({paused['status']}): {paused['reason']}")

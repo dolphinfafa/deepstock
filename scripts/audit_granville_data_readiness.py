@@ -9,6 +9,7 @@ from pathlib import Path
 import pandas as pd
 
 from deepstock.data.membership import audit_us_membership
+from deepstock.research_control import require_active_research
 from deepstock.data.store import ROOT, DataStore, digest, input_evidence, read_clean_csv, read_clean_json, write_json
 from scripts.rerun_clean_research import capture_code_provenance
 
@@ -46,6 +47,7 @@ def verify_history_metadata(history_manifest):
 
 
 def run(data_dir: Path, history_dir: Path, sizing_dir: Path, output: Path, verify_provider_metadata=False):
+    require_active_research("granville_stock_portfolio", ROOT)
     if output.exists():
         raise FileExistsError("Do not overwrite readiness evidence")
     code = capture_code_provenance()

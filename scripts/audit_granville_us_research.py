@@ -15,6 +15,7 @@ from deepstock.data.granville_history_audit import attach_window_coverage, plann
 from deepstock.data.store import ROOT, DataStore, digest, read_clean_csv, write_json
 from deepstock.strategies.both.granville_diagnostics import cost_path_attribution
 from deepstock.strategies.us.granville_audit import audit_ledger, verify_metrics
+from deepstock.research_control import require_active_research
 from deepstock.web.granville_audit_reports import render_report, validate_publication
 from scripts.download_norgate_membership import load_capture
 from scripts.prepare_granville_us_inventory import evidence_json, inventory_slice, load_inventory
@@ -183,6 +184,7 @@ def long_history(member_dir, inventory_dir, inventory_version):
 
 
 def run(args):
+    require_active_research("granville_stock_portfolio", ROOT)
     code = capture_code_provenance()
     if code["tracked_dirty"]:
         raise ValueError("Committed clean source required")

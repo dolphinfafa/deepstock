@@ -13,6 +13,10 @@ from scripts.run_granville_portfolio import dataset_csv
 
 @pytest.fixture
 def inventory(tmp_path, monkeypatch):
+    write_json(tmp_path / "config/strategy_registry.json", {
+        "strategies": [{"strategy_id": "granville_stock_portfolio", "execution_status": "research_only_no_orders"}]
+    })
+    monkeypatch.setattr(builder, "ROOT", tmp_path)
     store = DataStore(tmp_path)
     folder = tmp_path / "inventory"
     cfg = {"source_start": "2024-01-03", "evaluation_start": "2024-01-05", "evaluation_end": "2024-01-08"}

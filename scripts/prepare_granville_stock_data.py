@@ -12,6 +12,7 @@ import pandas as pd
 
 from deepstock.data.capture import capture_response
 from deepstock.data.membership import require_us_membership
+from deepstock.research_control import require_active_research
 from deepstock.data.store import ROOT, RULE_VERSION, DataQualityError, DataStore, clean_stock_dividends, digest, input_evidence, read_clean_csv, read_clean_json, write_json
 
 
@@ -83,6 +84,7 @@ def request_cn(endpoint, symbol, output, **kwargs):
 
 
 def collect_cn(output, cfg):
+    require_active_research("granville_stock_portfolio", ROOT)
     source = ROOT / "artifacts/auction_history_tushare/universe_snapshots.csv"
     universe = read_clean_csv(source, dtype={"stock_code": str})
     universe["snapshot_date"] = pd.to_datetime(universe.snapshot_date)
@@ -197,6 +199,7 @@ def collect_cn(output, cfg):
 
 
 def collect_us(output, cfg, membership_dir=None, reuse_price_dir=None):
+    require_active_research("granville_stock_portfolio", ROOT)
     import norgatedata as n
     capture, capture_version = None, None
     if membership_dir is not None:
@@ -288,6 +291,7 @@ def main():
     p.add_argument("--us-membership-dir", type=Path, help="New hash-verified full-watchlist native capture; old chunks never extended")
     p.add_argument("--reuse-us-price-dir", type=Path, help="Reuse only registered same-date raw/adjusted price exports, never stale eligibility")
     args = p.parse_args()
+    require_active_research("granville_stock_portfolio", ROOT)
     cfg = json.loads((ROOT / "config/granville_portfolio_v1.json").read_text(encoding="utf-8"))
     args.output_dir.mkdir(parents=True, exist_ok=True)
     if args.market != "US" and (args.us_membership_dir or args.reuse_us_price_dir):

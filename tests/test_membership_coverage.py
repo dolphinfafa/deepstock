@@ -55,10 +55,15 @@ def test_malformed_interval_and_unsorted_calendar_rejected():
 
 
 def test_collector_refuses_stale_mapping_before_price_collection(tmp_path, monkeypatch):
+    import json
     import sys
     from types import SimpleNamespace
     from scripts import prepare_granville_stock_data as collector
     cfg = {"source_start": "2026-08-20", "evaluation_start": "2026-08-20", "evaluation_end": "2026-09-01"}
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config/strategy_registry.json").write_text(json.dumps({
+        "strategies": [{"strategy_id": "granville_stock_portfolio", "execution_status": "research_only_no_orders"}]
+    }))
     base = tmp_path / "artifacts/research/norgate/stock-universe-sp500-liquidity"
     base.mkdir(parents=True)
     (base / "membership-0000.json").write_text("{}", encoding="utf-8")

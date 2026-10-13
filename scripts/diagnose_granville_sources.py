@@ -10,7 +10,8 @@ import pandas as pd
 
 from deepstock.data.capture import capture_response
 from deepstock.data.granville_history_audit import security_coverage
-from deepstock.data.store import DataStore, digest, read_clean_csv, write_json
+from deepstock.data.store import ROOT, DataStore, digest, read_clean_csv, write_json
+from deepstock.research_control import require_active_research
 from scripts.download_norgate_membership import load_capture
 from scripts.prepare_granville_us_inventory import load_inventory, inventory_slice
 from scripts.rerun_clean_research import capture_code_provenance
@@ -30,6 +31,7 @@ def classify_gap(day, raw_dates, adjusted_dates, listing):
 
 
 def run(args):
+    require_active_research("granville_stock_portfolio", ROOT)
     import norgatedata as n
     import importlib.metadata
     from deepstock.data.membership_contract import load_effective_membership_contract

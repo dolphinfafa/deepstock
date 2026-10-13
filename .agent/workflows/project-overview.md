@@ -31,6 +31,11 @@ verified actual processing, preserving read-only discovery. Auction adapter
 admits audited partial stk_auction views without changing gates. Granville
 adds source diagnosis and explicit terminal distribution contracts; unknown
 quotes/rights still block. Historical metrics stay intact.
+Later October13 owner instruction permits pausing instead of remaining stuck
+on long history. Granville is now paused_research_review after completing
+short-period cost/exit diagnosis. Its specific research/collection/preparation/
+diagnostic entrances stop before work; reports remain readable, new data does
+not auto-resume research. ADX and auction continue independently.
 
 October 6 update: `deepstock.data` provides raw → cleaning → entrance versioning
 and the authenticated `/data` page (see `data-layers.md`). Licensed Windows bars

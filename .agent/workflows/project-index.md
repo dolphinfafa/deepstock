@@ -53,6 +53,14 @@ passed coverage and native-overlap reconciliation for all1305 codes and the168
 required-date gaps; native/old diagnostic versions remain immutable and blocked.
 This does not permit price padding, infer announcement dates or resolve
 WBA, sector, broker-share/settlement or strategy-level execution gates.
+October13 later user instruction says to advance beyond long-history validation
+or pause. After reviewing the reconciled short-period diagnostics, Granville
+new research is paused_research_review in registry/catalog: no new backtests,
+optimization, Granville-specific collection/preparation or repeated history/
+WBA diagnosis. Existing reports stay readable. Data arrival cannot auto-resume;
+require new verifiable research grounds and explicit user resumption. ADX,
+auction and shared data services remain independent and active. See the latest
+section of granville-stock-portfolio.md; older next-step notes are historical.
 
 ### Think Before Act
 

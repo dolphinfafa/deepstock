@@ -13,6 +13,7 @@ import exchange_calendars as xcals
 import pandas as pd
 
 from deepstock.data.membership import require_us_membership
+from deepstock.research_control import require_active_research
 from deepstock.data.store import ROOT, DataStore, digest, input_evidence, read_clean_csv, write_json
 from scripts.download_norgate_membership import load_capture
 from scripts.prepare_granville_stock_data import persist
@@ -84,6 +85,7 @@ def inventory_slice(folder, record, cfg, store):
 
 
 def run(member_dir, inventory_dir, inventory_version, output, config_path):
+    require_active_research("granville_stock_portfolio", ROOT)
     cfg = fixed_config(config_path)
     code = capture_code_provenance()
     if code["tracked_dirty"]:

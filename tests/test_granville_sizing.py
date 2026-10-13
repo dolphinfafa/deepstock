@@ -193,6 +193,8 @@ def test_new_sizing_plan_keeps_completed_both_evidence_in_latest_display(catalog
     display = _strategy_summary(session, session.get(Strategy, "granville_stock_portfolio"))
     assert display["latest_run"]["id"] == run_id
     assert set(display["market_results"]) == {"US", "CN"}
+    assert display["summary"].startswith("研究已暂停")
+    assert session.get(ResearchRun, "catalog-granville_stock_portfolio-granville-stocks-fixed-v1-20261006").status == "paused_research_review"
 
 
 def test_completed_sizing_publication_replaces_older_evidence_not_baseline_headline(catalog_only_session):
