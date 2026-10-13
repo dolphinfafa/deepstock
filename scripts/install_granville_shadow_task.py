@@ -7,6 +7,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import xml.etree.ElementTree as ET
 
@@ -60,7 +61,12 @@ def main():
     python = Path(r'D:\workspace\conda-envs\deepstock\python.exe')
     if not python.is_file():
         raise ValueError('Dedicated interpreter required')
-    user = os.environ['USERDOMAIN'] + '\\' + os.environ['USERNAME']
+    identity = subprocess.run(['whoami.exe', '/USER', '/FO', 'CSV', '/NH'],
+                              capture_output=True, text=True, check=True)
+    identities = list(csv.reader(io.StringIO(identity.stdout.strip())))
+    if len(identities) != 1 or not re.fullmatch(r'S-\d+(?:-\d+)+', identities[0][-1]):
+        raise ValueError('Verified current Windows user SID required')
+    user = identities[0][-1]
     folder = root / 'artifacts/research/granville-shadow-v1/scheduler-backups'
     folder.mkdir(parents=True, exist_ok=True)
     now = datetime.now().astimezone()
@@ -75,8 +81,11 @@ def main():
         (folder / (now.strftime('%Y%m%dT%H%M%S%f') + '-prior.xml')).write_bytes(prior.stdout)
     path = folder / (now.strftime('%Y%m%dT%H%M%S%f') + '-new.xml')
     path.write_bytes(task_xml(root, python, user, now))
-    subprocess.run(['schtasks.exe', '/Create', '/TN', TASK, '/XML', str(path), '/F'],
-                   capture_output=True, check=True)
+    result = subprocess.run(['schtasks.exe', '/Create', '/TN', TASK, '/XML', str(path), '/F'],
+                            capture_output=True)
+    if result.returncode:
+        path.with_suffix('.error.log').write_bytes(result.stdout + result.stderr)
+        raise RuntimeError(f'Task registration failed ({result.returncode}); native diagnostic retained beside XML')
     print(json.dumps({'task': TASK, 'schedule_china': '08:10', 'status': 'installed'}))
 
 
