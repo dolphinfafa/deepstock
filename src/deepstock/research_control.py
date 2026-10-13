@@ -5,19 +5,22 @@ import json
 from pathlib import Path
 
 
-def research_pause(strategy_id: str, project_root: Path) -> dict | None:
+def research_pause(strategy_id: str, project_root: Path, scope: str | None = None) -> dict | None:
     registry = json.loads((project_root / "config/strategy_registry.json").read_text(encoding="utf-8"))
     entry = next((s for s in registry["strategies"] if s["strategy_id"] == strategy_id), None)
     if entry is None:
         raise ValueError(f"Unregistered strategy: {strategy_id}")
     status = entry.get("research_status", "")
+    if (scope is not None and scope in entry.get("authorized_research_scopes", [])
+            and entry.get("execution_status") != "frozen_research_no_orders"):
+        return None
     if status.startswith("paused") or entry.get("execution_status") == "frozen_research_no_orders":
         return {"strategy_id": strategy_id, "status": status or "paused_frozen",
                 "reason": entry.get("pause_reason", "Research is frozen; explicit user resumption is required")}
     return None
 
 
-def require_active_research(strategy_id: str, project_root: Path) -> None:
-    paused = research_pause(strategy_id, project_root)
+def require_active_research(strategy_id: str, project_root: Path, scope: str | None = None) -> None:
+    paused = research_pause(strategy_id, project_root, scope)
     if paused:
         raise ValueError(f"Research paused ({paused['status']}): {paused['reason']}")

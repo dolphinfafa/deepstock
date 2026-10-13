@@ -31,6 +31,7 @@ from deepstock.web.annualization import annualization_payload
 from deepstock.observation_reporting import validate_bundle
 from deepstock.scheduled_mail import TaskResult, enqueue
 from deepstock.adx_shadow import ShadowBundle
+from deepstock.strategies.us.granville_shadow import ShadowBundle as GranvilleShadowBundle
 from deepstock.web.models import (
     AccountSnapshot,
     Alert,
@@ -1309,7 +1310,7 @@ _defensive_publish_lock = threading.Lock()
 
 @app.post('/api/agent/scheduled-results')
 def publish_scheduled_result(payload: TaskResult, node: str = Depends(_node_dependency)):
-    if payload.node != 'quant' or payload.task_id not in ('defensive-observation','adx-shadow'):
+    if payload.node != 'quant' or payload.task_id not in ('defensive-observation','adx-shadow','granville-shadow'):
         raise HTTPException(status_code=400, detail='Unexpected scheduled node task')
     if payload.finished_at > datetime.now(timezone.utc) + timedelta(minutes=5):
         raise HTTPException(status_code=400, detail='Scheduled receipt is in the future')
@@ -1321,6 +1322,34 @@ def publish_scheduled_result(payload: TaskResult, node: str = Depends(_node_depe
 
 
 _adx_publish_lock = threading.Lock()
+
+_granville_shadow_publish_lock = threading.Lock()
+
+
+@app.post('/api/agent/research/granville-shadow')
+def publish_granville_shadow(payload: GranvilleShadowBundle, session: Session=Depends(get_session), node: str=Depends(_node_dependency)):
+    from deepstock.web.granville_shadow_reporting import ingest
+    from deepstock.strategies.us.granville_shadow import semantic_identity, validate_bundle
+    from deepstock.data.store import write_json
+    value = payload.model_dump(mode='json')
+    path = settings.project_root / 'artifacts/granville_shadow_node/latest.json'
+    with _granville_shadow_publish_lock:
+        try:
+            validate_bundle(value)
+            if path.exists():
+                prior = json.loads(path.read_text(encoding='utf-8'))
+                if (prior['data_date'] > value['data_date'] or prior['shadow_sessions'] > value['shadow_sessions']
+                        or prior['planned_sessions'] > value['planned_sessions'] or prior['missed_plan_sessions'] > value['missed_plan_sessions']):
+                    raise ValueError('Prospective evidence cannot move backwards')
+                if prior['data_date'] == value['data_date'] and prior['status'] in ('recorded', 'already_recorded'):
+                    if value['status'] not in ('recorded', 'already_recorded') or semantic_identity(prior) != semantic_identity(value):
+                        raise ValueError('Conflicting immutable prospective evidence')
+            result = ingest(session, value)
+        except (ValueError, KeyError, TypeError) as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+        session.commit()
+        write_json(path, value)
+    return result
 
 
 @app.post('/api/agent/research/adx-shadow')

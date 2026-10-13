@@ -24,6 +24,7 @@ TASKS = {
     'database-backup': '数据库备份',
     'defensive-observation': '防御型 ETF 定时观察',
     'adx-shadow': 'ADX 完整路由前瞻对照',
+    'granville-shadow': '葛兰威尔美股影子观察',
 }
 HIGH_FREQUENCY = {'auction-collect', 'app-ingest'}
 STAT_LABELS = {
@@ -40,7 +41,7 @@ STAT_LABELS = {
 }
 TaskId = Literal['auction-collect', 'auction-signal', 'auction-fill', 'auction-settle',
                  'auction-settle-counterfactual', 'auction-report', 'auction-minute-backfill',
-                 'app-ingest', 'database-backup', 'defensive-observation', 'adx-shadow']
+                 'app-ingest', 'database-backup', 'defensive-observation', 'adx-shadow', 'granville-shadow']
 
 
 class TaskResult(BaseModel):
@@ -72,7 +73,7 @@ class TaskResult(BaseModel):
     def consistent(self):
         if self.finished_at < self.started_at:
             raise ValueError('Task cannot finish before starting')
-        if self.node == 'quant' and self.task_id not in ('defensive-observation','adx-shadow'):
+        if self.node == 'quant' and self.task_id not in ('defensive-observation','adx-shadow','granville-shadow'):
             raise ValueError('Quant node may publish only its scheduled observation')
         if self.exit_code != 0 and self.status != 'failed':
             raise ValueError('Nonzero exit must remain failed')

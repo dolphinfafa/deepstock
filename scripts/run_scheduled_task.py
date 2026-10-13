@@ -21,6 +21,7 @@ MODULES = {
        for key in ('collect', 'signal', 'fill', 'settle', 'report')},
     'auction-settle-counterfactual': ('scripts.short_term_forward', ['settle-counterfactual']),
     'adx-shadow': ('scripts.run_adx_shadow', []),
+    'granville-shadow': ('scripts.run_granville_shadow', []),
 }
 
 
@@ -96,7 +97,7 @@ def run(task_id, extra, root):
         returncode = 1
     finished = datetime.now(timezone.utc)
     payload = last_object(tail.decode('utf-8', errors='replace'))
-    node = 'quant' if task_id in ('defensive-observation','adx-shadow') else 'server'
+    node = 'quant' if task_id in ('defensive-observation','adx-shadow','granville-shadow') else 'server'
     try:
         if task_id == 'defensive-observation' and returncode == 0:
             # The core command has completed all publication steps successfully.

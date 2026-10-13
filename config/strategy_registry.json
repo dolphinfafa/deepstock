@@ -57,7 +57,8 @@
       "strategy_id": "granville_stock_portfolio",
       "market": "Both",
       "research_status": "paused_research_review",
-      "pause_reason": "2026-10-13 按用户允许暂停：现有有效短期账本诊断完成，成本敏感且尚无稳健风险收益优势；暂停新回测、优化、长历史补洞及WBA重复取证。保留全部历史证据，取得新的可验证研究依据并经用户明确恢复后再推进。",
+      "authorized_research_scopes": ["us_prospective_shadow_v1"],
+      "pause_reason": "2026-10-13 用户继续指令仅恢复美股固定规则影子观察（us_prospective_shadow_v1）；历史回测、参数优化、长历史补洞、WBA重复取证及A股新研究继续暂停。既有报告保留，尚未启用IBKR Paper或实盘下单。",
       "display_name": "Granville Multi-Stock Portfolio",
       "execution_status": "research_only_no_orders",
       "specification": ".agent/workflows/granville-stock-portfolio.md"

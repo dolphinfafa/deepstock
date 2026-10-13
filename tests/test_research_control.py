@@ -54,6 +54,8 @@ def test_granville_pause_is_persisted_without_pausing_peer_strategies():
     assert entry["research_status"] == paused["status"]
     assert entry["pause_reason"] == paused["reason"]
     assert entry["execution_status"] == "research_only_no_orders"
+    assert research_pause("granville_stock_portfolio", ROOT, "us_prospective_shadow_v1") is None
+    assert research_pause("granville_stock_portfolio", ROOT, "parameter_search") == paused
 
 
 @pytest.mark.parametrize("name,operation,argument_count", [
@@ -91,3 +93,14 @@ def test_explicit_resumption_requires_registry_change(tmp_path):
     entry.pop("research_status")
     registry.write_text(json.dumps({"strategies": [entry]}), encoding="utf-8")
     require_active_research(entry["strategy_id"], tmp_path)
+
+
+def test_scoped_research_permission_cannot_override_frozen_execution(tmp_path):
+    registry = tmp_path / 'config/strategy_registry.json'
+    registry.parent.mkdir()
+    registry.write_text(json.dumps({'strategies': [{
+        'strategy_id': 'frozen', 'execution_status': 'frozen_research_no_orders',
+        'authorized_research_scopes': ['synthetic'],
+    }]}), encoding='utf-8')
+    with pytest.raises(ValueError, match='Research paused'):
+        require_active_research('frozen', tmp_path, 'synthetic')

@@ -61,6 +61,14 @@ WBA diagnosis. Existing reports stay readable. Data arrival cannot auto-resume;
 require new verifiable research grounds and explicit user resumption. ADX,
 auction and shared data services remain independent and active. See the latest
 section of granville-stock-portfolio.md; older next-step notes are historical.
+Later October13 owner asks to enter Paper and says continue: explicitly resume
+only `us_prospective_shadow_v1`. Keep the default historical/new-parameter/CN
+research pause. Daily08:10China fixed trend_pullback/time_7 plans and next-open
+analytical fills run on the quantitative node; no IBKR orders.60 effective
+planned-and-settled sessions allow manual process/cost review only. Real-share,
+cash-dividend/action/tax and broker reconciliation remain Paper prerequisites.
+Read granville-prospective.md; do not backdate the first decision or reopen
+long-history/WBA queries merely to start this empty forward account.
 
 ### Think Before Act
 

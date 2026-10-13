@@ -143,6 +143,18 @@ def test_only_last_json_summary_used_and_quota_or_cutoff_stays_blocked():
     assert receipt('auction-signal',NOW,NOW,0,{'status':'missed_decision_cutoff'}).status=='blocked'
 
 
+def test_granville_task_dispatch_aggregate_receipt_and_blocked_states(tmp_path):
+    assert command('granville-shadow', [], tmp_path)[2:] == ['scripts.run_granville_shadow']
+    for state in ('input_blocked', 'settlement_blocked', 'missed_decision_cutoff'):
+        result = receipt('granville-shadow', NOW, NOW, 0, {
+            'status': state, 'data_date': '2026-10-12', 'shadow_sessions': 3,
+            'coverage_failures': 1, 'prices': [123], 'account': 'private',
+        }, node='quant')
+        assert result.status == 'blocked' and result.reason == state
+        assert result.stats == {'shadow_sessions': 3, 'coverage_failures': 1}
+        assert '葛兰威尔' in summarize(result) and 'private' not in summarize(result)
+
+
 def test_scheduled_email_separate_subject_and_owner_only_smtp(monkeypatch, config):
     capture={}
     class SMTP:

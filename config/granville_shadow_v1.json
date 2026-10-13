@@ -1,0 +1,20 @@
+{
+  "version": "granville-us-shadow-v1-20261013",
+  "scope": "us_prospective_shadow_v1",
+  "market": "US",
+  "source_start": "2024-01-02",
+  "base_config_sha256": "ec4a4535efb51c653cf27f5c8f40b54dfd1af981d05ee64f0f4105d5cf9db851",
+  "signal_config_sha256": "f04250f35b1c990ef45db7d05060329ba3cc69bd26affa9b4d188b743a8eb863",
+  "variant": "trend_pullback",
+  "exit_policy": "time_7",
+  "accounts": ["base", "stress", "spy_100", "spy_80"],
+  "initial_capital": 100000.0,
+  "minimum_review_sessions": 60,
+  "schedule_china": "08:10",
+  "timing": "Persist close decisions before next XNYS open; simulate only saved intents at that next open. No retrospective signals or fills on missed-plan dates.",
+  "accounting": "Provider total-return analytical units, normalized to persisted held-price anchors; raw one-share entry reference. Not broker shares, cash dividend payment or tax settlement replication.",
+  "missing_data": "No imputation; incomplete rolling warm-up remains unready. Missing current eligible quote blocks planning; missing held/anchor quote blocks settlement without reset.",
+  "review": "60 planned-and-settled sessions permit manual process/cost review only. No automatic Paper/Live promotion or outcome-based parameter changes.",
+  "paper_authorized": false,
+  "live_authorized": false
+}

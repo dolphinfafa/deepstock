@@ -34,7 +34,9 @@ queue every poll, independently of Codex socket or IMAP availability. Windows
 keeps its scheduler action, now invoking the same core pipeline through the
 receipt wrapper. The October13 complete-route follow-up adds a separate
 ADX task at07:45China while preserving the defensive07:30action. Windows
-publishes only allowlisted defensive-observation and adx-shadow receipts to
+The later authorized Granville prospective scope adds
+Deepstock_Granville_Shadow at08:10China, preserving both prior tasks. Windows
+publishes only allowlisted defensive-observation, adx-shadow and granville-shadow receipts to
 `/api/agent/scheduled-results` with the existing node token. The endpoint
 requires node authentication, rejects extra fields/nonfinite stats/unexpected
 tasks/future timestamps and immutable-ID conflicts. Identical receipts are

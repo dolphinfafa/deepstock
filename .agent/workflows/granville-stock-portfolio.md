@@ -878,3 +878,20 @@ Resume only on explicit user direction, with new verifiable research grounds
 and a separately fixed single-change hypothesis/input/case set/stop criterion.
 Long history need not be the next research target, but incomplete windows cannot
 be presented as validated performance. New data alone does not clear the pause.
+
+## October13 explicit US prospective resumption
+
+Owner then asks whether Granville can enter Paper and says continue. Resume
+only `us_prospective_shadow_v1`, with fixed original trend_pullback/time_7 and
+separate base/stress/SPY100/SPY80 analytical accounts. The historical default
+pause above still applies to long-history validation, WBA re-queries,
+optimization, and new CN work. No retrospective fills or new historical
+performance result. Prior record/configuration remains immutable.
+
+First stage is Windows daily08:10China shadow observation. Decisions must be
+saved before the next XNYS open; missed plans retain marked holdings without
+invented trades.60 effective settlements permit manual process/cost review.
+Second-stage IBKR Paper needs real-share/cash/dividend/action/tax accounting,
+account isolation, execution reconciliation and separately reviewed risk/order
+authority. This implementation does not enable broker orders. See
+granville-prospective.md for acquisition, recovery and deployment evidence.

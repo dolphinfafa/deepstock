@@ -106,6 +106,45 @@ def test_adx_shadow_auth_immutable_retry_and_aggregate_contract(client,tmp_path)
     assert client.post(url,json=dict(value,prices=[10]),headers=headers).status_code==422
 
 
+def test_granville_shadow_auth_immutable_retry_and_aggregate_contract(client, tmp_path):
+    from deepstock.strategies.us.granville_shadow import bundle, open_state
+    with open_state(tmp_path / 'granville.sqlite3') as db:
+        value = bundle(db, '2026-10-12', 'a' * 64)
+    url = '/api/agent/research/granville-shadow'
+    headers = {'Authorization': 'Bearer test-node-token'}
+    assert client.post(url, json=value).status_code == 401
+    with SessionLocal() as session:
+        old_metrics = session.scalar(select(func.count(Metric.id)))
+    first = client.post(url, json=value, headers=headers)
+    assert first.status_code == 200, first.text
+    response = client.post(url, json=dict(value, status='already_recorded'), headers=headers)
+    assert response.status_code == 200 and response.json()['report_id'] == first.json()['report_id']
+    conflicting = json.loads(json.dumps(value))
+    conflicting['summaries']['base']['total_return'] = .1
+    assert client.post(url, json=conflicting, headers=headers).status_code == 409
+    for change in ({'data_date': '2026-10-09'}, {'review_ready': True}, {'planned_sessions': 9}):
+        assert client.post(url, json={**value, **change}, headers=headers).status_code == 409
+    for change in ({'prices': [10]}, {'paper_authorized': True}, {'shadow_sessions': True}):
+        assert client.post(url, json={**value, **change}, headers=headers).status_code == 422
+    with SessionLocal() as session:
+        assert session.scalar(select(func.count(Metric.id))) == old_metrics
+        reports = session.scalars(select(ResearchReport).where(ResearchReport.report_type == 'granville_prospective_shadow')).all()
+        assert len(reports) == 1 and reports[0].run_id is None
+
+
+def test_granville_scheduled_receipt_node_auth_and_schema(client):
+    from datetime import datetime, timezone
+    value = dict(event_id='c' * 32, task_id='granville-shadow', node='quant',
+                 started_at=datetime.now(timezone.utc).isoformat(), finished_at=datetime.now(timezone.utc).isoformat(),
+                 exit_code=0, status='blocked', reason='input_blocked', stats={'coverage_failures': 1})
+    url = '/api/agent/scheduled-results'
+    headers = {'Authorization': 'Bearer test-node-token'}
+    assert client.post(url, json=value).status_code == 401
+    assert client.post(url, json=value, headers=headers).status_code == 200
+    assert client.post(url, json=value, headers=headers).status_code == 200
+    assert client.post(url, json={**value, 'stats': {'prices': 10}}, headers=headers).status_code == 422
+
+
 def _login(client: TestClient) -> tuple[dict[str, str], str]:
     response = client.post(
         "/api/auth/login", json={"username": "admin", "password": "admin"}

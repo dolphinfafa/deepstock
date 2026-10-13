@@ -36,6 +36,15 @@ on long history. Granville is now paused_research_review after completing
 short-period cost/exit diagnosis. Its specific research/collection/preparation/
 diagnostic entrances stop before work; reports remain readable, new data does
 not auto-resume research. ADX and auction continue independently.
+The subsequent explicit owner resumption authorizes US fixed-rule prospective
+shadow only. `granville_shadow_v1.json` pins the original signal/portfolio
+contracts; Windows08:10China saves close decisions before the next XNYS open.
+Independent SQLite retains plans, analytical fills and holdings across restarts.
+Authenticated `/api/agent/research/granville-shadow` accepts aggregates only,
+appending reports/progress without replacing historical performance.60 effective
+settlements allow manual review, never automatic promotion. Broker-share/cash
+accounting and IBKR Paper execution remain separate prerequisites. Historical
+parameter/history/WBA/CN entrances remain paused; see granville-prospective.md.
 
 October 6 update: `deepstock.data` provides raw → cleaning → entrance versioning
 and the authenticated `/data` page (see `data-layers.md`). Licensed Windows bars
