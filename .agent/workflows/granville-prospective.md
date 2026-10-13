@@ -69,9 +69,24 @@ the forward results or auto-promote. IBKR Paper remains disabled until actual
 shares/cash/corporate-action ledger, isolated broker-account reconciliation,
 order deduplication/partial fill/reconnect controls and reviewed limits are
 implemented. Live stays false and the global kill switch stays true.
+Verified current classifications/sector constraints also remain a broker-Paper
+prerequisite under the original industry evidence policy.
 
 Deploy server tests → GitHub → clean quantitative ff-only pull → native tests.
 Back up app SQLite before catalog/report import. Licensed captures/full plans/
 ledgers stay Windows; credentials/contact state stay server. Actual validation
 and time-dependent first-plan/settlement evidence are recorded in
 milestone/2026-10-13.md, not inferred from synthetic parity tests.
+
+Deployment completedOctober14: clean quantitative d9e4aaa passed17 focused
+tests after the529 server /527 native (+2Unix skips) full regressions. Native
+preflight captured1305 securities,503 current members and504 quote files with
+zero failures. Task registered through verified current-user SID, Ready,
+next runOctober14 at08:10China. Both peer task XMLs remain identical.
+First normal run was late:zero plans/fills,missed_decision_cutoff. Publication
+retry created no duplicate report; one bounded scheduled receipt persisted.
+Expect first planOctober14 morning and first saved-intent settlementOctober15
+morning, subject to timely complete inputs. These future events are not yet
+verified. Current TWS absent/read-only502; broker Paper remains disabled.
+Private contact/outbox backups passed before reloading the existing mail
+service for the new task label; no second receiver or cron-time change.
