@@ -24,6 +24,14 @@ period returns, not headline annualisation, and cannot authorize orders.
 
 ## Architecture and Data Flow
 
+October13 follow-up adds complete ADX/ARC/SPY prospective plans/settlements on
+Windows (daily07:45), aggregate-only authenticated publication and immutable
+replay. See adx-prospective.md. Session mail separately queues Seen flags after
+verified actual processing, preserving read-only discovery. Auction adapter
+admits audited partial stk_auction views without changing gates. Granville
+adds source diagnosis and explicit terminal distribution contracts; unknown
+quotes/rights still block. Historical metrics stay intact.
+
 October 6 update: `deepstock.data` provides raw → cleaning → entrance versioning
 and the authenticated `/data` page (see `data-layers.md`). Licensed Windows bars
 stay local and publish metadata/quality only. Alembic data-version and research

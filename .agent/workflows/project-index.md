@@ -90,6 +90,11 @@ IDs/verified chains. Unknown parents, subject-only matches and cross-session
 conflicts remain pending. Other agents' bodies never enter this flow. Receiving
 continues while Codex is offline, and archived/deleted sessions stay suspended.
 This supersedes the former narrow server-side search-only restriction.
+The later October13 owner instruction additionally permits adding only Seen
+to confirmed Deepstock replies after actual tool execution/result or assistant
+reply, never on scan/download/queue/turn start. Persist processing evidence and
+flag retries; revalidate UID identity; respect later manual unread. Other
+agents' flags remain untouched. See session-mail-contact.md.
 The second verified October13 reply adds separate scheduled-task result
 emails. Read `scheduled-task-mail.md`: the provisional `results` scope
 suppresses only successful high-frequency collection/ingestion, pending owner

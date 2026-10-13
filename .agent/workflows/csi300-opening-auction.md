@@ -19,6 +19,13 @@ orders.
 
 ## Fixed Research Definition
 
+October13 source recovery accepts the registered valid subset of stk_auction
+when only invalid rows are quarantined, without conflicting keys or invalid
+dates. Empty valid subsets block; other endpoints remain strict. This fixes
+whole-response failures from non-trading securities with null auction prices.
+Keep95%PIT constituent auction coverage,240cross-section and90%exact09:31
+minute coverage. Late saved snapshots remain offline evidence only.
+
 - Universe: point-in-time CSI 300 constituents reconstructed from monthly
   Tushare `index_weight` snapshots.
 - Signal time: after the call-auction result is available and before 09:30

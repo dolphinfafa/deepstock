@@ -20,6 +20,7 @@ MODULES = {
     **{f'auction-{key}': ('scripts.short_term_forward', [key])
        for key in ('collect', 'signal', 'fill', 'settle', 'report')},
     'auction-settle-counterfactual': ('scripts.short_term_forward', ['settle-counterfactual']),
+    'adx-shadow': ('scripts.run_adx_shadow', []),
 }
 
 
@@ -56,7 +57,7 @@ def receipt(task_id, started, finished, returncode, payload, *, node='server'):
         status = 'failed'
     elif reason in ('failed', 'error'):
         status, reason = 'failed', 'process_failed'
-    elif reason in ('waiting_for_quota', 'waiting_for_provider_quota', 'missed_decision_cutoff'):
+    elif reason in ('waiting_for_quota', 'waiting_for_provider_quota', 'missed_decision_cutoff', 'input_blocked', 'settlement_blocked'):
         status = 'blocked'
     elif reason in ('skipped_locked', 'skipped_non_trading_day', 'already_recorded', 'nothing_pending'):
         status = 'skipped'
@@ -95,7 +96,7 @@ def run(task_id, extra, root):
         returncode = 1
     finished = datetime.now(timezone.utc)
     payload = last_object(tail.decode('utf-8', errors='replace'))
-    node = 'quant' if task_id == 'defensive-observation' else 'server'
+    node = 'quant' if task_id in ('defensive-observation','adx-shadow') else 'server'
     try:
         if task_id == 'defensive-observation' and returncode == 0:
             # The core command has completed all publication steps successfully.

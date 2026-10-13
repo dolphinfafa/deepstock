@@ -34,9 +34,12 @@ class CapturedTushare:
             result = DataStore().import_file(path, {"market": "CN", "provider": "Tushare", "endpoint": actual_endpoint,
                                                    "origin": "provider_response", "retrieved_at_utc": now.isoformat(),
                                                    "timezone": "Asia/Shanghai", "adjustment": "none"})
-            if result["status"] != "ready":
+            partial = actual_endpoint == "stk_auction"
+            if result["status"] != "ready" and not partial:
                 raise RuntimeError(f"Provider dataset blocked: {endpoint}: {result['quality']['issues']}")
-            clean = read_clean_csv(path)
+            clean = read_clean_csv(path, allow_quarantine=partial)
+            if clean.empty:
+                raise RuntimeError(f"Provider dataset has no valid rows: {actual_endpoint}")
             # Adapter view restores provider date spelling; persisted clean version stays canonical.
             for col in frame:
                 if col in clean and (col.endswith("date") or col == "cal_date") and frame[col].astype(str).str.fullmatch(r"\d{8}").all():

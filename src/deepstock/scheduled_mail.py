@@ -23,6 +23,7 @@ TASKS = {
     'app-ingest': '研究状态导入',
     'database-backup': '数据库备份',
     'defensive-observation': '防御型 ETF 定时观察',
+    'adx-shadow': 'ADX 完整路由前瞻对照',
 }
 HIGH_FREQUENCY = {'auction-collect', 'app-ingest'}
 STAT_LABELS = {
@@ -35,10 +36,11 @@ STAT_LABELS = {
     'actionable': '可执行信号', 'health_passed': '健康检查通过',
     'bytes': '备份字节数', 'integrity_ok': '备份完整性检查通过',
     'rows_received': '采集行数', 'rows_inserted': '新增行数',
+    'shadow_sessions': '前瞻结算交易日', 'coverage_failures': '输入阻塞数',
 }
 TaskId = Literal['auction-collect', 'auction-signal', 'auction-fill', 'auction-settle',
                  'auction-settle-counterfactual', 'auction-report', 'auction-minute-backfill',
-                 'app-ingest', 'database-backup', 'defensive-observation']
+                 'app-ingest', 'database-backup', 'defensive-observation', 'adx-shadow']
 
 
 class TaskResult(BaseModel):
@@ -52,7 +54,8 @@ class TaskResult(BaseModel):
     status: Literal['completed', 'failed', 'blocked', 'skipped']
     reason: Literal['completed', 'process_failed', 'waiting_for_quota', 'waiting_for_provider_quota',
                     'fetch_failed', 'finalize_failed', 'missed_decision_cutoff', 'skipped_locked',
-                    'skipped_non_trading_day', 'already_recorded', 'nothing_pending', 'result_unavailable']
+                    'skipped_non_trading_day', 'already_recorded', 'nothing_pending', 'result_unavailable',
+                    'input_blocked', 'settlement_blocked']
     data_date: date | None = None
     stats: dict[str, StrictInt | StrictFloat | StrictBool | None] = Field(default_factory=dict)
 
@@ -69,7 +72,7 @@ class TaskResult(BaseModel):
     def consistent(self):
         if self.finished_at < self.started_at:
             raise ValueError('Task cannot finish before starting')
-        if self.node == 'quant' and self.task_id != 'defensive-observation':
+        if self.node == 'quant' and self.task_id not in ('defensive-observation','adx-shadow'):
             raise ValueError('Quant node may publish only its scheduled observation')
         if self.exit_code != 0 and self.status != 'failed':
             raise ValueError('Nonzero exit must remain failed')
@@ -132,7 +135,8 @@ def summarize(result: TaskResult):
         'fetch_failed': '补数失败', 'finalize_failed': '完整报告生成失败',
         'missed_decision_cutoff': '错过正式信号截止时间', 'skipped_locked': '已有任务运行，跳过',
         'skipped_non_trading_day': '非交易日', 'already_recorded': '已有记录',
-        'nothing_pending': '没有待处理记录', 'result_unavailable': '任务结果摘要缺失或未能核对'}
+        'nothing_pending': '没有待处理记录', 'result_unavailable': '任务结果摘要缺失或未能核对',
+        'input_blocked': '研究输入不完整', 'settlement_blocked': '事前计划结算缺报价'}
     local = ZoneInfo('Asia/Shanghai')
     lines = [f'任务：{TASKS[result.task_id]}', f'节点：{result.node}',
              f'状态：{labels[result.status]}（{reasons[result.reason]}）', f'退出码：{result.exit_code}',

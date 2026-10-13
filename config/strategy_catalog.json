@@ -50,7 +50,7 @@
       },
       "progress": [
         {"stage": "controller", "title": "ADX 固定候选验证", "detail": "19 个固定窗口完成。", "status": "done"},
-        {"stage": "prospective", "title": "独立前瞻影子记录", "detail": "固定规则，至少观察 126 个交易日和 4 次有效切换。", "status": "current"},
+        {"stage": "prospective", "title": "完整路由前瞻对照", "detail": "每天07:45采集完整股票和ETF输入，保存ADX/原ARC/SPY事前计划及逐日结算；输入缺口阻塞，至少126个有效结算日和4次状态切换后人工复核。", "status": "current"},
         {"stage": "execution", "title": "订单授权", "detail": "长期收益和状态延迟仍未通过。", "status": "blocked"}
       ]
     },

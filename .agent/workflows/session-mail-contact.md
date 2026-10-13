@@ -18,8 +18,9 @@ or their text submitted to the model. Mail and credentials remain server-only.
 The existing `deepstock-session-mail.service` checks mail every 30 seconds,
 independently of Codex availability. It lists all folders and selects each with
 IMAP EXAMINE (readonly=True). It fetches minimal From, Message-ID, In-Reply-To,
-References and Subject headers plus UID and size using BODY.PEEK. No messages
-are marked read, moved, deleted or expunged. Subjects are only a local hint;
+References and Subject headers plus UID and size using BODY.PEEK. Discovery
+does not change flags. The later October13 owner instruction permits adding
+Seen after actual processing, as described below. Subjects are only a local hint;
 full subjects and other senders' addresses are not saved in the classification
 store. Reply-header and subject search indexes are no longer required.
 
@@ -100,6 +101,24 @@ status.json reports local_uid_scan as the discovery method, folder/history/error
 counts, pending confirmations, body retries, queued replies and SMTP/RPC
 ambiguity. It does not claim a live new-turn test merely from successful polling.
 Errors report class names only, never provider exception text or message data.
+
+## Seen after actual processing (October13)
+
+The owner authorized marking confirmed Deepstock replies read after actual
+tool execution/result or a nonempty assistant reply. Discovery, body download,
+queue insertion and turn creation alone do not count. An executed tool's
+failure counts; reasoning, pending tools and declined approvals do not.
+Evidence is tied to the saved original session/email turn through paginated
+thread/items/list or saved nonempty completion text. Historical mail needs
+the same saved/verifiable evidence.
+
+mail_processed saves evidence and mail_seen queues known folder/UID locations.
+Before adding only Seen through UID STORE +FLAGS.SILENT, verify selection,
+UIDVALIDITY, UID and exact header identity with BODY.PEEK, then confirm FLAGS.
+Preserve every other flag. Failures retry after60 seconds without repeating
+tools, body reads or injection, including while Codex is offline. Once
+confirmed per location, respect later manual unread; new copies can be marked
+once. Never move, delete or expunge. SQLite backup precedes private migration.
 
 ```bash
 # Config/socket/history check; no SMTP or IMAP calls.

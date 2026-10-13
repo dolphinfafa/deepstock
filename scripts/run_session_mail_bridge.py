@@ -11,6 +11,7 @@ import time
 from deepstock.codex_session_client import CodexClient
 from deepstock.session_mail import ContactConfig, receive_replies, send_contact, state_store, synchronize, tick
 from deepstock.scheduled_mail import notify_pending
+from deepstock import mail_seen
 
 
 def main():
@@ -56,6 +57,9 @@ def main():
         except Exception as error:
             # Exception text can contain provider credentials or session data.
             result.update(status='deferred', error_type=type(error).__name__)
+        if not args.check:
+            from deepstock.session_mail import open_mailbox
+            result.update(mail_seen.flush(db, config, open_mailbox))
         if result.get('mail_error_type') or result.get('mail_scan_errors') or result.get('mail_body_retries'):
             result['status'] = 'deferred'
         result['at_utc'] = time.time()

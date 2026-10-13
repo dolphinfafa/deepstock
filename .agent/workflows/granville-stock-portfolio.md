@@ -1,5 +1,25 @@
 # Independent Granville Stock Portfolio
 
+October13 source follow-up adds Windows-local diagnose_granville_sources:
+re-read pinned full inventory/effective membership, probe every member quote
+gap with raw/TOTALRETURN NONE and Major Exchange Listed ALLMARKETDAYS, retain
+WBA capital-event evidence. Dates, bars and event details stay Windows; only
+counts/classification/hash summary leaves. Recovered quotes require a separate
+new inventory. Provider-confirmed no eligible trades are not executable quotes
+or suspension proof. All18fixed windows retain original gates and status.
+Norgate Platinum already covers2005 history; no purchase is authorized/needed
+for these calls. Historical sectors and terminal accounting remain separate.
+
+New manifests can explicitly pin terminal-events.json and all source hashes.
+US analytical units convert through the last verified adjusted/raw ratio.
+Cash entitlement is receivable until verified payment; rights require a
+verified value on every outstanding session and payment evidence. Unknown
+WBA CVR value/date blocks, never cash at theUSD3cap or an invented zero.
+Distributions use a separate terminal event ledger, never fake market SELL
+fills. Old manifests/ledgers stay identical. This remains analytical units,
+not broker-share replication. Existing BUY/SELL ledger audit intentionally
+does not certify new terminal-event ledgers. No orders or promotion.
+
 User approved separate US/A-share individual-stock portfolio tests on October 6.
 `granville_stock_portfolio` is a new Both research candidate, not an ARC route
 and not a rewrite of `granville_ma_swing` ETF evidence.

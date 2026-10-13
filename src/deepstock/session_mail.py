@@ -21,7 +21,7 @@ import time
 from datetime import datetime, timezone
 
 from deepstock.web.config import settings
-from deepstock import mail_discovery
+from deepstock import mail_discovery, mail_seen
 
 WAIT_SECONDS = 30 * 60
 MAX_MAIL_BYTES = 256 * 1024
@@ -87,6 +87,7 @@ def state_store(path: Path):
     db.execute("INSERT OR IGNORE INTO settings VALUES ('activated_at', ?)", (time.time(),))
     db.commit()
     mail_discovery.seed_processed(db)
+    mail_seen.migrate(db, path)
     return db
 
 
@@ -127,7 +128,7 @@ def contact_text(session, *, parent_id=None, task_label=None):
     return (f"发件人：deepstock\n\n{intro}"
             f"你可以回到 Codex 回复，也可以直接回复本邮件；请保留邮件的回复关联。\n\n"
             f"Session: {session['thread_id']}\n\n{session['final_text']}\n\n"
-            '已获授权只读扫描共享邮箱全部文件夹的邮件头，仅下载确认属于 Deepstock 的未处理回复正文。')
+            '已获授权扫描共享邮箱全部文件夹的邮件头，仅下载确认属于 Deepstock 的未处理回复正文；执行或回复后标记该回复已读。')
 
 
 def send_contact(config, session, message_id, *, parent_id=None, references=(), task_label=None):
@@ -419,6 +420,8 @@ def synchronize(db, config, codex):
         if row['thread_id'] not in found:
             db.execute("UPDATE sessions SET status='inactive' WHERE thread_id=?", (row['thread_id'],))
     db.commit()
+
+    mail_seen.observe_processing(db, codex)
 
 
 def send_completions(db, config, sender=send_contact):

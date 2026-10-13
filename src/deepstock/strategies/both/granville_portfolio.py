@@ -1,6 +1,6 @@
 """Causal multi-stock research: free-slot rotation, no broker/order imports."""
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
@@ -26,9 +26,10 @@ class StockPanel:
     terminal: dict[str, str]
     documented_suspension: np.ndarray
     diagnostics: dict
+    terminal_events: dict = field(default_factory=dict)
 
 
-def make_panel(bars, calendar, membership, market, signal_rule, portfolio_rule, *, suspensions=None, dividends=None, terminal=None):
+def make_panel(bars, calendar, membership, market, signal_rule, portfolio_rule, *, suspensions=None, dividends=None, terminal=None, terminal_events=None):
     """Missing executable bars stay NaN. Stale valuation is separate state."""
     dates = pd.DatetimeIndex(calendar)
     if dates.empty or dates.has_duplicates or dates.tz is not None or not dates.is_monotonic_increasing:
@@ -38,6 +39,17 @@ def make_panel(bars, calendar, membership, market, signal_rule, portfolio_rule, 
     if bars.duplicated(["date", "symbol"]).any() or len(pd.DatetimeIndex(bars.date.unique()).difference(dates)):
         raise PortfolioDataError("Conflicting/unexpected stock sessions")
     symbols = sorted(membership.symbol.unique())
+    from deepstock.data.terminal_events import validate_event
+    terminal_contracts=terminal_events or {}
+    if terminal_contracts and market!='US':
+        raise PortfolioDataError('Terminal distribution contract is US-only')
+    try:
+        for symbol,event in terminal_contracts.items():
+            if symbol not in symbols or symbol not in (terminal or {}):
+                raise ValueError('Terminal event outside input identity')
+            validate_event(event,symbol,terminal[symbol],dates)
+    except (ValueError,TypeError,KeyError) as error:
+        raise PortfolioDataError(str(error)) from error
     if set(symbols).difference(bars.symbol):
         raise PortfolioDataError("Historical constituent has no bars; cannot replace it with a survivor")
     fields = ["open", "high", "low", "close", "adjusted_open", "adjusted_high", "adjusted_low", "adjusted_close", "volume", "turnover"]
@@ -176,7 +188,7 @@ def make_panel(bars, calendar, membership, market, signal_rule, portfolio_rule, 
                        "corporate_action_audit": action_audit,
                        "pre_eligibility_incomplete_warmup": pre_eligibility_gaps,
                        "rounding_only_factor_movements": rounding_moves,
-                       "adjustment_accounting": "analytical_total_return_units_not_actual_broker_shares"})
+                       "adjustment_accounting": "analytical_total_return_units_not_actual_broker_shares"},terminal_contracts)
 
 
 def signal_episodes(signal):
@@ -196,6 +208,12 @@ def sizing_reference(panel, config, market, close_index):
 
 
 def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullback", exit_policy="time_7", stress=False, *, entry_policy="signal_level", sizing_policy="fixed_16pct"):
+    from deepstock.data.terminal_events import validate_event
+    try:
+        for symbol,event in panel.terminal_events.items():
+            validate_event(event,symbol,panel.terminal[symbol],panel.dates)
+    except (ValueError,TypeError,KeyError) as error:
+        raise PortfolioDataError(str(error)) from error
     if variant not in VARIANTS or exit_policy not in {"time_7", "trend_only"} or market not in {"US", "CN"}:
         raise ValueError("Unknown fixed candidate")
     if entry_policy not in {"signal_level", "once_per_episode"}:
@@ -226,11 +244,48 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
     if not len(chosen) or chosen[0] == 0:
         raise PortfolioDataError("Evaluation/warm-up unavailable")
     daily, trades, sizing_audit = [], [], []
+    claims={};terminal_ledger=[]
     for i in chosen:
         day = dates[i]
         fee = slippage_cash = tax = traded = 0.
         entries = exits = blocked = delayed = stale = 0
         sold_today = set()
+        for symbol,claim in claims.items():
+            event=panel.terminal_events[symbol]
+            if not claim['cash_paid'] and day>=pd.Timestamp(event['cash_payment_date']):
+                amount=claim['shares']*event['cash_per_raw_share'];cash+=amount;claim['cash_paid']=True
+                terminal_ledger.append({'date':str(day.date()),'symbol':symbol,'action':'CASH_PAYMENT','amount':amount,'cash_after':cash})
+            right=event['right']
+            if right['kind']=='verified_schedule' and not claim['right_paid'] and day>=pd.Timestamp(right['payment_date']):
+                amount=claim['shares']*right['payment_per_raw_share'];cash+=amount;claim['right_paid']=True
+                terminal_ledger.append({'date':str(day.date()),'symbol':symbol,'action':'RIGHT_PAYMENT','amount':amount,'cash_after':cash})
+        for j in np.flatnonzero(units>1e-10):
+            symbol=panel.symbols[j];event=panel.terminal_events.get(symbol)
+            if event and day>=pd.Timestamp(event['effective_date']):
+                if symbol in claims or not np.isfinite(previous_raw_ratio[j]):
+                    raise PortfolioDataError('Terminal share conversion evidence unavailable')
+                shares=units[j]*previous_raw_ratio[j]
+                cash_paid=day>=pd.Timestamp(event['cash_payment_date'])
+                right=event['right'];right_paid=right['kind']=='none' or day>=pd.Timestamp(right['payment_date'])
+                distribution=shares*(event['cash_per_raw_share'] if cash_paid else 0.)
+                if right['kind']=='verified_schedule' and right_paid:
+                    distribution+=shares*right['payment_per_raw_share']
+                cash+=distribution
+                terminal_ledger.append({'date':str(day.date()),'symbol':symbol,'action':'ENTITLEMENT',
+                    'analytical_units':float(units[j]),'raw_shares_reference':float(shares),
+                    'cash_received':distribution,'cash_after':cash,'source_hashes':event['source_hashes']})
+                claims[symbol]={'shares':shares,'cash_paid':cash_paid,'right_paid':right_paid}
+                units[j]=0.;last_exit[j]=i;sold_today.add(j);pending.pop(j,None)
+        receivable=0.
+        for symbol,claim in claims.items():
+            event=panel.terminal_events[symbol]
+            if not claim['cash_paid']:
+                receivable+=claim['shares']*event['cash_per_raw_share']
+            if not claim['right_paid']:
+                values=event['right']['values_per_raw_share']
+                if str(day.date()) not in values:
+                    raise PortfolioDataError('Outstanding right value unknown')
+                receivable+=claim['shares']*values[str(day.date())]
         held = np.flatnonzero(units > 1e-10)
         for j in held:
             ex_tax = v["cash_dividend_tax_per_raw_share"][i, j]
@@ -252,7 +307,7 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
                 stale += 1
         marks_open = np.where(np.isfinite(v["adjusted_open"][i]), v["adjusted_open"][i], previous_mark)
         holding_open = float(np.dot(units[held], marks_open[held])) if len(held) else 0.
-        opening_nav = cash + holding_open
+        opening_nav = cash + holding_open + receivable
         # A buy list is frozen from the immediately preceding close. Failed
         # sales do not free slots/cash; later ranks are fill alternatives only.
         for j in sorted(list(pending), key=lambda idx: panel.symbols[idx]):
@@ -362,7 +417,7 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
         previous_raw_ratio[present] = v["adjusted_close"][i, present] / v["close"][i, present]
         held = np.flatnonzero(units > 1e-10)
         value = float(np.dot(units[held], previous_mark[held])) if len(held) else 0.
-        nav = cash + value
+        nav = cash + value + receivable
         if cash < -1e-6 or not np.isfinite(nav) or nav <= 0 or len(held) > config["max_positions"]:
             raise ValueError("Portfolio insolvency/position breach")
         for j in held:
@@ -378,7 +433,7 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
                       "nav": nav, "cash": cash, "exposure": value / nav, "quantity": float(units.sum()), "position_count": len(held),
                       "commission": fee, "slippage": slippage_cash, "dividend_tax": tax, "transaction_cost": (fee + slippage_cash + tax) / previous_nav,
                       "turnover": traded / (2 * previous_nav), "entry_fill": entries, "exit_fill": exits, "entry_signal": int(candidate.sum()),
-                      "blocked_entry": blocked, "delayed_exit": delayed, "stale_position_marks": stale, "receivable": 0.,
+                      "blocked_entry": blocked, "delayed_exit": delayed, "stale_position_marks": stale, "receivable": receivable,
                       "same_episode_candidates": int(repeated.sum()),
                       "suppressed_same_episode_candidates": int(repeated.sum()) if entry_policy == "once_per_episode" else 0,
                       "maximum_holding_sessions": max((i - entry_day[j] + 1 for j in held), default=0), "pending_exits": len(pending)})
@@ -393,4 +448,6 @@ def run_stock_portfolio(panel, config, signal_rule, market, variant="trend_pullb
                     "quantity_unit": "analytical_total_return_units_not_broker_shares"})
     summary.update(sizing_policy=sizing_policy, sizing_audit=sizing_audit,
                    average_cash_fraction=float(frame.cash_fraction.mean()), invalid_sizing_candidates=int(frame.invalid_sizing_candidates.sum()))
+    if panel.terminal_events:
+        summary.update(terminal_event_ledger=terminal_ledger,terminal_accounting='verified_distributions_not_market_sell_fills')
     return frame, pd.DataFrame(trades, columns=["date", "symbol", "action", "signal_date", "reason", "analytical_units", "entry_raw_shares_reference", "analytical_execution_price", "charges", "slippage", "held_sessions", "cash_after", "signal_episode"]), summary

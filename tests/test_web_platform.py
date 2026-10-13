@@ -89,6 +89,23 @@ def client() -> TestClient:
         yield value
 
 
+def test_adx_shadow_auth_immutable_retry_and_aggregate_contract(client,tmp_path):
+    from deepstock.adx_shadow import bundle,open_state
+    value=bundle(open_state(tmp_path/'shadow.sqlite3'),'2026-10-12','a'*64)
+    url='/api/agent/research/adx-shadow'
+    assert client.post(url,json=value).status_code==401
+    headers={'Authorization':'Bearer test-node-token'}
+    first=client.post(url,json=value,headers=headers)
+    assert first.status_code==200,first.text
+    retry=dict(value,status='already_recorded')
+    response=client.post(url,json=retry,headers=headers)
+    assert response.status_code==200 and response.json()['report_id']==first.json()['report_id']
+    conflicting=json.loads(json.dumps(value));conflicting['summaries']['adx']['total_return']=.1
+    assert client.post(url,json=conflicting,headers=headers).status_code==409
+    assert client.post(url,json=dict(value,data_date='2026-10-09'),headers=headers).status_code==409
+    assert client.post(url,json=dict(value,prices=[10]),headers=headers).status_code==422
+
+
 def _login(client: TestClient) -> tuple[dict[str, str], str]:
     response = client.post(
         "/api/auth/login", json={"username": "admin", "password": "admin"}

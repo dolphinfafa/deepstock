@@ -14,6 +14,7 @@ import pandas as pd
 from deepstock.data.store import ROOT, digest, input_evidence, read_clean_csv, write_json
 from deepstock.strategies.both.granville import VARIANTS, run_granville, summarize, walk_forward
 from deepstock.strategies.both.granville_portfolio import PortfolioDataError, make_panel, run_stock_portfolio
+from deepstock.data.terminal_events import load_events
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.rerun_clean_research import capture_code_provenance
@@ -55,7 +56,7 @@ def load_stock_inputs(market, data_dir, cfg, rule, config_path):
             dividends = pd.concat([dividends, read_clean_csv(verified)], ignore_index=True)
         suspensions = pd.concat([read_clean_csv(data_dir / "suspensions" / (s + ".csv.gz")) for s in manifest["symbols"]], ignore_index=True)
     terminal = {s: v["last_quote_date"] for s, v in manifest.get("terminal_securities", {}).items()}
-    panel = make_panel(bars, calendar, membership, market, rule, cfg, dividends=dividends, suspensions=suspensions, terminal=terminal)
+    panel = make_panel(bars, calendar, membership, market, rule, cfg, dividends=dividends, suspensions=suspensions, terminal=terminal,terminal_events=load_events(data_dir,manifest))
     return panel, manifest
 
 
@@ -105,7 +106,7 @@ def run(market, data_dir, benchmark_path, output, config_path, benchmark_version
                 dividends = pd.concat([dividends, read_clean_csv(verified)], ignore_index=True)
             suspensions = pd.concat([read_clean_csv(data_dir / "suspensions" / (s + ".csv.gz")) for s in manifest["symbols"]], ignore_index=True)
         terminal = {s: v["last_quote_date"] for s, v in manifest.get("terminal_securities", {}).items()}
-        panel = make_panel(bars, calendar, membership, market, rule["signal"], cfg, dividends=dividends, suspensions=suspensions, terminal=terminal)
+        panel = make_panel(bars, calendar, membership, market, rule["signal"], cfg, dividends=dividends, suspensions=suspensions, terminal=terminal,terminal_events=load_events(data_dir,manifest))
         result["data_audit"] = panel.diagnostics
     except (PortfolioDataError, ValueError) as error:
         load_error = str(error)
