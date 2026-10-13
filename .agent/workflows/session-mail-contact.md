@@ -127,3 +127,13 @@ body failures, legacy migration, conservative quoting and offline/busy/archive
 queue behavior. Live verification outcomes are recorded in milestone/2026-10-13.md
 only after they occur. A fresh owner's automatic session injection requires a
 new actual reply; existing processed replies are not replayed to test it.
+
+
+October13 first live automatic injection verified: the owner's new reply to
+an unanswered-session reminder was discovered by the running UID scanner,
+classified to its original session, and delivered through one new Codex turn
+without an owner-supplied hint. Private state shows delivered, exactly one
+reply-turn link, and a queued/body-processed classification. Later service
+cycles show zero repeat receipt/submission; both previously adopted replies
+remain preserved. This closes the fresh-reply receiving/routing check. Native
+quantitative-computer clean pull/tests remain pending while SSH is unavailable.
