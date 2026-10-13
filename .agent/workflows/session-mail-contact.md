@@ -10,6 +10,9 @@ this specific reminder/reply flow. It does not authorize unrelated sends.
 The verified October 13 owner reply adds: Codex-origin messages retain the
 30-minute unanswered reminder; an email-origin task receives its completed
 result immediately by email, once, in the same thread.
+The second verified reply authorizes separate scheduled-task result messages;
+see [scheduled-task-mail.md](scheduled-task-mail.md) for receipt scope and
+deployment. Their replies obey this same mailbox boundary.
 
 ## Behavior
 
@@ -147,3 +150,19 @@ Existing service restarted successfully. The actual recovery and result send
 are verified; discovery of the next newly tagged reply and automatic new-turn
 routing still require a live owner reply. Do not claim those were exercised by
 this deliberate adoption of the existing task.
+
+The second reply (Date08:43:13CST, replying to the08:28 result) was located
+using its owner-supplied exact Message-ID and adopted into the current active
+turn without a duplicate Codex submission. It retains the mailed unpredictable
+token, but reply-header and token subject searches still return OK/zero;
+native SUBJECT/TEXT searches are rejected. Exact known raw MIME subject and
+encoded-token fragments also return zero. Only verified matching bodies were
+read. Thus the first result's delivery and exact-ID receipt recovery are
+confirmed, while automatic discovery remains unreliable on this provider.
+
+`status.json` now records `reply_discovery=provider_search_unreliable` when a
+verified hinted reply is missed by automatic association/token queries; an
+empty OK search is not a healthy live-receiving check. No broad fallback is
+permitted. Restoring automatic reception needs provider-side search repair or
+a configured receiving service with working narrow association/token search.
+Do not claim a dedicated mailbox alone repairs this provider's search behavior.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import shlex
 from pathlib import Path
 import subprocess
 import tempfile
@@ -17,24 +18,24 @@ PYTHON = Path(__import__("sys").executable)
 def cron_block(workspace: Path = WORKSPACE, python: Path = PYTHON) -> str:
     root = workspace / "artifacts/short_term_forward"
     log = root / "cron.log"
-    command = f"cd {workspace} && {python} -m scripts.short_term_forward"
-    output = f">> {log} 2>&1"
+    command = f"cd {shlex.quote(str(workspace))} && {shlex.quote(str(python))} -m scripts.run_scheduled_task auction-"
+    output = f">> {shlex.quote(str(log))} 2>&1"
     return "\n".join([
         BEGIN_MARKER,
         "CRON_TZ=Asia/Shanghai",
-        f"*/10 0-8 * * 1-5 {command} collect {output}",
-        f"0-20/5 9 * * 1-5 {command} collect {output}",
-        f"24 9 * * 1-5 {command} collect {output}",
-        f"*/10 15-23 * * 1-5 {command} collect {output}",
-        f"*/30 * * * 0,6 {command} collect {output}",
-        f"27,29 9 * * 1-5 {command} signal {output}",
-        f"31 9 * * 1-5 {command} fill --wait-seconds 90 {output}",
-        f"33,38,43 9 * * 1-5 {command} fill --wait-seconds 0 {output}",
-        f"0 10 * * 1-5 {command} fill --wait-seconds 0 {output}",
-        f"20 15 * * 1-5 {command} settle {output}",
-        f"5 16,18 * * 1-5 {command} settle {output}",
-        f"15 16,18 * * 1-5 {command} settle-counterfactual {output}",
-        f"10 18 * * 1-5 {command} report {output}",
+        f"*/10 0-8 * * 1-5 {command}collect {output}",
+        f"0-20/5 9 * * 1-5 {command}collect {output}",
+        f"24 9 * * 1-5 {command}collect {output}",
+        f"*/10 15-23 * * 1-5 {command}collect {output}",
+        f"*/30 * * * 0,6 {command}collect {output}",
+        f"27,29 9 * * 1-5 {command}signal {output}",
+        f"31 9 * * 1-5 {command}fill --wait-seconds 90 {output}",
+        f"33,38,43 9 * * 1-5 {command}fill --wait-seconds 0 {output}",
+        f"0 10 * * 1-5 {command}fill --wait-seconds 0 {output}",
+        f"20 15 * * 1-5 {command}settle {output}",
+        f"5 16,18 * * 1-5 {command}settle {output}",
+        f"15 16,18 * * 1-5 {command}settle-counterfactual {output}",
+        f"10 18 * * 1-5 {command}report {output}",
         END_MARKER,
     ])
 

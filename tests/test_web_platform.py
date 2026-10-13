@@ -214,6 +214,29 @@ def test_tail_ingestion_publishes_preregistered_case_not_best_and_handles_blocke
         assert session.get(Strategy, "cn_etf_tail_momentum").live_eligible is False
 
 
+def test_scheduled_receipt_endpoint_owner_node_auth_and_idempotence(client, tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+    from deepstock.scheduled_mail import outbox
+    from test_scheduled_mail import event
+    isolated_settings = replace(settings, project_root=tmp_path)
+    monkeypatch.setattr(importlib.import_module('deepstock.web.app'), 'settings', isolated_settings)
+    now = datetime.now(timezone.utc)
+    payload = event(task_id='defensive-observation', node='quant', started_at=now, finished_at=now).model_dump(mode='json')
+    endpoint = '/api/agent/scheduled-results'
+    headers = {'Authorization': 'Bearer test-node-token'}
+    assert client.post(endpoint, json=payload).status_code == 401
+    assert client.post(endpoint, headers={'Authorization':'Bearer wrong'}, json=payload).status_code == 401
+    assert client.post(endpoint, headers=headers, json=payload).status_code == 200
+    assert client.post(endpoint, headers=headers, json=payload).status_code == 200
+    queue = outbox(tmp_path)
+    assert queue.execute('SELECT count(*) FROM results').fetchone()[0] == 1
+    queue.close()
+    changed = {**payload, 'stats': {'completed_cohorts':99}}
+    assert client.post(endpoint, headers=headers, json=changed).status_code == 409
+    assert client.post(endpoint, headers=headers, json={**payload,'raw_prices':[]}).status_code == 422
+    assert client.post(endpoint, headers=headers, json={**payload,'node':'server'}).status_code == 400
+
+
 def test_node_observation_publication_is_authenticated_validated_and_replay_safe(client, tmp_path, monkeypatch):
     from test_observation_reporting import valid_bundle
     source_root = settings.project_root

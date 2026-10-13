@@ -77,6 +77,9 @@ def state_store(path: Path):
         CREATE TABLE IF NOT EXISTS completions (message_id TEXT PRIMARY KEY, thread_id TEXT NOT NULL,
             turn_id TEXT NOT NULL, reply_id TEXT NOT NULL, final_text TEXT NOT NULL,
             state TEXT NOT NULL, attempted_at REAL, UNIQUE(thread_id, turn_id));
+        CREATE TABLE IF NOT EXISTS scheduled_messages (event_id TEXT PRIMARY KEY, message_id TEXT UNIQUE NOT NULL,
+            thread_id TEXT NOT NULL, task_id TEXT NOT NULL, final_text TEXT NOT NULL,
+            state TEXT NOT NULL, attempted_at REAL NOT NULL);
     ''')
     db.execute("INSERT OR IGNORE INTO settings VALUES ('activated_at', ?)", (time.time(),))
     db.commit()
@@ -112,7 +115,7 @@ def search_token(message_id):
     return 'ds-' + hashlib.sha256(message_id.encode()).hexdigest()[:32]
 
 
-def send_contact(config, session, message_id, *, parent_id=None, references=()):
+def send_contact(config, session, message_id, *, parent_id=None, references=(), task_label=None):
     message = EmailMessage()
     message['From'] = formataddr(('deepstock', config.mailbox))
     message['To'] = config.owner
@@ -120,14 +123,18 @@ def send_contact(config, session, message_id, *, parent_id=None, references=()):
     message['Message-ID'] = message_id
     message['Date'] = format_datetime(datetime.now(timezone.utc))
     subject = '邮件任务处理结果' if parent_id else 'session 消息等待回复超过30分钟'
-    # Keep the random correlation token ASCII so provider subject indexes can
-    # find it even when the descriptive Chinese subject is MIME encoded.
+    if task_label:
+        subject = f'定时任务结果 · {task_label}'
+    # Retain a narrow discovery token for providers that support subject search.
+    # The current provider has demonstrated false negatives even for this token.
     message['Subject'] = f'[{search_token(message_id)}] [deepstock] {subject}'
     if parent_id:
         message['In-Reply-To'] = parent_id
         message['References'] = ' '.join([*references, parent_id])
     intro = ('你通过邮件交办的任务已处理，结果如下。\n' if parent_id else
              '你尚未回复下面的 session 消息，现按你的设置发送一次提醒。\n')
+    if task_label:
+        intro = '定时任务已结束，结果如下。\n'
     message.set_content(f"发件人：deepstock\n\n{intro}"
                         f"你可以回到 Codex 回复，也可以直接回复本邮件；请保留邮件的回复关联。\n\n"
                         f"Session: {session['thread_id']}\n\n{session['final_text']}\n\n"
@@ -251,13 +258,15 @@ def poll_replies(db, config, client):
     # Only stored outbound IDs, their unpredictable subject tokens, or an
     # exact reply Message-ID supplied by the owner may produce candidates.
     reminders = db.execute('''SELECT message_id,thread_id,turn_id FROM reminders
-        UNION ALL SELECT message_id,thread_id,turn_id FROM completions WHERE state<>'ready' ''').fetchall()
+        UNION ALL SELECT message_id,thread_id,turn_id FROM completions WHERE state<>'ready'
+        UNION ALL SELECT message_id,thread_id,NULL AS turn_id FROM scheduled_messages''').fetchall()
     known_ids = {r['message_id'] for r in reminders}
     for reminder in reminders:
         message_id = reminder['message_id']
         if MESSAGE_IDS.fullmatch(message_id) is None or '"' in message_id or '\\' in message_id:
             raise ValueError('Invalid saved reminder identity')
         uids = set()
+        automatic_uids = set()
         searches = [(field, message_id) for field in ('In-Reply-To', 'References')]
         token = db.execute('SELECT token FROM message_tokens WHERE message_id=?', (message_id,)).fetchone()
         if token:
@@ -279,6 +288,8 @@ def poll_replies(db, config, client):
             available = True
             if result and result[0]:
                 uids.update(result[0].split())
+                if field != 'Message-ID':
+                    automatic_uids.update(result[0].split())
         if not available:
             raise RuntimeError('Reply-only IMAP search unavailable; broad scan forbidden')
         for uid in sorted(uids):
@@ -298,6 +309,10 @@ def poll_replies(db, config, client):
             if (reply_target(header, known_ids, config.owner) != message_id or not MESSAGE_IDS.fullmatch(reply_id)
                     or not size or int(size[1]) > MAX_MAIL_BYTES):
                 continue
+            if hints and uid not in automatic_uids:
+                # A verified reply exists, but association/token discovery missed it.
+                # Keep that live evidence visible; an empty OK response is not proof of health.
+                db.execute("INSERT OR REPLACE INTO settings VALUES ('reply_search_false_negative', 1)")
             seen_uids.add(uid)
             if db.execute('SELECT 1 FROM replies WHERE message_id=?', (reply_id,)).fetchone():
                 continue
@@ -324,6 +339,7 @@ def poll_replies(db, config, client):
                        (reminder['thread_id'], reminder['turn_id']))
             db.commit()
             count += 1
+    db.commit()
     return count
 
 
@@ -333,7 +349,8 @@ def register_reply_hint(db, message_id, parent_id):
            for value in (message_id, parent_id)):
         raise ValueError('Invalid supplied reply identity')
     known = db.execute('''SELECT 1 FROM reminders WHERE message_id=?
-        UNION ALL SELECT 1 FROM completions WHERE message_id=?''', (parent_id, parent_id)).fetchone()
+        UNION ALL SELECT 1 FROM completions WHERE message_id=?
+        UNION ALL SELECT 1 FROM scheduled_messages WHERE message_id=?''', (parent_id, parent_id, parent_id)).fetchone()
     if not known:
         raise ValueError('Reply parent must be our own stored outbound message')
     db.execute('INSERT OR IGNORE INTO reply_hints VALUES (?, ?)', (message_id, parent_id))
@@ -455,7 +472,7 @@ def send_completions(db, config, sender=send_contact):
 def tick(db, config, codex, sender=send_reminder, mailbox_factory=open_mailbox):
     synchronize(db, config, codex)
     received = 0
-    if db.execute('SELECT 1 FROM reminders UNION ALL SELECT 1 FROM completions LIMIT 1').fetchone():
+    if db.execute('SELECT 1 FROM reminders UNION ALL SELECT 1 FROM completions UNION ALL SELECT 1 FROM scheduled_messages LIMIT 1').fetchone():
         mailbox = mailbox_factory(config)
         try:
             received = poll_replies(db, config, mailbox)
@@ -469,7 +486,11 @@ def tick(db, config, codex, sender=send_reminder, mailbox_factory=open_mailbox):
     sent = send_due(db, config, sender)
     failures = db.execute("""SELECT
         (SELECT count(*) FROM reminders WHERE state IN ('sending','failed_or_ambiguous')) +
-        (SELECT count(*) FROM completions WHERE state IN ('sending','failed_or_ambiguous'))""").fetchone()[0]
+        (SELECT count(*) FROM completions WHERE state IN ('sending','failed_or_ambiguous')) +
+        (SELECT count(*) FROM scheduled_messages WHERE state IN ('sending','failed_or_ambiguous'))""").fetchone()[0]
     ambiguous = db.execute("SELECT count(*) FROM replies WHERE state='submission_ambiguous'").fetchone()[0]
     return {'sent': sent, 'completions_sent': completed, 'replies_received': received, 'replies_delivered': delivered,
-            'smtp_failures_or_ambiguous': failures, 'reply_submissions_ambiguous': ambiguous}
+            'smtp_failures_or_ambiguous': failures, 'reply_submissions_ambiguous': ambiguous,
+            'reply_discovery': ('provider_search_unreliable' if db.execute(
+                "SELECT 1 FROM settings WHERE key='reply_search_false_negative' AND value=1").fetchone()
+                else 'not_live_verified')}

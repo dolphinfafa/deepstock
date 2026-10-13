@@ -41,11 +41,11 @@ def build_block(project_root: Path, python: Path) -> str:
     backup_log = shlex.quote(str(project_root / "artifacts/app/logs/backup.log"))
     ingest = (
         f"mkdir -p {log_dir} && cd {root} && "
-        f"{executable} scripts/ingest_deepstock_state.py >> {ingest_log} 2>&1"
+        f"{executable} -m scripts.run_scheduled_task app-ingest >> {ingest_log} 2>&1"
     )
     backup = (
         f"mkdir -p {log_dir} && cd {root} && "
-        f"{executable} scripts/backup_deepstock_database.py >> {backup_log} 2>&1"
+        f"{executable} -m scripts.run_scheduled_task database-backup >> {backup_log} 2>&1"
     )
     return "\n".join(
         (

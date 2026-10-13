@@ -30,7 +30,7 @@ def test_cron_is_idempotent_preserves_other_jobs_and_has_correct_environment():
     assert first.count(BEGIN) == 1
     assert "30 11 * * *" in first
     assert "35 12 * * *" in first
-    assert "/opt/envs/deepstock/bin/python -m scripts.run_csi300_minute_backfill" in first
+    assert "/opt/envs/deepstock/bin/python -m scripts.run_scheduled_task auction-minute-backfill" in first
     assert replace_block(first, BEGIN, END, None).strip() == original.strip()
 
 

@@ -66,5 +66,5 @@ def test_auction_backfill_cron_is_idempotent_and_preserves_other_blocks(tmp_path
     assert installed == reinstalled
     assert installed.count(BEGIN_MARKER) == 1
     assert "keep me" in installed
-    assert "scripts.run_csi300_minute_backfill" in installed
+    assert "scripts.run_scheduled_task auction-minute-backfill" in installed
     assert "30 11" in installed and "35 12" in installed

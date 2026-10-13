@@ -29,6 +29,7 @@ from deepstock.web.evidence_notices import notices_for_run
 from deepstock.data.store import DataStore, DataQualityError
 from deepstock.web.annualization import annualization_payload
 from deepstock.observation_reporting import validate_bundle
+from deepstock.scheduled_mail import TaskResult, enqueue
 from deepstock.web.models import (
     AccountSnapshot,
     Alert,
@@ -1303,6 +1304,19 @@ def agent_snapshot(
 
 
 _defensive_publish_lock = threading.Lock()
+
+
+@app.post('/api/agent/scheduled-results')
+def publish_scheduled_result(payload: TaskResult, node: str = Depends(_node_dependency)):
+    if payload.node != 'quant' or payload.task_id != 'defensive-observation':
+        raise HTTPException(status_code=400, detail='Unexpected scheduled node task')
+    if payload.finished_at > datetime.now(timezone.utc) + timedelta(minutes=5):
+        raise HTTPException(status_code=400, detail='Scheduled receipt is in the future')
+    try:
+        enqueue(settings.project_root, payload)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail='Scheduled receipt identity conflict') from error
+    return {'event_id': payload.event_id, 'status': 'queued'}
 
 
 @app.post("/api/agent/research/defensive-observation")

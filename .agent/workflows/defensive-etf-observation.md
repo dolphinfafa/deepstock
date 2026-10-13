@@ -125,3 +125,12 @@ prefers that node bundle over stale server-local artifacts. Publishing failure
 fails the scheduled task. Raw Norgate prices and account data remain local.
 Current assessments are stored in the research report; historical decisions
 remain auditable, including the configuration correction.
+
+October13 owner email additionally requests separate scheduled-task result
+mail. The existing Task Scheduler action/time remains; its `.cmd` now calls
+the receipt wrapper and `run_defensive_etf_observation_core.cmd` contains the
+unchanged original pipeline. After success/failure, only an allowlisted
+aggregate receipt is published using the existing node token to
+`/api/agent/scheduled-results`. SMTP/IMAP credentials remain server-only.
+Notification failure leaves the original exit code and research task intact;
+pending receipt publication is idempotent. See `scheduled-task-mail.md`.

@@ -86,6 +86,12 @@ The shared-mailbox boundary remains: discover by our stored association IDs,
 our mailed unpredictable subject token, or an owner-supplied exact reply ID;
 validate owner/nearest parent before body fetch. Never use a generic subject,
 sender/time scan or browse other agents' traffic.
+The second verified October13 reply adds separate scheduled-task result
+emails. Read `scheduled-task-mail.md`: the provisional `results` scope
+suppresses only successful high-frequency collection/ingestion, pending owner
+preference; task times/parameters/quotas stay fixed. Only aggregate receipts
+cross nodes. The provider has now missed a real tagged reply too: automatic
+reply discovery is degraded, not verified healthy; exact owner IDs still work.
 
 ### Error Handling
 

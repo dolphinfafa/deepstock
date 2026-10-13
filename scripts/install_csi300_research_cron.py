@@ -39,7 +39,7 @@ def replace_block(existing: str, begin: str, end: str, block: str | None) -> str
 def backfill_block(root: Path, python: Path) -> str:
     command = (
         f"cd {shlex.quote(str(root))} && {shlex.quote(str(python))} "
-        f"-m scripts.run_csi300_minute_backfill >> {shlex.quote(str(root / 'artifacts/csi300_sync/minute_backfill_cron.log'))} 2>&1"
+        f"-m scripts.run_scheduled_task auction-minute-backfill >> {shlex.quote(str(root / 'artifacts/csi300_sync/minute_backfill_cron.log'))} 2>&1"
     )
     return "\n".join((BEGIN, "CRON_TZ=Asia/Shanghai", f"30 11 * * * {command}", f"35 12 * * * {command}", END))
 

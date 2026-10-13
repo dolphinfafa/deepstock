@@ -9,7 +9,8 @@ import signal
 import time
 
 from deepstock.codex_session_client import CodexClient
-from deepstock.session_mail import ContactConfig, state_store, synchronize, tick
+from deepstock.session_mail import ContactConfig, send_contact, state_store, synchronize, tick
+from deepstock.scheduled_mail import notify_pending
 
 
 def main():
@@ -31,6 +32,17 @@ def main():
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     while not stopping:
+        scheduled_sent = 0
+        scheduled_error = None
+        if not args.check and os.getenv('DEEPSTOCK_SCHEDULED_EMAIL_ENABLED', '').lower() == 'true':
+            try:
+                thread_id = os.environ['DEEPSTOCK_SCHEDULED_EMAIL_THREAD_ID']
+                if not thread_id.strip():
+                    raise ValueError('Scheduled email needs an originating session')
+                scheduled_sent = notify_pending(db, config, send_contact, thread_id=thread_id,
+                    scope=os.getenv('DEEPSTOCK_SCHEDULED_EMAIL_SCOPE', 'results'))
+            except Exception as error:
+                scheduled_error = type(error).__name__
         try:
             with CodexClient(socket_path) as codex:
                 if args.check:
@@ -42,6 +54,9 @@ def main():
             # Exception text can contain provider credentials or session data.
             result = {'status': 'deferred', 'error_type': type(error).__name__}
         result['at_utc'] = time.time()
+        result['scheduled_sent'] = scheduled_sent
+        if scheduled_error:
+            result['scheduled_error_type'] = scheduled_error
         path = config.root / 'artifacts/session-contact/private/status.json'
         path.write_text(json.dumps(result) + '\n', encoding='utf-8')
         path.chmod(0o600)

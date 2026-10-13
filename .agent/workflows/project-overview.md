@@ -489,6 +489,7 @@ minutes and creates an online SQLite backup daily with 30-day retention.
 | Live authorization | Per strategy/configuration, explicit, maximum 30 days | Password, typed confirmation, eligibility, alert test, and kill switch gates |
 | Alert channels | Web plus SMTP email for severe alerts | Email test must pass before Live can be enabled |
 | Session contact | Codex-origin30-minute reminder; email-origin completion immediately by email | Private state/linked replies only; preserves trading gates |
+| Scheduled result mail | Separate completion/failure mail through the existing bridge | Immutable aggregate receipts; unchanged execution times; provisional results scope |
 | Research-note policy | Assess, explain, then await user decision | Notes cannot silently change research or trading |
 | First research strategy | Defensive ETF trend allocation | Implemented as a reproducible, no-order backtest |
 | Historical research data | Massive adjusted daily bars | User subscription; key remains in local `.env` |

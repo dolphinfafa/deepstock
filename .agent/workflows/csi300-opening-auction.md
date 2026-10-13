@@ -251,3 +251,26 @@ dates remain. The next two scheduled requests are October 6 at 11:30 and
 12:35 China time. At two successful dates per day, completion could occur
 around October 11, but coverage failures or entitlement changes can delay it.
 The complete frozen report remains absent, correctly, until all dates pass.
+
+## October13 current status check and result notification
+
+Read-only inspection of the actual forward store/report, minute manifest and
+cron logs found: latest report as ofOctober12 has21 completed baseline cohorts,
+cumulative-4.5622%, mean daily-0.2195%, win33.33%, t-1.3608; robustness60-cohort
+gate is unmet. Official signals remain last datedSeptember30, with zero
+actionable/health-passed signal days. Announcement collection continues
+successfully (verifiedOctober13 09:05), but October12 signal attempts failed
+the stk_auction cleaner entrance with297 invalid/conflicting quarantined rows;
+October9 logs similarly show407. Do not describe working collection as a
+healthy official signal pipeline or insert late/backdated signals.
+
+September minute labels remain9/21,12 missing; the complete frozen report is
+absent. Current manifest records9 provider frequency-limit errors and1
+incomplete entry. The latest quota status is waiting_for_quota after the
+October12 slots. No provider call, new strategy run, parameter or quota change
+was performed for this status check. Execution remains research_only_no_orders.
+
+The verified owner email asks for separate scheduled completion mail. Managed
+commands now use the receipt wrapper described in `scheduled-task-mail.md`;
+the original timing fields and original underlying commands/arguments remain.
+Receipt reporting never retries the original provider call or strategy task.
