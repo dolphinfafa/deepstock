@@ -10,7 +10,9 @@ from types import SimpleNamespace
 import pytest
 
 from deepstock.session_mail import (ContactConfig, WAIT_SECONDS, deliver_replies, eligible_thread,
-                                    observe, poll_replies, reply_target, send_due, send_reminder, state_store)
+                                    observe, poll_replies, reply_target, register_reply_hint,
+                                    search_token, send_completions, send_contact, send_due,
+                                    send_reminder, state_store, synchronize)
 
 
 @pytest.fixture
@@ -154,8 +156,10 @@ class Mailbox:
     def uid(self, operation, *args):
         self.calls.append((operation, args))
         if operation == 'search':
-            assert args[1:3] in (('HEADER', 'In-Reply-To'), ('HEADER', 'References'))
-            assert args[3].startswith('"<deepstock-')
+            assert args[1] == 'HEADER'
+            assert args[2] in ('In-Reply-To', 'References', 'Subject', 'Message-ID')
+            if args[2] in ('In-Reply-To', 'References'):
+                assert args[3].startswith('"<deepstock-')
             return 'OK', [b' '.join(self.searched)]
         uid, fields = args
         assert 'BODY.PEEK' in fields
@@ -264,3 +268,160 @@ def test_archived_session_not_resumed_by_email(db, config):
     codex = Codex(config)
     assert deliver_replies(db, config, codex) == 0
     assert codex.calls == []
+
+
+class UnindexedReplyHeaders(Mailbox):
+    def uid(self, operation, *args):
+        if operation == 'search' and args[2] in ('In-Reply-To', 'References'):
+            self.calls.append((operation, args))
+            return 'OK', [b'']
+        return super().uid(operation, *args)
+
+
+def test_owner_supplied_exact_identity_recovers_legacy_reply_once(db, config):
+    prepare(db, config)
+    register_reply_hint(db, '<owner-reply@example.test>', '<deepstock-a@example.test>')
+    mailbox = UnindexedReplyHeaders({b'3': mail()})
+    assert poll_replies(db, config, mailbox) == 1
+    assert poll_replies(db, config, mailbox) == 0
+    assert mailbox.body_fetches == [b'3']
+    assert any(args[2:] == ('Message-ID', '"<owner-reply@example.test>"')
+               for op, args in mailbox.calls if op == 'search')
+
+
+def test_unknown_parent_and_search_injection_not_registered(db):
+    with pytest.raises(ValueError, match='our own'):
+        register_reply_hint(db, '<owner@example.test>', '<other-agent@example.test>')
+    with pytest.raises(ValueError, match='Invalid'):
+        register_reply_hint(db, '<owner"injection@example.test>', '<other-agent@example.test>')
+
+
+@pytest.mark.parametrize('value,expected', [
+    ({}, 1), ({'sender': 'other@example.test'}, 0),
+    ({'reply_to': '<other-agent@example.test>', 'refs': '<deepstock-a@example.test>'}, 0),
+])
+def test_random_subject_candidates_still_require_owner_and_exact_nearest_parent(db, config, value, expected):
+    prepare(db, config)
+    mid = '<deepstock-a@example.test>'
+    db.execute('INSERT INTO message_tokens VALUES (?, ?)', (mid, search_token(mid)))
+    db.commit()
+    mailbox = UnindexedReplyHeaders({b'3': mail(**value)})
+    assert poll_replies(db, config, mailbox) == expected
+    assert mailbox.body_fetches == ([b'3'] if expected else [])
+    assert any(args[2:] == ('Subject', f'"{search_token(mid)}"') for op, args in mailbox.calls if op == 'search')
+
+
+def test_legacy_messages_do_not_acquire_unmailed_subject_tokens(db, config):
+    prepare(db, config)
+    mailbox = UnindexedReplyHeaders({b'3': mail()})
+    assert poll_replies(db, config, mailbox) == 0
+    assert not any(args[2] == 'Subject' for op, args in mailbox.calls if op == 'search')
+
+
+def test_active_codex_turn_defers_reply_without_claim(db, config):
+    prepare(db, config)
+    poll_replies(db, config, Mailbox({b'3': mail()}))
+    class Active(Codex):
+        def request(self, method, params):
+            assert method == 'thread/read'
+            return {'thread': thread(self.config, status={'type': 'active'})}
+    assert deliver_replies(db, config, Active(config)) == 0
+    assert db.execute('SELECT state FROM replies').fetchone()[0] == 'received'
+
+
+def ready_email_completion(db, config):
+    prepare(db, config)
+    poll_replies(db, config, Mailbox({b'3': mail()}))
+    assert deliver_replies(db, config, Codex(config)) == 1
+    class Completed(Codex):
+        def request(self, method, params):
+            if method == 'thread/list': return {'data': [thread(config)], 'nextCursor': None}
+            assert method == 'thread/turns/list'
+            # A subsequent Codex turn must not hide the completed email task.
+            return {'data': [turn(id='codex-later'), turn(id='email-turn')]}
+    synchronize(db, config, Completed(config))
+
+
+def test_email_task_completion_sent_immediately_once_with_reply_headers(db, config):
+    ready_email_completion(db, config)
+    calls = []
+    assert send_completions(db, config, lambda *args, **kwargs: calls.append((args, kwargs))) == 1
+    assert send_completions(db, config, lambda *_: pytest.fail('Duplicate result')) == 0
+    assert calls[0][1] == {'parent_id': '<owner-reply@example.test>', 'references': ['<deepstock-a@example.test>']}
+    assert db.execute('SELECT state FROM completions').fetchone()[0] == 'sent'
+    observe(db, thread(config), turn(id='email-turn'), config.root)
+    assert send_due(db, config, lambda *_: pytest.fail('Email turn must not wait/send a reminder'), 999999) == 0
+
+
+def test_ambiguous_completion_is_not_retried(db, config):
+    ready_email_completion(db, config)
+    def failed(*args, **kwargs): raise TimeoutError('Ambiguous SMTP DATA')
+    assert send_completions(db, config, failed) == 0
+    assert db.execute('SELECT state FROM completions').fetchone()[0] == 'failed_or_ambiguous'
+    assert send_completions(db, config, lambda *_: pytest.fail('Unsafe resend')) == 0
+
+
+def test_reply_to_our_completion_is_accepted(db, config):
+    ready_email_completion(db, config)
+    assert send_completions(db, config, lambda *args, **kwargs: None) == 1
+    mid = db.execute('SELECT message_id FROM completions').fetchone()[0]
+    value = mail(reply_to=mid, refs='<deepstock-a@example.test>', message_id='<owner-second@example.test>')
+    mailbox = Mailbox({b'7': value})
+    # This fake transport allows completion IDs in association searches.
+    original = mailbox.uid
+    def accept_completion(operation, *args):
+        if operation == 'search':
+            mailbox.calls.append((operation, args))
+            return 'OK', [b'7']
+        return original(operation, *args)
+    mailbox.uid = accept_completion
+    assert poll_replies(db, config, mailbox) == 1
+    assert db.execute('SELECT count(*) FROM replies').fetchone()[0] == 2
+
+
+def test_completion_formatter_keeps_ascii_token_and_standard_reply_headers(monkeypatch, config):
+    sent = []
+    class SMTP:
+        def __init__(self, **kwargs): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): pass
+        def login(self, *args): pass
+        def send_message(self, value, **kwargs): sent.append(value); return {}
+    monkeypatch.setattr('deepstock.session_mail.smtplib.SMTP_SSL', SMTP)
+    mid = '<deepstock-completion@example.test>'
+    send_contact(config, {'thread_id': 'thread-a', 'final_text': '任务完成'}, mid,
+                 parent_id='<owner-reply@example.test>', references=['<deepstock-a@example.test>'])
+    assert sent[0]['In-Reply-To'] == '<owner-reply@example.test>'
+    assert sent[0]['References'] == '<deepstock-a@example.test> <owner-reply@example.test>'
+    assert search_token(mid).encode() in sent[0].as_bytes().split(b'\n\n')[0]
+    assert sent[0]['From'] == 'deepstock <agents@example.test>'
+
+
+def test_unsupported_reply_header_search_uses_only_saved_random_token(db, config):
+    prepare(db, config)
+    mid = '<deepstock-a@example.test>'
+    db.execute('INSERT INTO message_tokens VALUES (?, ?)', (mid, search_token(mid)))
+    db.commit()
+    class Unsupported(Mailbox):
+        def uid(self, operation, *args):
+            if operation == 'search' and args[2] in ('In-Reply-To', 'References'):
+                return 'BAD', []
+            return super().uid(operation, *args)
+    mailbox = Unsupported({b'3': mail()})
+    assert poll_replies(db, config, mailbox) == 1
+    assert mailbox.body_fetches == [b'3']
+
+
+def test_completion_turn_found_beyond_latest_page(db, config):
+    prepare(db, config)
+    poll_replies(db, config, Mailbox({b'3': mail()}))
+    assert deliver_replies(db, config, Codex(config)) == 1
+    class Paged(Codex):
+        def request(self, method, params):
+            if method == 'thread/list': return {'data': [thread(config)], 'nextCursor': None}
+            if params.get('cursor') == 'older':
+                return {'data': [turn(id='email-turn')], 'nextCursor': None}
+            return {'data': [turn(id='newer-turn')], 'nextCursor': 'older'}
+    synchronize(db, config, Paged(config))
+    assert db.execute('SELECT turn_id FROM completions').fetchone()[0] == 'email-turn'
+    assert db.execute('SELECT turn_id FROM sessions').fetchone()[0] == 'newer-turn'

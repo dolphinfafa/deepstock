@@ -80,6 +80,12 @@ bridge and its strict shared-mailbox boundaries. This authorization persists
 across turns; it is limited to this contact rule and does not permit browsing
 other agents' messages or sending unrelated mail. Do not install a second
 timer, resend a claimed reminder or duplicate the bridge's mailbox polling.
+Verified October13 owner email adds immediate email delivery of completed
+email-origin tasks; Codex-origin unanswered messages keep the30-minute rule.
+The shared-mailbox boundary remains: discover by our stored association IDs,
+our mailed unpredictable subject token, or an owner-supplied exact reply ID;
+validate owner/nearest parent before body fetch. Never use a generic subject,
+sender/time scan or browse other agents' traffic.
 
 ### Error Handling
 

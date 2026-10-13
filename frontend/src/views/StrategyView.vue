@@ -15,6 +15,18 @@ const error = ref('')
 const auditReport = computed(() => strategy.value?.reports?.find((report: any) => report.report_type === 'granville_us_ledger_history_audit'))
 const metrics = computed(() => strategy.value?.latest_run?.metrics || [])
 const separateMarkets = computed(() => strategy.value?.annualization?.scope === 'separate_markets')
+const progress = computed(() => [...(strategy.value?.progress || [])].sort((a, b) =>
+  progressTime(b.occurred_at) - progressTime(a.occurred_at)))
+
+function progressTime(value?: string) {
+  if (!value) return 0
+  const date = Date.parse(/[zZ]$|[+-]\d{2}:?\d{2}$/.test(value) ? value : `${value}Z`)
+  return Number.isNaN(date) ? 0 : date
+}
+function progressDate(value?: string) {
+  const date = progressTime(value)
+  return date ? new Date(date).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }) : '日期未知'
+}
 
 function pct(value: number | null | undefined) {
   return value == null ? '—' : `${(value * 100).toFixed(2)}%`
@@ -48,7 +60,7 @@ watch(() => live.revision, load)
     <div class="version-line"><span>当前版本</span><code>{{ strategy.current_version }}</code><span>更新于 {{ strategy.updated_at?.slice(0, 10) }}</span></div>
     <section v-for="notice in strategy.evidence_notices || []" :key="notice.id" class="panel compact-panel form-error">
       <strong>{{ notice.title }}</strong><p>{{ notice.detail }}</p>
-      <RouterLink :to="{ path: '/reports', query: { report: `${notice.id}-report` } }">查看数据审计更正报告</RouterLink>
+      <RouterLink :to="{ path: '/reports', query: { report: `${notice.id}-report`, strategy: strategy.id } }">查看数据审计更正报告</RouterLink>
     </section>
     <div v-if="strategy.is_archived" class="panel compact-panel"><strong>研究已冻结 · {{ strategy.archived_at?.slice(0, 10) }}</strong><p>{{ strategy.archive_reason }}</p></div>
     <div v-if="strategy.latest_run?.status === 'paused_missing_data'" class="panel compact-panel"><strong>需要更多数据 · 研究已暂停</strong><p>尚无合格真实行情回测结果。补齐分钟历史、交易日历及公司行动数据后，需你明确要求恢复；当前不会自动下载或回测。</p></div>
@@ -58,7 +70,7 @@ watch(() => live.revision, load)
     <section v-if="auditReport" class="panel compact-panel">
       <strong>成本与退出归因 · 长历史准入检查</strong>
       <p>仅诊断，未做新回测。原12组与两组WBA阻塞保留；报告展示完整周期退出费用、基础/10bp真实路径差异，以及1305代码覆盖和固定窗口清单。</p>
-      <RouterLink :to="{ path: '/reports', query: { report: auditReport.id } }">查看聚合诊断报告</RouterLink>
+      <RouterLink :to="{ path: '/reports', query: { report: auditReport.id, strategy: strategy.id } }">查看聚合诊断报告</RouterLink>
     </section>
     <section v-if="separateMarkets" class="detail-grid">
       <article v-for="(result, market) in strategy.market_results" :key="market" class="panel">
@@ -109,10 +121,10 @@ watch(() => live.revision, load)
       <article v-if="!separateMarkets" class="panel"><div class="section-title"><div><small>LATEST EVIDENCE</small><h2>最新指标</h2></div></div><div class="metric-list"><div v-for="metric in metrics" :key="`${metric.scope}-${metric.name}`"><span>{{ metric.name.replaceAll('_', ' ') }}</span><strong :class="{ loss: metric.value < 0 }">{{ displayMetric(metric) }}</strong><small>{{ metric.scope }}<template v-if="metric.benchmark"> · {{ metric.benchmark }}</template></small></div></div></article>
     </section>
     <section v-if="!separateMarkets" class="panel chart-panel"><div class="section-title"><div><small>METRIC PROFILE</small><h2>指标轮廓</h2></div><span>保留原始量纲，仅用于快速辨识</span></div><MetricChart :metrics="metrics" /></section>
-    <section class="panel"><div class="section-title"><div><small>RESEARCH PROGRESS</small><h2>研究进程</h2></div></div><div class="timeline"><div v-for="item in strategy.progress" :key="item.id" :class="['timeline-item', item.status]"><i /><div><div><strong>{{ item.title }}</strong><StatusBadge :status="item.status" /></div><p>{{ item.detail }}</p><small>{{ item.stage }}</small></div></div></div></section>
+    <section class="panel"><div class="section-title"><div><small>RESEARCH PROGRESS</small><h2>研究进程</h2></div></div><div class="timeline progress-timeline" tabindex="0" role="region" aria-label="研究进程，最新记录在前"><div v-for="item in progress" :key="item.id" :class="['timeline-item', item.status]"><i /><div><div><strong>{{ item.title }}</strong><StatusBadge :status="item.status" /></div><time :datetime="item.occurred_at">{{ progressDate(item.occurred_at) }}</time><p>{{ item.detail }}</p><small>{{ item.stage }}</small></div></div><p v-if="!progress.length" class="empty-state">暂无研究进程。</p></div></section>
     <section class="panel"><div class="section-title"><div><small>RUN HISTORY</small><h2>研究运行</h2></div></div><div class="table-wrap"><table><thead><tr><th>日期</th><th>类型</th><th>状态</th><th>摘要</th><th>指标数</th></tr></thead><tbody><tr v-for="run in strategy.runs" :key="run.id"><td>{{ run.as_of_date || '—' }}</td><td>{{ run.run_type }}</td><td><StatusBadge :status="run.status" /></td><td>{{ run.summary }}</td><td>{{ run.metrics.length }}</td></tr></tbody></table></div></section>
     <section class="detail-grid">
-      <article class="panel"><div class="section-title"><div><small>REPORTS</small><h2>研究报告</h2></div></div><RouterLink class="report-row" v-for="report in strategy.reports" :key="report.id" :to="{ path: '/reports', query: { report: report.id } }"><div><strong>{{ report.title }}</strong><small>{{ report.report_type }}</small></div><time>{{ report.as_of_date }}</time></RouterLink></article>
+      <article class="panel"><div class="section-title"><div><small>REPORTS</small><h2>研究报告</h2></div></div><RouterLink class="report-row" v-for="report in strategy.reports" :key="report.id" :to="{ path: '/reports', query: { report: report.id, strategy: strategy.id } }"><div><strong>{{ report.title }}</strong><small>{{ report.report_type }}</small></div><time>{{ report.as_of_date }}</time></RouterLink></article>
       <article class="panel"><div class="section-title"><div><small>RESEARCH NOTES</small><h2>关联笔记</h2></div></div><div v-if="!strategy.notes.length" class="empty-state">尚无已登记的关联笔记。</div><div class="note-row" v-for="note in strategy.notes" :key="note.id"><p>{{ note.original_text }}</p><div><StatusBadge :status="note.status" /><span>{{ note.recommendation }}</span></div></div></article>
     </section>
   </div>

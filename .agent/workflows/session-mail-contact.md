@@ -7,6 +7,9 @@ reply through Codex or email. The sender mailbox is shared with other agents;
 only replies to this assistant's own emails may be inspected. This consent
 persists across turns and supersedes the earlier test-only email scope for
 this specific reminder/reply flow. It does not authorize unrelated sends.
+The verified October 13 owner reply adds: Codex-origin messages retain the
+30-minute unanswered reminder; an email-origin task receives its completed
+result immediately by email, once, in the same thread.
 
 ## Behavior
 
@@ -25,7 +28,17 @@ and the latest final message (bounded to 6000 characters), with no transcript,
 tool outputs or attachments. The newest Codex user turn cancels the old timer;
 a newly completed assistant turn gets a new timer. No reply means one reminder,
 not repeated 30-minute emails. SMTP claim is committed before submission;
-timeouts/crashes never automatically resubmit an ambiguous send.
+timeouts/crashes never automatically resubmit an ambiguous send. New outbound
+messages include a stored unpredictable ASCII `ds-...` subject token tied to
+their Message-ID, because this provider does not reliably search reply headers.
+
+Email-origin turn IDs are persisted separately. After the corresponding turn
+completes, its final answer is sent at the next poll (no 30-minute wait), with
+In-Reply-To pointing to the owner reply and References retaining the chain.
+It does not also get a delayed reminder. Completed email turns are located
+even if newer Codex turns precede them. Busy sessions queue incoming email
+until idle; they are not interrupted. Completion SMTP claims use the same
+no-automatic-retry rule. Replies to completion emails are also eligible.
 
 Replies are routed to the exact original session using `turn/start` and a
 stable client message identifier. This uses the existing model/permissions;
@@ -39,9 +52,14 @@ local state and are never silently replayed. Live gates/order governance remain.
 
 - Generate an unpredictable Message-ID for each Deepstock reminder and retain
   the exact originating session/turn mapping before SMTP.
-- Select INBOX read-only. UID searches must be server-side HEADER
-  In-Reply-To/References matches for those stored IDs. No ALL/subject-only
-  search, mailbox header sweep, other-folder scan or full-inbox download.
+- Select INBOX read-only. Candidate discovery is limited to server-side HEADER
+  In-Reply-To/References matches for stored outbound IDs, the exact unpredictable
+  subject token actually mailed for that outbound message, or an exact reply
+  Message-ID supplied by the owner and pinned to an existing outbound parent.
+  A generic subject, sender or time search is forbidden, as are ALL, header
+  sweeps, other-folder scans and full-inbox downloads. Subject tokens never
+  substitute for reply association: owner and nearest-parent validation still
+  precede every body fetch. Legacy mail has no retroactively invented token.
 - Fetch only the matching candidate's minimal reply/sender headers and size;
   verify the single configured owner sender and the nearest reply parent.
   A reply directed to another agent is rejected even if our ID appears earlier
@@ -50,8 +68,9 @@ local state and are never silently replayed. Live gates/order governance remain.
 - Read no other messages' bodies or attachments. Do not inspect provider
   support mail or another agent's traffic under this authorization. Plain-text
   and HTML user replies are converted to bounded text without executing HTML.
-- Unsupported reply-header search stops collection; it does not permit a broad
-  fallback. Repeated UID appearances/message identifiers are deduplicated.
+- Unsupported reply-header search may use only the narrow identities above;
+  if all authorized searches fail, collection stops. No broad fallback.
+  Repeated UID appearances/message identifiers are deduplicated.
 
 ## Configuration and operation
 
@@ -113,3 +132,10 @@ The deployment uses its owner-only Unix socket and current CLI 0.162.1 schemas.
 The real completed-turn summary exposes phase `final_answer`; the bridge
 accepts that value as well as `final`. A read-only real-summary observation
 confirmed the waiting state without SMTP/IMAP or starting a Codex turn.
+
+October 13 actual reply verification: the owner supplied the specific reply's
+Message-ID, In-Reply-To and References. Its parent matched the stored 00:18
+reminder exactly. Message-ID lookup located one UID; reply-header searches
+returned zero despite the fetched reply's correct headers. Only that verified
+owner reply body was read. No shared-inbox header sweep occurred. The existing
+task adopts this reply so it is not injected a second time into Codex.
