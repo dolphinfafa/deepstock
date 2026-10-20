@@ -77,6 +77,12 @@ immutable; cleaning owns normalisation/audit and research entrances validate
 registered versions. Never invent unknown executable prices/activity or
 silently drop missing sessions. New research results pin all input versions.
 CSI300 collection/backtesting now belongs to Deepstock, not Darwen.
+October20 announcement collection uses CNINFO plus both official exchanges,
+with full pagination/evidence, persistent cross-source identities and original
+first-observed timestamps. Tushare announcement/calendar probes succeeded;
+network failures are not permission denials. Explicit permission denial disables
+only that endpoint persistently, never every Tushare interface. See
+csi300-opening-auction.md for source selection, pending identities and recovery.
 
 Before changing a file, state a three-point plan in the working update.
 

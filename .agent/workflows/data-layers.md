@@ -3,6 +3,14 @@
 All strategies/markets are peers. `deepstock.data` owns raw provider evidence,
 deterministic cleaning and strict research inputs, outside market packages.
 
+October20 official auction disclosure adapters capture CNINFO/SSE/SZSE request,
+response and response-read time before validation, then register normalized
+exports with upstream versions. Empty verified source responses remain evidence;
+partial pages never become accepted inputs. Cross-source shared IDs or retained
+PDF bytes establish event identity; title matching alone cannot. Existing
+Tushare event provenance and first-seen times remain immutable in observation
+SQLite. See csi300-opening-auction.md for selection and blocked-input behavior.
+
 ## Storage and contracts
 
 `artifacts/datasets/<version>/` holds immutable raw bytes, clean CSV/GZip or

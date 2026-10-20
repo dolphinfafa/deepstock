@@ -24,6 +24,19 @@ period returns, not headline annualisation, and cannot authorize orders.
 
 ## Architecture and Data Flow
 
+October20 auction announcement collection moves to CNINFO/SSE/SZSE public
+interfaces. Full-response evidence precedes normalization and pinned cleaned
+exports. The consolidated CNINFO/SZSE identities feed one event per stock and
+document; SSE is captured independently as the Shanghai fallback, with PDF-byte
+identity checks across mirrors. Additive research SQLite tables preserve legacy
+Tushare events, first observation times, live/backfill modes and frozen signals.
+Incomplete market coverage or unresolved document identities returns a blocked
+collection result. Tushare's authenticated announcement/calendar probes were
+successful; its recent announcement failures were transport errors. Only an
+explicit endpoint permission denial creates a persistent local endpoint disable
+record. Market-data interfaces and existing collection times/quotas are retained.
+See csi300-opening-auction.md for deployment and recovery contracts.
+
 October13 follow-up adds complete ADX/ARC/SPY prospective plans/settlements on
 Windows (daily07:45), aggregate-only authenticated publication and immutable
 replay. See adx-prospective.md. Session mail separately queues Seen flags after

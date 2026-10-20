@@ -24,6 +24,10 @@ import pandas as pd
 
 from deepstock.strategies.cn.auction.repository import SessionLocal
 from deepstock.strategies.cn.auction.providers import get_pro
+from deepstock.strategies.cn.auction.announcements import OfficialAnnouncements, fetch_official_announcements
+from deepstock.strategies.cn.auction.announcement_store import (
+    seed_legacy_identities, register_identity, store_official_frame,
+)
 from deepstock.strategies.cn.auction.cli import build_parser, run_auction_prediction
 from deepstock.strategies.cn.auction.data import (
     fetch_tushare_auction_snapshot,
@@ -337,6 +341,7 @@ def open_store(root: Path = DEFAULT_FORWARD_ROOT) -> sqlite3.Connection:
     if "entry_source" not in paper_order_columns:
         connection.execute("ALTER TABLE paper_order ADD COLUMN entry_source TEXT")
         connection.commit()
+    seed_legacy_identities(connection)
     return connection
 
 
@@ -376,9 +381,12 @@ def store_announcement_frame(
     frame: pd.DataFrame,
     seen_at: datetime,
     observation_mode: str = "live",
+    identity_service=None,
 ) -> dict[str, int]:
     if observation_mode not in {"live", "backfill"}:
         raise ValueError("observation_mode must be live or backfill")
+    if 'source' in frame:
+        return store_official_frame(connection, frame, observation_mode, identity_service)
     inserted = 0
     updated = 0
     seen = _iso(seen_at)
@@ -422,6 +430,7 @@ def store_announcement_frame(
             ),
         )
         inserted += max(cursor.rowcount, 0)
+        register_identity(connection, event_id, stock_code, row)
         update_cursor = connection.execute(
             """
             UPDATE announcement_event
@@ -445,6 +454,7 @@ def collect_announcements(
     observation_mode: str = "live",
     seen_at: datetime | None = None,
     pro=None,
+    service=None,
 ) -> dict[str, Any]:
     dates = tuple(source_dates or (date.today(),))
     observed_at = seen_at or _now()
@@ -452,6 +462,9 @@ def collect_announcements(
         if not acquired:
             return {"status": "skipped_locked", "dates": [value.isoformat() for value in dates]}
         connection = open_store(root)
+        owned_service = service is None and pro is None
+        if owned_service:
+            service = OfficialAnnouncements()
         reports: list[dict[str, Any]] = []
         try:
             for source_date in dates:
@@ -467,22 +480,34 @@ def collect_announcements(
                 )
                 connection.commit()
                 try:
-                    frame = fetch_tushare_announcement_pages(source_date, pro=pro)
+                    # A supplied legacy client is an explicit compatibility path;
+                    # the scheduled/default path never falls back to Tushare.
+                    if pro is not None:
+                        frame = fetch_tushare_announcement_pages(source_date, pro=pro)
+                        sources, coverage = [], True
+                    else:
+                        frame, sources, coverage = fetch_official_announcements(source_date, service)
                     stats = store_announcement_frame(
-                        connection, frame, observed_at, observation_mode
+                        connection, frame, observed_at, observation_mode, service
                     )
+                    status = 'ok' if coverage and not stats.get('pending') else 'input_blocked'
+                    for source in sources:
+                        connection.execute('INSERT INTO announcement_source_run VALUES (?, ?, ?)',
+                                           (run_id, source['source'], _json(source)))
                     finished = _iso(_now())
                     connection.execute(
                         """
                         UPDATE collector_run
-                        SET finished_at=?, status='ok', rows_received=?, rows_inserted=?
+                        SET finished_at=?, status=?, rows_received=?, rows_inserted=?
                         WHERE run_id=?
                         """,
-                        (finished, stats["received"], stats["inserted"], run_id),
+                        (finished, status, stats["received"], stats["inserted"], run_id),
                     )
                     reports.append({
                         "source_date": source_date.isoformat(),
-                        "status": "ok",
+                        "status": status,
+                        "sources": sources,
+                        "market_coverage_complete": coverage,
                         **stats,
                     })
                 except Exception as exc:
@@ -498,8 +523,10 @@ def collect_announcements(
                 connection.commit()
         finally:
             connection.close()
+            if owned_service:
+                service.close()
     return {
-        "status": "ok",
+        "status": "ok" if all(r['status'] == 'ok' for r in reports) else 'input_blocked',
         "observed_at": _iso(observed_at),
         "observation_mode": observation_mode,
         "dates": reports,

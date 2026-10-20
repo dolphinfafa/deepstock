@@ -1,6 +1,9 @@
 """Deepstock-owned credentials and provider evidence capture."""
 from __future__ import annotations
 import os
+from pathlib import Path
+import re
+import sqlite3
 import uuid
 from datetime import datetime, timezone
 import pandas as pd
@@ -10,9 +13,31 @@ from deepstock.data.store import ROOT, DataStore, read_clean_csv
 _pro = None
 
 
+def permission_denied(error):
+    # Rate limits/credits, timeouts and invalid tokens are not endpoint permissions.
+    return bool(re.search(r'没有访问该接口的权限|没有.*接口.*权限|权限不足|无权访问该接口|'
+                          r'permission denied|insufficient permissions?|no permission to access',
+                          str(error), re.I))
+
+
 class CapturedTushare:
-    def __init__(self, client):
+    def __init__(self, client, *, state_path=None):
         self.client = client
+        self.state_path = Path(state_path) if state_path is not None else ROOT / 'artifacts/providers/tushare/endpoint_state.sqlite3'
+
+    def _disabled(self, endpoint):
+        if not self.state_path.exists():
+            return False
+        with sqlite3.connect(self.state_path, timeout=30) as db:
+            db.execute('CREATE TABLE IF NOT EXISTS disabled_endpoint (endpoint TEXT PRIMARY KEY, disabled_at TEXT NOT NULL, reason TEXT NOT NULL)')
+            return db.execute('SELECT 1 FROM disabled_endpoint WHERE endpoint=?', (endpoint,)).fetchone() is not None
+
+    def _disable(self, endpoint):
+        self.state_path.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(self.state_path, timeout=30) as db:
+            db.execute('CREATE TABLE IF NOT EXISTS disabled_endpoint (endpoint TEXT PRIMARY KEY, disabled_at TEXT NOT NULL, reason TEXT NOT NULL)')
+            db.execute('INSERT OR IGNORE INTO disabled_endpoint VALUES (?, ?, ?)',
+                       (endpoint, datetime.now(timezone.utc).isoformat(), 'explicit_permission_denied'))
 
     def __getattr__(self, endpoint):
         def fetch(*args, **kwargs):
@@ -21,10 +46,18 @@ class CapturedTushare:
             # Tushare exposes both pro.stk_mins(...) and
             # pro.query("stk_mins", ...); neither may bypass the shared quota.
             actual_endpoint = (args[0] if args else kwargs.get("api_name", endpoint)) if endpoint == "query" else endpoint
+            if self._disabled(actual_endpoint):
+                raise PermissionError(f'Tushare endpoint {actual_endpoint} disabled: explicit_permission_denied')
             if actual_endpoint == "stk_mins":
                 from .quota import consume_minute_request
                 consume_minute_request()
-            frame = getattr(self.client, endpoint)(*args, **kwargs)
+            try:
+                frame = getattr(self.client, endpoint)(*args, **kwargs)
+            except Exception as error:
+                if permission_denied(error):
+                    self._disable(actual_endpoint)
+                    raise PermissionError(f'Tushare endpoint {actual_endpoint} disabled: explicit_permission_denied') from error
+                raise
             if frame is None or frame.empty:
                 return frame
             now = datetime.now(timezone.utc)
