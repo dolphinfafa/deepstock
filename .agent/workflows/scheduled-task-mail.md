@@ -9,13 +9,22 @@ using the same dedicated interpreter, cwd and arguments. All existing cron
 times, waits, quota rules and the Windows07:30 trigger stay fixed. The wrapper
 retains the original exit code; mail/reporting failures never rerun research or
 change task success. A bounded stdout tail is used locally to extract the last
-JSON summary; raw stdout/stderr, prices, securities, trades and credentials are
+JSON summary for legacy tasks. October21 auction commands instead emit a marked
+single-line `DEEPSTOCK_RESULT_V1` aggregate JSON envelope when invoked by the
+wrapper (`DEEPSTOCK_SCHEDULED_SUMMARY=1`), capped at16KiB. Full report files and
+ordinary CLI output remain available locally. This prevents a large report's
+opening JSON from falling outside the128KiB tail. Marked malformed output fails
+closed, and lock skips with string date lists remain `skipped_locked`.
+Raw stdout/stderr, prices, securities, trades and credentials are
 never emailed or uploaded by this flow. Original task logging stays local.
 
 Receipts contain only a random execution ID, allowlisted task/node/status,
 timezone-aware start/end, exit code, data date and approved numeric/boolean
 aggregates. Failure, quota wait, missed signal cutoff and no-op statuses remain
 distinct. A successful command is task completion, not strategy validation.
+Aggregate receipts also expose pending/recovered announcement identity counts
+and a no-progress flag for minute backfill. An incomplete attempted date returns
+`input_blocked`, not a successful backfill; quota waits remain distinct.
 Private SQLite outbox `artifacts/scheduled-mail/private/outbox.sqlite3` is
 ignored by Git and protected with0700/0600 on the server.
 

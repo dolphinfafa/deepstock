@@ -28,11 +28,16 @@ URLS = {
 }
 REFERERS = {'cninfo': 'https://www.cninfo.com.cn/', 'sse': 'https://www.sse.com.cn/',
             'szse': 'https://www.szse.cn/'}
-DOCUMENT_HOSTS = {'static.cninfo.com.cn', 'www.cninfo.com.cn', 'www.sse.com.cn',
+DOCUMENT_HOSTS = {'static.cninfo.com.cn', 'www.cninfo.com.cn', 'www.sse.com.cn', 'static.sse.com.cn',
                   'www.szse.cn', 'disc.static.szse.cn'}
 
 
 class AnnouncementUnavailable(RuntimeError):
+    pass
+
+
+class VerificationDeferred(AnnouncementUnavailable):
+    """The round's verification budget is spent; this is not a failed attempt."""
     pass
 
 
@@ -42,7 +47,8 @@ def plain_title(value):
 
 def document_url(value):
     parsed = urlsplit(str(value))
-    if parsed.hostname not in DOCUMENT_HOSTS or parsed.username or parsed.password:
+    if (parsed.scheme != 'https' or parsed.hostname not in DOCUMENT_HOSTS
+            or parsed.username or parsed.password or parsed.port not in (None, 443)):
         raise AnnouncementUnavailable('Disclosure document is outside official hosts')
     return 'https://' + parsed.hostname + unquote(parsed.path)
 
@@ -71,7 +77,8 @@ def _count(value):
 
 class OfficialAnnouncements:
     def __init__(self, client=None, *, capture=capture_response, pause=time.sleep,
-                 page_size=100, max_pages=500, root=ROOT):
+                 page_size=100, max_pages=500, root=ROOT, max_documents=20,
+                 document_seconds=60, monotonic=time.monotonic):
         self.client = client or httpx.Client(timeout=httpx.Timeout(18, connect=5), follow_redirects=False)
         self.owns_client = client is None
         self.capture = capture
@@ -81,6 +88,21 @@ class OfficialAnnouncements:
         self.root = Path(root)
         self.document_hashes = {}
         self.partial_versions = {}
+        self.max_documents = max_documents
+        self.document_seconds = document_seconds
+        self.monotonic = monotonic
+        self.document_deadline = None
+        self.document_attempts = 0
+        self.document_failures = set()
+        self.document_aliases = {}
+
+    def _document_remaining(self):
+        if self.document_deadline is None:
+            self.document_deadline = self.monotonic() + self.document_seconds
+        remaining = self.document_deadline - self.monotonic()
+        if remaining <= 0:
+            raise VerificationDeferred('Disclosure verification time budget exhausted')
+        return remaining
 
     def close(self):
         if self.owns_client:
@@ -230,14 +252,35 @@ class OfficialAnnouncements:
         url = document_url(url)
         if url in self.document_hashes:
             return self.document_hashes[url]
-        self.pause(.15)
-        with self.client.stream('GET', url, headers={'User-Agent': 'Mozilla/5.0'}) as response:
-            response.raise_for_status()
-            content = bytearray()
-            for chunk in response.iter_bytes():
-                content.extend(chunk)
-                if len(content) > 20 * 1024 * 1024:
-                    raise AnnouncementUnavailable('Disclosure PDF exceeds verification limit')
+        self._document_remaining()
+        if self.document_attempts >= self.max_documents:
+            raise VerificationDeferred('Disclosure verification document budget exhausted')
+        if url in self.document_failures:
+            raise AnnouncementUnavailable('Disclosure verification already failed this round')
+        self.document_attempts += 1
+        self.document_failures.add(url)
+        aliases = [url]
+        for hop in range(4):
+            self.pause(.15)
+            timeout = min(18, self._document_remaining())
+            with self.client.stream('GET', aliases[-1], headers={'User-Agent': 'Mozilla/5.0'},
+                                    follow_redirects=False, timeout=timeout) as response:
+                if response.status_code in (301, 302, 303, 307, 308):
+                    if hop == 3 or not response.headers.get('location'):
+                        raise AnnouncementUnavailable('Disclosure redirect limit reached')
+                    target = document_url(urljoin(aliases[-1], response.headers['location']))
+                    if target in aliases:
+                        raise AnnouncementUnavailable('Disclosure redirect loop')
+                    aliases.append(target)
+                    continue
+                response.raise_for_status()
+                content = bytearray()
+                for chunk in response.iter_bytes():
+                    self._document_remaining()
+                    content.extend(chunk)
+                    if len(content) > 20 * 1024 * 1024:
+                        raise AnnouncementUnavailable('Disclosure PDF exceeds verification limit')
+                break
         if not bytes(content).lstrip().startswith(b'%PDF-'):
             raise AnnouncementUnavailable('Disclosure response is not a PDF; identity remains unconfirmed')
         digest = hashlib.sha256(content).hexdigest()
@@ -249,9 +292,12 @@ class OfficialAnnouncements:
                 stream.write(content)
         if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
             raise AnnouncementUnavailable('Retained disclosure checksum mismatch')
-        self.capture('OfficialAnnouncements', 'document-identity', {'url': url, 'sha256': digest,
+        self.capture('OfficialAnnouncements', 'document-identity', {'url': url, 'aliases': aliases, 'sha256': digest,
                      'bytes': len(content), 'local_document': str(path.relative_to(self.root))}, 'CN', restricted=True)
-        self.document_hashes[url] = digest
+        for alias in aliases:
+            self.document_hashes[alias] = digest
+            self.document_aliases[alias] = tuple(aliases)
+            self.document_failures.discard(alias)
         return digest
 
 

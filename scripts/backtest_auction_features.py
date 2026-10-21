@@ -6,10 +6,12 @@ import argparse
 import asyncio
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
-from datetime import date, timedelta
+import os
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 import time
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -204,6 +206,23 @@ def _pending_minute_windows(
     return pending
 
 
+def _minute_attempt_queue(pending, manifest, now):
+    """Missing inventory stays chronological; execution rotates durably."""
+    today = now.astimezone(ZoneInfo('Asia/Shanghai')).date()
+
+    def state(window):
+        start, end = window
+        return manifest.get(f'{start:%Y%m%d}_{end:%Y%m%d}', {})
+
+    def due(window):
+        last = state(window).get('last_attempt_at_utc')
+        return not last or datetime.fromisoformat(last).astimezone(ZoneInfo('Asia/Shanghai')).date() != today
+
+    return sorted((window for window in pending if due(window)), key=lambda w: (
+        bool(state(w).get('attempts') or state(w).get('total_attempts')),
+        state(w).get('last_attempt_at_utc', ''), w))
+
+
 def _fetch_tushare_stock_history(
     ts_code: str,
     start: date,
@@ -373,12 +392,13 @@ def fetch_execution_entries(args: argparse.Namespace) -> dict:
         else {}
     )
     pending_before = _pending_minute_windows(windows, output_dir, manifest)
+    eligible = _minute_attempt_queue(pending_before, manifest, datetime.now(timezone.utc))
     maximum_windows = getattr(args, "maximum_windows_per_run", None)
     if maximum_windows is not None and maximum_windows < 1:
         raise ValueError("--maximum-windows-per-run must be at least 1")
     pending = (
-        pending_before[:maximum_windows]
-        if maximum_windows is not None else pending_before
+        eligible[:maximum_windows]
+        if maximum_windows is not None else eligible
     )
 
     minute_source = getattr(args, "minute_source", "ftshare")
@@ -425,6 +445,8 @@ def fetch_execution_entries(args: argparse.Namespace) -> dict:
                     "point_in_time_members": len(expected),
                     "covered_members": covered,
                     "coverage": coverage,
+                    "normalization_audit": entries.attrs.get('normalization_audit', {}),
+                    "raw_version": entries.attrs.get('raw_version'),
                     "attempts": attempt + 1,
                     "source": (
                         "tushare.stk_mins" if minute_source == "tushare"
@@ -450,11 +472,24 @@ def fetch_execution_entries(args: argparse.Namespace) -> dict:
 
     if minute_source == "tushare" and args.date_concurrency != 1:
         raise ValueError("Tushare stk_mins backfill requires --date-concurrency 1")
+    attempt_metadata = {}
     with ThreadPoolExecutor(max_workers=args.date_concurrency) as executor:
-        futures = {
-            executor.submit(fetch_window, start, end): (start, end)
-            for start, end in pending
-        }
+        futures = {}
+        for start, end in pending:
+            key = f'{start:%Y%m%d}_{end:%Y%m%d}'
+            previous = manifest.get(key, {})
+            attempt_metadata[key] = {
+                'last_attempt_at_utc': datetime.now(timezone.utc).isoformat(),
+                'total_attempts': previous.get('total_attempts', previous.get('attempts', 0)),
+                'reservation': os.getenv('DEEPSTOCK_MINUTE_RESERVATION'),
+            }
+            # Persist before submitting: a process interruption cannot starve later dates.
+            manifest[key] = {**previous, **attempt_metadata[key], 'status': 'running',
+                             'total_attempts': attempt_metadata[key]['total_attempts'] + 1}
+            temporary = manifest_path.with_suffix('.tmp')
+            temporary.write_text(json.dumps(manifest, ensure_ascii=False, default=_json_default), encoding='utf-8')
+            temporary.replace(manifest_path)
+            futures[executor.submit(fetch_window, start, end)] = (start, end)
         for future in as_completed(futures):
             key, entries, status = future.result()
             if not entries.empty:
@@ -462,12 +497,16 @@ def fetch_execution_entries(args: argparse.Namespace) -> dict:
                     output_dir / f"{key}.csv.gz", index=False, compression="gzip"
                 )
                 DataStore().import_file(output_dir / f"{key}.csv.gz", metadata_for(output_dir / f"{key}.csv.gz"))
+            status.update(attempt_metadata[key])
+            status['total_attempts'] += status['attempts']
             manifest[key] = status
             print(key, status, flush=True)
-            manifest_path.write_text(
+            temporary = manifest_path.with_suffix('.tmp')
+            temporary.write_text(
                 json.dumps(manifest, ensure_ascii=False, indent=2, default=_json_default),
                 encoding="utf-8",
             )
+            temporary.replace(manifest_path)
     requested_keys = {f"{start:%Y%m%d}_{end:%Y%m%d}" for start, end in windows}
     remaining = _pending_minute_windows(windows, output_dir, manifest)
     counts = pd.Series([
@@ -486,6 +525,8 @@ def fetch_execution_entries(args: argparse.Namespace) -> dict:
         "windows": len(windows),
         "pending_before_run": len(pending_before),
         "processed_this_run": len(pending),
+        "attempted_dates": [start.isoformat() for start, _ in pending],
+        "reservation": os.getenv('DEEPSTOCK_MINUTE_RESERVATION'),
         "remaining_windows": len(remaining),
         "remaining_dates": [start.isoformat() for start, _ in remaining],
         "status_counts": counts.to_dict(),

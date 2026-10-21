@@ -26,7 +26,7 @@ from deepstock.strategies.cn.auction.repository import SessionLocal
 from deepstock.strategies.cn.auction.providers import get_pro
 from deepstock.strategies.cn.auction.announcements import OfficialAnnouncements, fetch_official_announcements
 from deepstock.strategies.cn.auction.announcement_store import (
-    seed_legacy_identities, register_identity, store_official_frame,
+    seed_legacy_identities, register_identity, store_official_frame, retry_pending,
 )
 from deepstock.strategies.cn.auction.cli import build_parser, run_auction_prediction
 from deepstock.strategies.cn.auction.data import (
@@ -382,11 +382,12 @@ def store_announcement_frame(
     seen_at: datetime,
     observation_mode: str = "live",
     identity_service=None,
+    *, respect_backoff=False,
 ) -> dict[str, int]:
     if observation_mode not in {"live", "backfill"}:
         raise ValueError("observation_mode must be live or backfill")
     if 'source' in frame:
-        return store_official_frame(connection, frame, observation_mode, identity_service)
+        return store_official_frame(connection, frame, observation_mode, identity_service, respect_backoff=respect_backoff)
     inserted = 0
     updated = 0
     seen = _iso(seen_at)
@@ -458,6 +459,7 @@ def collect_announcements(
 ) -> dict[str, Any]:
     dates = tuple(source_dates or (date.today(),))
     observed_at = seen_at or _now()
+    recovery = {}
     with _command_lock(root, "collect") as acquired:
         if not acquired:
             return {"status": "skipped_locked", "dates": [value.isoformat() for value in dates]}
@@ -488,7 +490,7 @@ def collect_announcements(
                     else:
                         frame, sources, coverage = fetch_official_announcements(source_date, service)
                     stats = store_announcement_frame(
-                        connection, frame, observed_at, observation_mode, service
+                        connection, frame, observed_at, observation_mode, service, respect_backoff=True
                     )
                     status = 'ok' if coverage and not stats.get('pending') else 'input_blocked'
                     for source in sources:
@@ -521,6 +523,8 @@ def collect_announcements(
                     connection.commit()
                     raise
                 connection.commit()
+            if service is not None:
+                recovery = retry_pending(connection, service)
         finally:
             connection.close()
             if owned_service:
@@ -530,6 +534,7 @@ def collect_announcements(
         "observed_at": _iso(observed_at),
         "observation_mode": observation_mode,
         "dates": reports,
+        **recovery,
     }
 
 

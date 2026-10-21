@@ -37,6 +37,14 @@ explicit endpoint permission denial creates a persistent local endpoint disable
 record. Market-data interfaces and existing collection times/quotas are retained.
 See csi300-opening-auction.md for deployment and recovery contracts.
 
+October21 auction reliability adds bounded aggregate task summaries, accurate
+lock-skip receipts, safe SSE static-host redirects and durable bounded PDF
+identity recovery. A redundant mirror backlog does not invalidate complete
+primary coverage. Historical minute acquisition rotates persisted attempts
+instead of starving behind one empty date, records empty-response/filter
+evidence within normal calls, and postpones finalization until all windows pass.
+Quotas, schedule, input gates and historical strategy evidence stay fixed.
+
 October13 follow-up adds complete ADX/ARC/SPY prospective plans/settlements on
 Windows (daily07:45), aggregate-only authenticated publication and immutable
 replay. See adx-prospective.md. Session mail separately queues Seen flags after

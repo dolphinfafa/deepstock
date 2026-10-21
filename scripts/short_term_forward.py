@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import argparse
 from datetime import date, timedelta
-import json
 from pathlib import Path
+
+from deepstock.scheduled_summary import print_result
 
 from deepstock.strategies.cn.auction.forward import (
     DEFAULT_FORWARD_ROOT,
@@ -25,7 +26,7 @@ def _parse_date(value: str) -> date:
 
 
 def _print(report: dict) -> None:
-    print(json.dumps(report, ensure_ascii=False, indent=2, default=str))
+    print_result(report)
 
 
 def run_init(args: argparse.Namespace) -> dict:

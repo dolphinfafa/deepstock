@@ -59,6 +59,16 @@ class CapturedTushare:
                     raise PermissionError(f'Tushare endpoint {actual_endpoint} disabled: explicit_permission_denied') from error
                 raise
             if frame is None or frame.empty:
+                if actual_endpoint == 'stk_mins':
+                    from deepstock.data.capture import capture_response
+                    version = capture_response('Tushare', 'stk_mins-empty', {
+                        'response_kind': 'none' if frame is None else 'dataframe',
+                        'columns': [] if frame is None else list(frame.columns), 'rows': [],
+                        'request': {'args': list(args), **kwargs},
+                    }, 'CN', restricted=True)
+                    if frame is None:
+                        frame = pd.DataFrame()
+                    frame.attrs['raw_version'] = version
                 return frame
             now = datetime.now(timezone.utc)
             path = ROOT / f"artifacts/providers/tushare/{actual_endpoint}/{now.strftime('%Y%m%dT%H%M%S')}-{uuid.uuid4().hex}.csv.gz"
@@ -71,6 +81,9 @@ class CapturedTushare:
             if result["status"] != "ready" and not partial:
                 raise RuntimeError(f"Provider dataset blocked: {endpoint}: {result['quality']['issues']}")
             clean = read_clean_csv(path, allow_quarantine=partial)
+            if actual_endpoint == 'stk_mins':
+                clean.attrs['raw_version'] = result['id']
+                clean.attrs['provider_rows'] = len(frame)
             if clean.empty:
                 raise RuntimeError(f"Provider dataset has no valid rows: {actual_endpoint}")
             # Adapter view restores provider date spelling; persisted clean version stays canonical.

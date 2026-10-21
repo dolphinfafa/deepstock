@@ -83,6 +83,11 @@ first-observed timestamps. Tushare announcement/calendar probes succeeded;
 network failures are not permission denials. Explicit permission denial disables
 only that endpoint persistently, never every Tushare interface. See
 csi300-opening-auction.md for source selection, pending identities and recovery.
+October21 reliability keeps those gates and schedules: bounded marked task
+summaries eliminate large-report/lock-skip false blocks, official PDF redirects
+and persistent limited retries recover SSE identities, and durable minute-date
+rotation prevents starvation without consuming extra quota. See the auction
+and scheduled-task-mail workflows for the result/recovery contracts.
 
 Before changing a file, state a three-point plan in the working update.
 

@@ -12,6 +12,7 @@ import uuid
 
 from deepstock.scheduled_mail import TASKS, STAT_LABELS, TaskResult, enqueue, publish_pending
 from deepstock.web.config import settings
+from deepstock.scheduled_summary import marked_payload
 
 MODULES = {
     'app-ingest': ('scripts.ingest_deepstock_state', []),
@@ -73,8 +74,10 @@ def receipt(task_id, started, finished, returncode, payload, *, node='server'):
     if task_id == 'database-backup' and 'integrity_check' in payload:
         stats['integrity_ok'] = payload.get('integrity_check') == 'ok'
     if task_id == 'auction-collect':
-        stats.update({key: sum(v.get(field, 0) for v in payload.get('dates', []))
-                      for key, field in (('rows_received', 'received'), ('rows_inserted', 'inserted'))})
+        if isinstance(payload.get('dates'), list):
+            stats.update({key: sum(v.get(field, 0) for v in payload['dates'] if isinstance(v, dict)
+                                  and type(v.get(field, 0)) is int)
+                          for key, field in (('rows_received', 'received'), ('rows_inserted', 'inserted'))})
     data_date = next((payload.get(k) for k in ('as_of_date', 'signal_date', 'trade_date', 'data_date') if payload.get(k)), None)
     return TaskResult(event_id=uuid.uuid4().hex, task_id=task_id, node=node, started_at=started,
                       finished_at=finished, exit_code=returncode, status=status, reason=reason,
@@ -86,7 +89,8 @@ def run(task_id, extra, root):
     started = datetime.now(timezone.utc)
     tail = bytearray()
     try:
-        with subprocess.Popen(args, cwd=root, stdout=subprocess.PIPE) as process:
+        with subprocess.Popen(args, cwd=root, stdout=subprocess.PIPE,
+                              env={**os.environ, 'DEEPSTOCK_SCHEDULED_SUMMARY': '1'}) as process:
             while block := process.stdout.read1(8192):
                 sys.stdout.buffer.write(block)
                 sys.stdout.buffer.flush()
@@ -96,7 +100,10 @@ def run(task_id, extra, root):
     except OSError:
         returncode = 1
     finished = datetime.now(timezone.utc)
-    payload = last_object(tail.decode('utf-8', errors='replace'))
+    output = tail.decode('utf-8', errors='replace')
+    payload = marked_payload(output)
+    if payload is None:
+        payload = last_object(output)
     node = 'quant' if task_id in ('defensive-observation','adx-shadow','granville-shadow') else 'server'
     try:
         if task_id == 'defensive-observation' and returncode == 0:

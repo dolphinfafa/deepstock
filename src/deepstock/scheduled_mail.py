@@ -38,6 +38,8 @@ STAT_LABELS = {
     'bytes': '备份字节数', 'integrity_ok': '备份完整性检查通过',
     'rows_received': '采集行数', 'rows_inserted': '新增行数',
     'shadow_sessions': '前瞻结算交易日', 'coverage_failures': '输入阻塞数',
+    'identity_pending': '公告身份待核验数', 'identity_recovered': '本轮恢复身份数',
+    'no_progress': '本轮补数无进展',
 }
 TaskId = Literal['auction-collect', 'auction-signal', 'auction-fill', 'auction-settle',
                  'auction-settle-counterfactual', 'auction-report', 'auction-minute-backfill',

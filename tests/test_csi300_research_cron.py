@@ -50,17 +50,20 @@ def test_backfill_runs_only_one_window_and_never_fabricates_completion(tmp_path,
         calls.append(command)
         if "fetch-minute-entries" in command:
             (root / "minute_manifest.json").write_text(json.dumps({"20260904_20260904": {"status": "ok"}}))
-            (root / "minute_fetch_report.json").write_text(json.dumps({"remaining_windows": 12, "remaining_dates": ["2026-09-07"]}))
+            (root / "minute_fetch_report.json").write_text(json.dumps({"remaining_windows": 12, "remaining_dates": ["2026-09-07"],
+                'attempted_dates': ['2026-09-04'], 'reservation': kwargs['env']['DEEPSTOCK_MINUTE_RESERVATION']}))
         return SimpleNamespace(returncode=0)
     monkeypatch.setattr("scripts.run_csi300_minute_backfill.subprocess.run", fake_run)
     monkeypatch.setattr("scripts.run_csi300_minute_backfill.synchronize", lambda *args: {})
     result = run_backfill(source, Path("/darwen/python"), destination)
     assert result["completed_windows"] == 9
     assert result["frozen_report_ready"] is False
-    assert len(calls) == 2
+    assert result['status'] == 'backfilling'
+    assert result['attempted_dates'] == ['2026-09-04']
+    assert len(calls) == 1
     assert calls[0][calls[0].index("--maximum-windows-per-run") + 1] == "1"
     assert calls[0][calls[0].index("--retries") + 1] == "0"
     assert calls[0][0] == str(Path("/darwen/python"))
     result = run_backfill(source, Path("/darwen/python"), destination)
     assert result["status"] == "waiting_for_quota"
-    assert len(calls) == 2
+    assert len(calls) == 1

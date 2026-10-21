@@ -25,7 +25,11 @@ def normalize_tushare_stk_mins_0931(
 ) -> pd.DataFrame:
     """Return the completed 09:30-09:31 bar in the execution-cache schema."""
     if frame is None or frame.empty:
-        return pd.DataFrame(columns=ENTRY_COLUMNS)
+        result = pd.DataFrame(columns=ENTRY_COLUMNS)
+        result.attrs.update(getattr(frame, 'attrs', {}))
+        result.attrs['normalization_audit'] = {'received_rows': 0, 'exact_0931_rows': 0,
+                                             'valid_activity_rows': 0, 'valid_vwap_rows': 0, 'deduplicated_rows': 0}
+        return result
     required = {
         "ts_code", "trade_time", "open", "high", "low", "close", "vol", "amount"
     }
@@ -37,6 +41,8 @@ def normalize_tushare_stk_mins_0931(
     out["trade_time"] = pd.to_datetime(out["trade_time"], errors="coerce")
     target = pd.Timestamp.combine(trade_date, pd.Timestamp("09:31:00").time())
     out = out[out["trade_time"].eq(target)].copy()
+    audit = {'received_rows': len(frame), 'provider_rows': frame.attrs.get('provider_rows', len(frame)),
+             'exact_0931_rows': len(out)}
     for column in ("open", "high", "low", "close", "vol", "amount"):
         out[column] = pd.to_numeric(out[column], errors="coerce")
     valid_ohlc = (
@@ -45,21 +51,27 @@ def normalize_tushare_stk_mins_0931(
         & out["low"].le(out[["open", "close", "high"]].min(axis=1))
     )
     out = out[valid_ohlc & out["vol"].gt(0) & out["amount"].gt(0)].copy()
+    audit['valid_activity_rows'] = len(out)
     out["entry_0931_vwap"] = out["amount"] / out["vol"]
     out = out[
         out["entry_0931_vwap"].between(out["low"] * 0.999, out["high"] * 1.001)
     ].copy()
+    audit['valid_vwap_rows'] = len(out)
     out["stock_code"] = out["ts_code"].astype(str).str[:6].str.zfill(6)
     out["trade_date"] = trade_date
     out["entry_0931_open"] = out["open"]
     out["entry_0931_volume"] = out["vol"]
     out["entry_0931_close"] = out["close"]
-    return (
+    result = (
         out.loc[:, ENTRY_COLUMNS]
         .drop_duplicates(["stock_code", "trade_date"], keep="last")
         .sort_values("stock_code")
         .reset_index(drop=True)
     )
+    audit['deduplicated_rows'] = len(result)
+    result.attrs.update(frame.attrs)
+    result.attrs['normalization_audit'] = audit
+    return result
 
 
 def fetch_tushare_historical_0931(

@@ -78,26 +78,49 @@ def run_backfill(source: Path, python: Path, destination: Path) -> dict:
             ]
             # The original adapter makes one stk_mins call for this one window.
             # Never retry or invoke a second window in the same execution.
-            process = subprocess.run(command, cwd=source, check=False, timeout=180,
-                                     env={**os.environ, "DEEPSTOCK_MINUTE_RESERVATION": ledger["attempts"][-1]["reserved_at_utc"]})
+            reservation = ledger['attempts'][-1]['reserved_at_utc']
+            try:
+                process = subprocess.run(command, cwd=source, check=False, timeout=180,
+                                         env={**os.environ, "DEEPSTOCK_MINUTE_RESERVATION": reservation})
+                returncode = process.returncode
+            except (subprocess.TimeoutExpired, OSError):
+                returncode = 1
             # Preserve the provider's consumed marker; never overwrite it with the pre-call ledger.
             ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
-            ledger["attempts"][-1]["returncode"] = process.returncode
-            pending = previous.get("remaining_dates", [])
-            if pending:
-                key = pending[0].replace("-", "")
-                minute_manifest = json.loads((root / "minute_manifest.json").read_text(encoding="utf-8"))
+            attempt = next(row for row in ledger['attempts'] if row['reserved_at_utc'] == reservation)
+            attempt['returncode'] = returncode
+            fetched = json.loads(fetch_report_path.read_text(encoding='utf-8')) if fetch_report_path.exists() else {}
+            attempted = fetched.get('attempted_dates', []) if fetched.get('reservation') == reservation else []
+            manifest_path = root / 'minute_manifest.json'
+            minute_manifest = json.loads(manifest_path.read_text(encoding='utf-8')) if manifest_path.exists() else {}
+            if not attempted:
+                attempted = [datetime.strptime(key.split('_')[0], '%Y%m%d').date().isoformat()
+                             for key, value in minute_manifest.items() if value.get('reservation') == reservation]
+            result['attempted_dates'] = attempt['attempted_dates'] = attempted
+            if attempted:
+                key = attempted[0].replace("-", "")
                 outcome = minute_manifest.get(f"{key}_{key}", {})
-                ledger["attempts"][-1]["window_status"] = outcome.get("status", "unknown")
+                attempt['window_status'] = outcome.get('status', 'unknown')
                 if "频率超限" in outcome.get("error", ""):
                     ledger.setdefault("provider_exhausted_dates", []).append(now.astimezone(ZoneInfo("Asia/Shanghai")).date().isoformat())
                     result["status"] = "waiting_for_provider_quota"
                 elif outcome.get("status") == "error":
                     result["status"] = "fetch_failed"
+                elif outcome.get('status') != 'ok':
+                    result['status'] = 'input_blocked'
+                    result['no_progress'] = True
+                elif fetched.get('remaining_windows', 21) >= previous.get('remaining_windows', 21):
+                    result['status'] = 'input_blocked'
+                    result['no_progress'] = True
+            else:
+                result['status'] = 'fetch_failed' if returncode else 'input_blocked'
             write_json(ledger_path, ledger)
-            result.setdefault("status", "backfilling" if process.returncode == 0 else "fetch_failed")
-        if not frozen.exists() and result["status"] not in {"waiting_for_quota", "waiting_for_provider_quota", "fetch_failed"}:
-            # Darwen independently verifies all 21 windows before producing a report.
+            if returncode:
+                result['status'] = 'fetch_failed'
+            result.setdefault("status", "backfilling")
+        current = json.loads(fetch_report_path.read_text(encoding='utf-8')) if fetch_report_path.exists() else {}
+        if not frozen.exists() and current.get('remaining_windows') == 0 and result['status'] not in {'fetch_failed', 'waiting_for_provider_quota'}:
+            # The finalizer independently verifies all 21 windows and fixed coverage.
             finalize = subprocess.run(base + [
                 "finalize-minute-backfill", "--start", "2026-08-31", "--end", "2026-09-29",
                 "--report-name", REPORT_NAME,
