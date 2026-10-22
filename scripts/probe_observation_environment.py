@@ -80,12 +80,14 @@ def probe(expected_sid, output):
             raise ProbeFailure('server_health_check_failed')
         checks[stage] = 'passed'
         result['status'] = 'passed'
-    except Exception as error:
+    except (Exception, SystemExit) as error:
         # Errors can contain user paths, license details, URLs or credentials.
         checks[stage] = 'failed'
         result.update(status='failed', failed_check=stage, error_type=type(error).__name__)
         if isinstance(error, ProbeFailure):
             result['reason'] = str(error)
+        elif isinstance(error, SystemExit):
+            result['reason'] = 'dependency_exited_without_completing_probe'
     result['finished_at_utc'] = datetime.now(timezone.utc).isoformat()
     write_json(output, result)
     return result

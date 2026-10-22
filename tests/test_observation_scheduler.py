@@ -132,3 +132,30 @@ def test_probe_startup_timeout_keeps_native_diagnostic_and_cleans_up(tmp_path, m
         installer.run_probe(tmp_path, SID, timeout=0)
     assert (tmp_path / 'probe-scheduler-status.csv').read_bytes() == b'native-status'
     assert '/Delete' in calls[-1]
+
+
+def test_sdk_exit_zero_is_failed_probe_not_success(tmp_path, monkeypatch):
+    import sqlite3
+    import sys
+    from scripts import probe_observation_environment as probe
+    from scripts import run_adx_shadow
+    import pandas as pd
+    for relative in ('artifacts/paper/defensive-etf', 'artifacts/research/adx-shadow-v1',
+                     'artifacts/research/granville-shadow-v1'):
+        folder = tmp_path / relative
+        folder.mkdir(parents=True)
+        (folder / 'latest.json').write_text('{}')
+        sqlite3.connect(folder / 'state.sqlite3').close()
+    (tmp_path / '.env').write_text('synthetic configuration')
+    monkeypatch.setattr(probe, 'settings', SimpleNamespace(project_root=tmp_path, node_token='synthetic-token'))
+    monkeypatch.setattr(probe, 'os', SimpleNamespace(name='nt'))
+    monkeypatch.setattr(installer, 'current_identity', lambda: IDENTITY)
+    monkeypatch.setattr(probe.importlib.metadata, 'version', lambda name: '1.0.77')
+    monkeypatch.setattr(run_adx_shadow, 'completed_session', lambda now: pd.Timestamp('2026-10-21'))
+    def exit_sdk(*args):
+        raise SystemExit(0)
+    monkeypatch.setitem(sys.modules, 'norgatedata', SimpleNamespace(watchlist_symbols=exit_sdk))
+    result = probe.probe(SID, tmp_path / 'probe-result.json')
+    assert result['status'] == 'failed' and result['failed_check'] == 'norgate'
+    assert result['reason'] == 'dependency_exited_without_completing_probe'
+    assert result['checks']['identity'] == result['checks']['local_files'] == 'passed'

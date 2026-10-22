@@ -161,3 +161,14 @@ observation publishing independently, retains a failing final exit if either
 fails, and logs publication pending. Recover with publish_data_catalog.py and/or
 publish_defensive_observation.py alone. Never rerun the engine solely to retry
 upload, reset the observation clock or invent missed observations.
+
+October22 native validation: metadata recovery succeeded for28823 manifests,
+including two2701-reference summaries; repeat publication sent0. Actual S4U
+passed user/local-file checks but Norgate did not finish. The SDK can sys.exit(0)
+on provider failures, so the probe explicitly records SystemExit as failure.
+The vendor-documented NDU.Trigger UPDATE DONOTSHOW attempt returned0 yet NDU
+4.2.0.38 crashed with InvalidOperationException in Form.ShowDialog (Windows
+Application events1026/1000/1001). No updater remained. Until NDU starts in an
+actual Windows user session and ordinary data refresh completes, retain the
+existing task XML and report this dependency block; do not claim installation,
+current observations or next-trigger acceptance. Re-probe before replacing tasks.
