@@ -555,3 +555,12 @@ fixed252warmup/504history/252test coverage plans. No strategy is run on those
 windows; terminal/listing/sector execution gaps are kept distinct from input
 coverage blocks. See granville-stock-portfolio.md for the entry point, privacy,
 immutability, backup and clean two-node publication process.
+
+October22 observation recovery adds a shared current-user S4U installer with
+an actual temporary diagnostic context, backups and task-registration rollback.
+Three daily observation schedules/actions remain fixed. Metadata publication
+adds an explicitly typed count/hash projection for oversized upstream lists,
+unchanged100000-character API bounds,512KiB batches and native durable server
+acknowledgements. Local defensive evidence commits before independent metadata
+and report uploads. Native licensed manifests/ledgers never move to the server;
+no strategy rule, research freeze or broker gate changes.

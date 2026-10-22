@@ -25,8 +25,6 @@ if errorlevel 1 (
 )
 "%PYTHON_EXE%" scripts\clean_existing_data.py >>%LOG% 2>&1
 if errorlevel 1 exit /b 1
-"%PYTHON_EXE%" scripts\publish_data_catalog.py >>%LOG% 2>&1
-if errorlevel 1 exit /b 1
 "%PYTHON_EXE%" scripts\generate_defensive_etf_plan.py --prices artifacts\research\norgate\defensive_etf_prices.csv >>%LOG% 2>&1
 if errorlevel 1 (
   echo [%date% %time%] plan generation failed>>%LOG%
@@ -57,9 +55,20 @@ if errorlevel 1 (
   echo [%date% %time%] governance evaluation failed>>%LOG%
   exit /b 1
 )
+rem Local evidence is committed before either independent network publication.
+set "PUBLICATION_FAILED=0"
+"%PYTHON_EXE%" scripts\publish_data_catalog.py >>%LOG% 2>&1
+if errorlevel 1 (
+  echo [%date% %time%] metadata publishing failed; retry publisher only>>%LOG%
+  set "PUBLICATION_FAILED=1"
+)
 "%PYTHON_EXE%" scripts\publish_defensive_observation.py >>%LOG% 2>&1
 if errorlevel 1 (
-  echo [%date% %time%] observation publishing failed>>%LOG%
+  echo [%date% %time%] observation publishing failed; retry publisher only>>%LOG%
+  set "PUBLICATION_FAILED=1"
+)
+if "%PUBLICATION_FAILED%"=="1" (
+  echo [%date% %time%] local observation completed; publication pending>>%LOG%
   exit /b 1
 )
 echo [%date% %time%] observation completed>>%LOG%

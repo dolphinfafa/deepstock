@@ -72,3 +72,24 @@ def test_native_member_contract_accepts_bounded_policy_not_raw_payload(client):
     assert client.post("/api/agent/research/data-versions", headers=headers, json=[invalid]).status_code == 422
     auth, _ = _login(client)
     assert client.get(f"/api/data/{body['id']}/preview", headers=auth).json()["rows"] == []
+
+
+def test_upstream_digest_is_bounded_validated_and_immutable(client):
+    import hashlib
+    from deepstock.data.publication import publication_manifest
+    native = {'id': 'f' * 64, 'node': 'quant-computer', 'market': 'US', 'provider': 'Norgate',
+              'source_name': 'synthetic.csv', 'preview_allowed': False, 'status': 'ready',
+              'contract': {'upstream_versions': [hashlib.sha256(str(i).encode()).hexdigest() for i in range(2701)]}}
+    headers = {'Authorization': 'Bearer test-node-token'}
+    assert client.post('/api/agent/research/data-versions', headers=headers, json=[native]).status_code == 422
+    wire = publication_manifest(native)
+    for _ in range(2):
+        assert client.post('/api/agent/research/data-versions', headers=headers, json=[wire]).json() == {'published': 1}
+    changed = publication_manifest({**native, 'contract': {'upstream_versions': native['contract']['upstream_versions'][::-1]}})
+    assert client.post('/api/agent/research/data-versions', headers=headers, json=[changed]).status_code == 422
+    for invalid in ({'representation': 'sha256_v1', 'count': True, 'sha256': 'a' * 64},
+                    {'representation': 'sha256_v1', 'count': 2701, 'sha256': 'invalid'},
+                    {'representation': 'sha256_v1', 'count': 2701, 'sha256': 'a' * 64, 'rows': [123]},
+                    [{'price': 123}], 'a' * 64):
+        value = {**wire, 'id': '0' * 64, 'contract': {'upstream_versions': invalid}}
+        assert client.post('/api/agent/research/data-versions', headers=headers, json=[value]).status_code == 422

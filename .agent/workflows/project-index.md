@@ -326,3 +326,12 @@ conda run -n deepstock python -m scripts.install_csi300_research_cron --dry-run
 conda run -n deepstock python scripts/reconcile_defensive_observation.py
 conda run -n deepstock python scripts/publish_defensive_observation.py
 ```
+
+October22 quantitative observation recovery uses the shared passwordless S4U
+installer only after a real temporary-context SDK/files/network probe passes.
+Preserve the three existing actions and07:30/07:45/08:10China times. Probe
+failure leaves existing tasks unchanged; do not store passwords or switch user.
+Defensive local observation/governance precedes independent metadata/report
+uploads. Oversized upstream lists publish a count/SHA-256 projection, retaining
+immutable full native manifests; durable acknowledgements retry metadata only.
+See defensive-etf-observation.md and data-layers.md for the recovery contracts.

@@ -134,3 +134,30 @@ aggregate receipt is published using the existing node token to
 `/api/agent/scheduled-results`. SMTP/IMAP credentials remain server-only.
 Notification failure leaves the original exit code and research task intact;
 pending receipt publication is idempotent. See `scheduled-task-mail.md`.
+
+## Background recovery and publication isolation (2026-10-22)
+
+The three quantitative observations can be restored together with
+`python -m scripts.install_observation_tasks`. It exports all selected existing
+task XMLs before replacement and runs one temporary on-demand S4U diagnostic
+under the verified current user's SID. That context must read local settings,
+plans/ledgers, current Norgate ETF data and historical watchlist, and reach the
+server health endpoint. A failure leaves the original schedules unchanged;
+never substitute SYSTEM, store a password or enable autologin. The temporary
+task is ended/deleted even on failure. Registration failures restore attempted
+tasks from their local XML backups. --probe-only performs no permanent task
+replacement; --task can select one of the existing authorized observers.
+
+Passing installations use S4U/LeastPrivilege, WakeToRun, StartWhenAvailable,
+IgnoreNew, no battery condition and a two-hour execution limit. Original actions
+and07:30/07:45/08:10China times are retained, starting at their next trigger.
+This removes the interactive-login requirement; next scheduled execution still
+needs separate real-world verification. Local diagnostics/backups stay under
+artifacts/research/observation-scheduler. No permanent diagnostic timer is added.
+
+The defensive core now completes local plan/observation/governance evidence
+before either network publication. It attempts metadata and aggregate
+observation publishing independently, retains a failing final exit if either
+fails, and logs publication pending. Recover with publish_data_catalog.py and/or
+publish_defensive_observation.py alone. Never rerun the engine solely to retry
+upload, reset the observation clock or invent missed observations.

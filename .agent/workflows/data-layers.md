@@ -151,3 +151,21 @@ membership is not announcement/publication-time evidence. Major Exchange
 Listing series is mentioned by support but not yet acquired or a claimed
 OTC-execution filter. No price padding, fabricated trade/activity, terminal
 payment or overall strategy admission follows from this member-only contract.
+
+October22 observation recovery adds a publication-only projection for manifests
+above the existing100000-character API bound. Only an oversized
+contract.upstream_versions list is replaced by
+{representation:sha256_v1,count:<positive integer>,sha256:<64 lowercase hex>}.
+The digest covers the full ordered list encoded as UTF-8 compact JSON with
+sorted object keys; list order is retained. Normal accepted payloads, native
+manifests, source chains and dataset IDs stay unchanged. The endpoint validates
+legacy hash lists or the exact bounded digest shape; existing immutable-ID,
+node, privacy and size checks still apply. Other oversized content fails.
+
+Metadata publication batches at most500 records and512KiB of JSON, with durable
+endpoint/version/wire-hash acknowledgements in the quantitative node's ignored
+artifacts/data-publication/acknowledged.sqlite3. Only a successful matching
+server count acknowledges a batch. Same-ID wire changes fail; ambiguous HTTP
+outcomes retry idempotent metadata only. --since retains its timezone-aware
+filter. Re-run the publisher to recover network publication, never acquisition
+or prospective observation. Full manifests/market rows stay native-local.

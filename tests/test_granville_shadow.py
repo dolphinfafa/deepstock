@@ -260,18 +260,9 @@ def test_preflight_does_not_create_plans_or_fills(inputs, tmp_path, monkeypatch)
     assert value['status'] == 'preflight_ready' and value['planned_sessions'] == value['shadow_sessions'] == 0
 
 
-def test_native_schedule_starts_next_morning_and_uses_fixed_observation(tmp_path):
-    from datetime import timedelta
-    from pathlib import Path
-    import xml.etree.ElementTree as ET
-    from scripts.install_granville_shadow_task import NS, task_xml
-    now = datetime(2026, 10, 13, 23, 58, tzinfo=timezone(timedelta(hours=8)))
-    value = ET.fromstring(task_xml(tmp_path, Path('python.exe'), 'HOST\\admin', now))
-    def text(path):
-        return value.find(path, {'t': NS}).text
-    assert text('t:Triggers/t:CalendarTrigger/t:StartBoundary') == '2026-10-14T08:10:00+08:00'
-    assert text('t:Actions/t:Exec/t:Arguments') == '-m scripts.run_scheduled_task granville-shadow'
-    assert text('t:Principals/t:Principal/t:LogonType') == 'InteractiveToken'
-    assert text('t:Settings/t:MultipleInstancesPolicy') == 'IgnoreNew'
-    with pytest.raises(ValueError, match='China timezone'):
-        task_xml(tmp_path, Path('python.exe'), 'HOST\\admin', now.astimezone(timezone.utc))
+def test_granville_installer_uses_shared_probed_scheduler(monkeypatch):
+    from scripts import install_granville_shadow_task as cli
+    calls = []
+    monkeypatch.setattr(cli, 'install', calls.append)
+    cli.main()
+    assert calls == [('Deepstock_Granville_Shadow',)]

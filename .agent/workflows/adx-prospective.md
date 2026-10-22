@@ -29,3 +29,11 @@ count/review gates, finite metrics, immutable successful same-date evidence
 and idempotent retry. Dates/segments cannot move backwards. Reports/progress
 augment ARC without replacing old headline metrics.126settled sessions and4
 ADXstate switches permit human review only, never automatic promotion.
+
+October22 background recovery uses the shared
+`python -m scripts.install_observation_tasks` installer (or --task
+Deepstock_ADX_Shadow). A real temporary S4U probe must pass before replacing any
+existing task. Preserve07:45China and its original action; keep backups and
+restore on registration failure. SDK/files/network incompatibility leaves the
+interactive configuration intact. No password/SYSTEM fallback, replayed daily
+plans or order authorization. See defensive-etf-observation.md for diagnostics.

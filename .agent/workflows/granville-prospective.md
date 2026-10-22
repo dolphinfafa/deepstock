@@ -20,7 +20,8 @@ through `-m scripts.run_scheduled_task granville-shadow`.07:30defensive and
 `python -m scripts.install_granville_shadow_task` uses native schtasks XML,
 backs up an existing same-name task and starts at the next08:10. This avoids
 depending on disabled PowerShell script-file execution; no execution-policy
-change. The admin interactive session is required, matching existing observers.
+change. The original installation required an admin interactive session; the October22
+shared S4U recovery below supersedes that installation procedure.
 Serialize executions and require clean committed source before capture.
 Save decisions after the completed XNYS close
 and before next open; late initial runs publish missed_decision_cutoff with
@@ -90,3 +91,11 @@ morning, subject to timely complete inputs. These future events are not yet
 verified. Current TWS absent/read-only502; broker Paper remains disabled.
 Private contact/outbox backups passed before reloading the existing mail
 service for the new task label; no second receiver or cron-time change.
+
+October22 recovery delegates the Granville installer to
+scripts.install_observation_tasks --task Deepstock_Granville_Shadow. It requires
+an existing task, backs it up, and verifies the real current-user S4U context
+before migration to passwordless background execution. The original08:10China
+action/time and prospective/held-account rules remain. A failed probe leaves
+the old task intact; registration failure restores its XML. No password/SYSTEM
+fallback or permanent additional task. See defensive-etf-observation.md.

@@ -27,6 +27,7 @@ from deepstock.web.ingestion import ingest_all, ingest_defensive_bundle
 from deepstock.web.data_catalog import register_manifest, payload as dataset_payload
 from deepstock.web.evidence_notices import notices_for_run
 from deepstock.data.store import DataStore, DataQualityError
+from deepstock.data.publication import MAX_MANIFEST_CHARS, valid_upstream
 from deepstock.web.annualization import annualization_payload
 from deepstock.observation_reporting import validate_bundle
 from deepstock.scheduled_mail import TaskResult, enqueue
@@ -532,8 +533,10 @@ def publish_data_versions(body: list[dict[str, Any]], _node=Depends(_node_depend
             raise HTTPException(422, "Invalid data version")
         contract = manifest.get("contract", {})
         allowed_contract = {"market", "provider", "restricted", "adjustment", "price_adjustment", "total_return_adjustment", "retrieved_at_utc", "volume_unit", "amount_unit", "timezone", "license_note", "origin", "upstream_versions", "endpoint", "kind", "index_name", "padding", "unknown_policy", "reused_verified_price_only"}
-        if not isinstance(contract, dict) or set(contract).difference(allowed_contract) or len(json.dumps(manifest)) > 100000:
+        if not isinstance(contract, dict) or set(contract).difference(allowed_contract) or len(json.dumps(manifest)) > MAX_MANIFEST_CHARS:
             raise HTTPException(422, "Only bounded data contracts, not raw payloads, are accepted")
+        if 'upstream_versions' in contract and not valid_upstream(contract['upstream_versions']):
+            raise HTTPException(422, "Invalid upstream version references or digest summary")
         if set(manifest).difference({"id", "node", "market", "provider", "source_name", "source_sha256", "raw_sha256", "origin", "imported_at_utc", "rules", "contract", "preview_allowed", "status", "kind", "rows", "raw_rows", "quality", "data_start", "data_end", "clean_sha256"}):
             raise HTTPException(422, "File paths, files or raw rows are not allowed")
         try:
