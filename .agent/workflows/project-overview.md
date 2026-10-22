@@ -564,3 +564,9 @@ unchanged100000-character API bounds,512KiB batches and native durable server
 acknowledgements. Local defensive evidence commits before independent metadata
 and report uploads. Native licensed manifests/ledgers never move to the server;
 no strategy rule, research freeze or broker gate changes.
+
+October22 afternoon actual S4U access passed after NDU was started in the owner's
+Windows desktop session. All three existing observers now use S4U with their
+original actions/times. This supports observation while the desktop updater
+remains running; it does not provide a headless NDU startup service or certify
+logout/reboot recovery. See the dated work record for measured task outcomes.

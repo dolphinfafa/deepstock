@@ -172,3 +172,13 @@ Application events1026/1000/1001). No updater remained. Until NDU starts in an
 actual Windows user session and ordinary data refresh completes, retain the
 existing task XML and report this dependency block; do not claim installation,
 current observations or next-trigger acceptance. Re-probe before replacing tasks.
+
+LaterOctober22 at15:10China, the owner had logged into Windows and NDU was
+running in desktop session1. SDK reads succeeded throughOctober21. A new actual
+S4U probe passed identity/files/Norgate/network at15:11:56; all three existing
+tasks were migrated with original actions/times intact. The Defensive original
+task then completed in session0 and publishedOctober21 evidence with26effective
+observations. This verifies background access to an already running desktop
+NDU, not unattended NDU startup or behavior after logout/reboot. Keep NDU
+running; its headless startup crash remains unresolved. Next daily triggers
+need independent verification rather than being inferred from manual starts.

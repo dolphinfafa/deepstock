@@ -99,3 +99,13 @@ before migration to passwordless background execution. The original08:10China
 action/time and prospective/held-account rules remain. A failed probe leaves
 the old task intact; registration failure restores its XML. No password/SYSTEM
 fallback or permanent additional task. See defensive-etf-observation.md.
+
+October22 afternoon recovery after the owner started NDU: actual S4U context
+passed SDK/files/network and the original08:10task migrated without an action
+change. A manual scheduler invocation completed in session0 at15:28:37China,
+withOctober21data,2saved plans,1effective settled sample,5missed-plan dates and
+zero input failures. Missing dates never receive invented plans; prior saved
+intents/held-account valuation use the existing atomic recovery rules. Retrying
+the saved day leaves plan/settlement hashes and capture count unchanged. Server
+summary and the normal completion receipt agree. NDU must remain running;
+headless startup/logout/reboot and the next daily trigger are not certified.

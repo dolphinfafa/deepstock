@@ -335,3 +335,9 @@ Defensive local observation/governance precedes independent metadata/report
 uploads. Oversized upstream lists publish a count/SHA-256 projection, retaining
 immutable full native manifests; durable acknowledgements retry metadata only.
 See defensive-etf-observation.md and data-layers.md for the recovery contracts.
+
+LaterOctober22 owner retry found the Windows desktop user/NDU running; actual
+S4U identity/files/Norgate/network checks passed and all three original observer
+tasks migrated to S4U. Access is verified against the already running desktop
+updater; headless NDU startup, logout/reboot survival and next daily triggers
+are not established. Keep this dependency distinct from SSH connectivity.

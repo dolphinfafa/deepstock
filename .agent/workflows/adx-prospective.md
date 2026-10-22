@@ -37,3 +37,10 @@ existing task. Preserve07:45China and its original action; keep backups and
 restore on registration failure. SDK/files/network incompatibility leaves the
 interactive configuration intact. No password/SYSTEM fallback, replayed daily
 plans or order authorization. See defensive-etf-observation.md for diagnostics.
+
+October22 actual S4U verification passed after desktop NDU startup. The original
+07:45task then completed in session0 at15:24:53China,October21data,zero input
+failures,segment2,zero settled sessions. It preserves two actual plans, not
+invented missed-day returns. Saved-day retry changes neither plan/settlement
+ledger hashes nor capture count; server summary/normal receipt agree. NDU must
+remain running; the next daily trigger and logout/reboot survival remain pending.
