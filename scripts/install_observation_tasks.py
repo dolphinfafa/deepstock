@@ -109,8 +109,10 @@ def probe_xml(root, python, sid, output):
                       'Enabled': 'true', 'ExecutionTimeLimit': 'PT2M'}.items():
         add(options, key, text)
     action = add(add(value, 'Actions', Context='Author'), 'Exec')
-    add(action, 'Command', str(python))
-    add(action, 'Arguments', f'-m scripts.probe_observation_environment --expected-sid {sid} --output "{output}"')
+    # Capture interpreter/import failures that occur before the result writer.
+    add(action, 'Command', r'C:\Windows\System32\cmd.exe')
+    add(action, 'Arguments', f'/d /c ""{python}" -X utf8 -u -m scripts.probe_observation_environment '
+        f'--expected-sid {sid} --output "{output}" > "{output.with_suffix(".console.log")}" 2>&1"')
     add(action, 'WorkingDirectory', str(root))
     return ET.tostring(value, encoding='utf-16', xml_declaration=True)
 
@@ -133,7 +135,11 @@ def run_probe(folder, sid, *, timeout=110):
                     raise RuntimeError(f"S4U probe failed at {result.get('failed_check')}: {result.get('reason', result.get('error_type'))}; existing tasks unchanged")
                 return result
             time.sleep(1)
-        raise RuntimeError('S4U probe timed out; existing tasks unchanged; diagnostic XML retained')
+        status = native(['schtasks.exe', '/Query', '/TN', task, '/V', '/FO', 'CSV'])
+        (folder / 'probe-scheduler-status.csv').write_bytes(status)
+        progress = output.with_suffix('.progress.json')
+        stage = json.loads(progress.read_text(encoding='utf-8')).get('stage') if progress.exists() else 'before_result_writer'
+        raise RuntimeError(f'S4U probe timed out at {stage}; existing tasks unchanged; native diagnostics retained')
     finally:
         if created:
             # End is best-effort (a completed task is normally not running).

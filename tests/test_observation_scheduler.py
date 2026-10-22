@@ -119,3 +119,16 @@ def test_probe_task_is_on_demand_and_removed_after_diagnostic_failure(tmp_path, 
     xml = ET.fromstring((tmp_path / 'probe-task.xml').read_bytes())
     assert xml.find('t:Triggers', NS) is None
     assert xml.findtext('t:Principals/t:Principal/t:LogonType', namespaces=NS) == 'S4U'
+    assert xml.findtext('t:Actions/t:Exec/t:Command', namespaces=NS) == r'C:\Windows\System32\cmd.exe'
+    assert '.console.log' in xml.findtext('t:Actions/t:Exec/t:Arguments', namespaces=NS)
+
+
+def test_probe_startup_timeout_keeps_native_diagnostic_and_cleans_up(tmp_path, monkeypatch):
+    monkeypatch.setattr(installer, 'settings', SimpleNamespace(project_root=tmp_path))
+    calls = []
+    monkeypatch.setattr(installer, 'native', lambda args: calls.append(args) or b'native-status')
+    monkeypatch.setattr(installer.subprocess, 'run', lambda *a, **kw: None)
+    with pytest.raises(RuntimeError, match='before_result_writer'):
+        installer.run_probe(tmp_path, SID, timeout=0)
+    assert (tmp_path / 'probe-scheduler-status.csv').read_bytes() == b'native-status'
+    assert '/Delete' in calls[-1]

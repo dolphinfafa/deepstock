@@ -18,6 +18,10 @@ class ProbeFailure(ValueError):
 
 
 def probe(expected_sid, output):
+    progress = output.with_suffix('.progress.json')
+    def entering(stage):
+        write_json(progress, {'stage': stage, 'time_utc': datetime.now(timezone.utc).isoformat()})
+    entering('identity')
     from scripts.install_observation_tasks import current_identity
     result = {'started_at_utc': datetime.now(timezone.utc).isoformat(), 'checks': {}}
     checks = result['checks']
@@ -27,6 +31,7 @@ def probe(expected_sid, output):
             raise ProbeFailure('wrong_windows_user_context')
         checks[stage] = 'passed'
         stage = 'local_files'
+        entering(stage)
         # Readability is verified without recording secrets or licensed contents.
         if not (settings.project_root / '.env').read_bytes() or not settings.node_token:
             raise ProbeFailure('local_node_configuration_unavailable')
@@ -45,6 +50,7 @@ def probe(expected_sid, output):
         test_file.unlink()
         checks[stage] = 'passed'
         stage = 'norgate'
+        entering(stage)
         import norgatedata as n
         import pandas as pd
         from deepstock.data.membership_contract import load_effective_membership_contract
@@ -66,6 +72,7 @@ def probe(expected_sid, output):
         result['data_date'] = day
         result['historical_symbols'] = len(symbols)
         stage = 'network'
+        entering(stage)
         import httpx
         response = httpx.get(settings.public_base_url.rstrip('/') + '/api/health', timeout=20)
         response.raise_for_status()
