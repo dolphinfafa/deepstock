@@ -50,6 +50,9 @@ Keep industry2/Top5, dynamic confidence thresholds,100-share lots,5% minute
 capacity, T+1/limit-down deferral and20bp costs. Report50bp stress. All study
 records are diagnostic/actionable=false. Baseline health is context, not proof
 B/C is executable. No new cron or mail task is installed.
+All three study arms use the original dynamic ranking thresholds. A is a
+frozen-feature control, not the60-day fallback portfolio emitted by the original
+service when health fails; study diagnostics must not be labelled executable.
 
 ## Replay and review
 
@@ -89,3 +92,6 @@ review. No automatic promotion or broker orders.
 Deploy server tests → GitHub → clean quantitative ff-only pull → native tests.
 Code/docs and aggregates may travel; private ledgers/provider rows/original
 notebooks/credentials stay local.
+Implementation01d89f1 passed server614 tests and native quantitative612 tests
+with2 Unix-only skips. Original28-cohort metrics were verified unchanged;
+the newly enabled forward ledger awaits its first real post-deployment signal.
