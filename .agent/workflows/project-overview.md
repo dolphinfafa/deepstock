@@ -1,5 +1,12 @@
 # Deepstock Project Overview
 
+October25 notebook-inspired auction research adds a fixed A/B/C daily-state
+interaction study beside the frozen auction model. Existing commands share
+inputs, minute fills and exits into an independent diagnostic SQLite; no new
+cron or orders. Historical56-date comparison shows no benefit, with4 coverage
+gaps. Prospective evidence starts after actual deployment and cannot promote
+itself; see auction-state-strength.md.
+
 ## Scope
 
 Deepstock is a multi-market quantitative research and automated-trading control

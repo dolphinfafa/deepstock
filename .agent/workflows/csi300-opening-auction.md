@@ -13,6 +13,15 @@
 - Deepstock local research copy: `artifacts/auction_history*`,
   `artifacts/auction_probe`, and `artifacts/short_term_forward` (ignored by Git)
 
+October25 owner approved `auction_state_strength_v1`: fixed A/B/C13/18/21-feature
+daily-state/auction interactions using existing data, then isolated prospective
+diagnostics. The frozen policy remains the default. Existing signal/fill/settle
+commands share captured inputs and retain their schedules; no new provider
+source, cron or broker orders. Read `auction-state-strength.md` for versioning,
+same-sample comparison, cutoff/restarts and the60-common-date manual review.
+First historical diagnostics do not support an improvement; do not adopt or
+tune these features using those outcomes.
+
 ## Official announcement sources (October 20, 2026)
 
 Owner selects CNINFO, Shanghai Stock Exchange and Shenzhen Stock Exchange as

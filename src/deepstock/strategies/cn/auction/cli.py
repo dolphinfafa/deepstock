@@ -9,7 +9,7 @@ from datetime import date, datetime, time, timedelta
 import math
 from pathlib import Path
 import time as clock
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 import pandas as pd
@@ -51,6 +51,7 @@ from deepstock.strategies.cn.auction.model import (
     rank_signal,
     walk_forward_backtest,
 )
+from deepstock.strategies.cn.auction.study import PreparedAuctionInputs
 
 
 DEFAULT_AUCTION_HISTORY_ROOT = "artifacts/auction_history_tushare"
@@ -607,7 +608,10 @@ def _print_auction_prediction(report: dict) -> None:
         print("  No candidate passed the dynamic confidence and cost thresholds.")
 
 
-def run_auction_prediction(args: argparse.Namespace) -> dict:
+def run_auction_prediction(
+    args: argparse.Namespace,
+    *, prepared_callback: Callable[[PreparedAuctionInputs], None] | None = None,
+) -> dict:
     root = Path(args.auction_history_root)
     snapshots = read_clean_csv(root / "universe_snapshots.csv", dtype={"stock_code": str})
     snapshots["stock_code"] = snapshots["stock_code"].str[:6].str.zfill(6)
@@ -826,6 +830,10 @@ def run_auction_prediction(args: argparse.Namespace) -> dict:
         "news_policy": "excluded from the production score until point-in-time history exists",
         "warning": "Research ranking only; no automatic order and no return guarantee.",
     }
+    if prepared_callback is not None:
+        prepared_callback(PreparedAuctionInputs(
+            strategy_frame.copy(deep=True), config, available_at, input_evidence(),
+        ))
     if args.json:
         print(report_json(report, ensure_ascii=False, indent=2, default=_json_default))
     else:

@@ -37,6 +37,7 @@ from deepstock.strategies.cn.auction.tushare_minute import (
     SHANGHAI,
     poll_tushare_rt_min_entries,
 )
+from deepstock.strategies.cn.auction import study as state_study
 
 
 DEFAULT_FORWARD_ROOT = Path("artifacts/short_term_forward")
@@ -45,6 +46,20 @@ DAILY_BUDGET_FRACTION = 0.5
 ROUND_TRIP_COST_BPS = 20
 PRELIMINARY_EVALUATION_COHORTS = 20
 ROBUST_EVALUATION_COHORTS = 60
+
+
+def _study_call(function, *args, **kwargs):
+    """An independent research failure cannot undo the frozen strategy's work."""
+    try:
+        return function(*args, **kwargs)
+    except Exception as error:
+        return {"status": "input_blocked", "reason": f"{type(error).__name__}: {error}"}
+
+
+def _with_study(result, research):
+    if research is not None:
+        result["research_study"] = research
+    return result
 
 STRATEGY_ROLES = {
     "model_baseline": "paper",
@@ -981,7 +996,10 @@ def generate_signal(
                 (signal_date.isoformat(),),
             ).fetchone()
             if existing:
-                return {"status": "already_recorded", "signal_date": signal_date.isoformat()}
+                return _with_study(
+                    {"status": "already_recorded", "signal_date": signal_date.isoformat()},
+                    state_study.after_baseline(root, signal_date),
+                )
             pro = get_pro()
             try:
                 previous, following = trading_neighbors(signal_date, pro)
@@ -1004,8 +1022,13 @@ def generate_signal(
                 "--wait-seconds", str(wait_seconds),
                 "--json",
             ])
+            prepared = []
+            active = _study_call(state_study.activation, state_study.root_for(root))
             with redirect_stdout(io.StringIO()):
-                report = run_auction_prediction(args)
+                if active and active.get("enabled"):
+                    report = run_auction_prediction(args, prepared_callback=prepared.append)
+                else:
+                    report = run_auction_prediction(args)
             decision_at = generated_at or _now()
             if enforce_forward_time and decision_at.time() >= time(9, 30):
                 return {
@@ -1013,7 +1036,7 @@ def generate_signal(
                     "signal_date": signal_date.isoformat(),
                     "decision_at": _iso(decision_at),
                 }
-            return record_signal_report(
+            result = record_signal_report(
                 connection,
                 report,
                 decision_at,
@@ -1021,6 +1044,10 @@ def generate_signal(
                 following,
                 universe_codes,
             )
+            return _with_study(result, state_study.after_baseline(
+                root, signal_date, prepared[0] if prepared else None,
+                previous, following, report["strategy_health"],
+            ))
         finally:
             connection.close()
 
@@ -1186,13 +1213,23 @@ def fill_entries(
                     (trade_date.isoformat(),),
                 ).fetchall()
             ]
-            if not codes:
+            study_root = state_study.root_for(root)
+            research_codes = _study_call(state_study.pending_codes, study_root, trade_date)
+            research_error = research_codes if isinstance(research_codes, dict) else None
+            research_codes = [] if research_error else research_codes
+            all_codes = sorted(set(codes) | set(research_codes))
+            if not all_codes:
                 return {"status": "nothing_pending", "trade_date": trade_date.isoformat()}
-            cached = load_entry_minute_snapshots(connection, trade_date, codes)
+            cached = load_entry_minute_snapshots(connection, trade_date, all_codes)
             cached_codes = (
                 set(cached["stock_code"].astype(str)) if not cached.empty else set()
             )
             missing_codes = [code for code in codes if code not in cached_codes]
+            # Existing per-poll 50-symbol batches are shared, never expanded by
+            # research beyond the batch budget needed by the original orders.
+            batch_budget = max(50, math.ceil(len(missing_codes) / 50) * 50)
+            extra = [c for c in research_codes if c not in cached_codes and c not in missing_codes]
+            missing_codes.extend(extra[:max(0, batch_budget - len(missing_codes))])
             source_report = {
                 "source": "tushare.rt_min",
                 "attempts": 0,
@@ -1214,20 +1251,21 @@ def fill_entries(
                 source_report["errors"] = [
                     "tushare.rt_min only exposes the current trading day"
                 ]
-            entries = load_entry_minute_snapshots(connection, trade_date, codes)
+            entries = load_entry_minute_snapshots(connection, trade_date, all_codes)
             fill_report = apply_entry_fills(
                 connection, trade_date, entries, _now()
             )
-            status = "ok"
+            research = research_error or _study_call(state_study.apply_shared_fills, study_root, trade_date, entries)
+            status = "ok" if codes else "nothing_pending"
             if fill_report["missing_price"] and entries.empty:
                 status = "source_unavailable"
-            return {
+            return _with_study({
                 "status": status,
                 "snapshot_rows": len(entries),
                 "snapshot_rows_inserted": inserted,
                 "source_report": source_report,
                 **fill_report,
-            }
+            }, research)
         finally:
             connection.close()
 
@@ -1419,13 +1457,19 @@ def settle_positions(
                 """,
                 (as_of_date.isoformat(),),
             ).fetchone()
-            if not row or not row["first_date"]:
-                return {
+            original_first = date.fromisoformat(row["first_date"]) if row and row["first_date"] else None
+            study_root = state_study.root_for(root)
+            study_first = _study_call(state_study.first_exit_date, study_root, as_of_date)
+            research_error = study_first if isinstance(study_first, dict) else None
+            study_first = None if research_error else study_first
+            first_dates = [d for d in (original_first, study_first) if d is not None]
+            if not first_dates:
+                return _with_study({
                     "status": "nothing_pending",
                     "as_of_date": as_of_date.isoformat(),
                     "expired_entries": expired_entries,
-                }
-            first_date = date.fromisoformat(row["first_date"])
+                }, research_error or _study_call(state_study.apply_shared_exits, study_root, as_of_date, {}))
+            first_date = min(first_dates)
             pro = get_pro()
             dates = _trading_dates(first_date, as_of_date, pro)
             market_rows = {
@@ -1435,11 +1479,11 @@ def settle_positions(
                 )
                 for value in dates
             }
-            return {
-                "status": "ok",
+            return _with_study({
+                "status": "ok" if original_first else "nothing_pending",
                 "expired_entries": expired_entries,
                 **apply_exit_prices(connection, market_rows, as_of_date),
-            }
+            }, research_error or _study_call(state_study.apply_shared_exits, study_root, as_of_date, market_rows))
         finally:
             connection.close()
 
@@ -1914,6 +1958,13 @@ def write_forward_report(
     finally:
         connection.close()
     reports = root / "reports"
+    study_root = state_study.root_for(root)
+    if (study_root / "activation.json").exists():
+        research = _study_call(state_study.write_report, study_root, as_of=as_of_date)
+        report["research_study"] = {
+            k: research[k] for k in ("status", "policy_version", "actionable", "arms", "comparisons", "review", "reason")
+            if k in research
+        }
     reports.mkdir(parents=True, exist_ok=True)
     (reports / "latest.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"

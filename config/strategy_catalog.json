@@ -234,6 +234,7 @@
         {"stage": "freeze", "title": "冻结策略和防泄漏检查", "detail": "2026-08-31 起作为前瞻区间。", "status": "done"},
         {"stage": "backfill", "title": "9 月 09:31 标签补数", "detail": "当前 8/21，按每日两次额度继续。", "status": "current"},
         {"stage": "forward", "title": "前向模拟稳健性", "detail": "20 批完成，目标至少 60 批。", "status": "current"},
+        {"stage": "notebook_study", "title": "前日状态与竞价强度独立诊断", "detail": "auction_state_strength_v1 固定三组对照；历史56个共同日未见改善、4天覆盖不足。原版继续，新版仅独立前瞻诊断，不自动晋升。", "status": "current"},
         {"stage": "execution", "title": "券商执行", "detail": "尚无 A 股券商通道。", "status": "blocked"}
       ]
     }

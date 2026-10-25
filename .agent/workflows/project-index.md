@@ -88,6 +88,12 @@ summaries eliminate large-report/lock-skip false blocks, official PDF redirects
 and persistent limited retries recover SSE identities, and durable minute-date
 rotation prevents starvation without consuming extra quota. See the auction
 and scheduled-task-mail workflows for the result/recovery contracts.
+October25 approved notebook research adds `auction_state_strength_v1`: fixed
+daily-state × auction-gap/volume interactions, three matched comparison arms,
+isolated forward diagnostics and shared original task inputs. Read
+auction-state-strength.md. Missing quotes are not zero returns, replay is
+development-only, and60 common completed dates allow manual review. First
+replay shows no improvement; frozen rules and other strategies stay unchanged.
 
 Before changing a file, state a three-point plan in the working update.
 
