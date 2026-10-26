@@ -2,6 +2,12 @@
 
 ## Status
 
+October26 follow-up: both local TWS sessions were verified read-only on the
+quantitative computer, live7496 and paper7497. A separate fixed USD200/70:30
+paper pilot is being prepared; see `ibkr-paper-pilot.md`. It never uses7496,
+changes live permissions or replaces the main environment. Earlier status
+below describes the initial onboarding, not the current pilot implementation.
+
 The user has opened and funded an IBKR account with approximately USD 10,000,
 enabled Paper Trading, and logged in to TWS in paper mode. The local read-only
 API probe has verified server time and the presence/counts of account-summary

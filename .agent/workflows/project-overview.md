@@ -31,6 +31,16 @@ period returns, not headline annualisation, and cannot authorize orders.
 
 ## Architecture and Data Flow
 
+October26 adds a separate, fixed USD200/70:30 ETF paper execution pilot on the
+quantitative computer. It uses pinned VOO/QQQM example contracts, guarded
+fractional DAY limit orders, an isolated local account pin/enable file and a
+durable JSON journal with OS locking and at-most-once submission. Broker
+orders/executions and actual paper position deltas determine completion.
+Only its process loads the hash-verified official1051.1 API/protobuf5.29.5;
+existing9.81 clients and server authorizations remain separate. It has no live
+connection path and is not a recurring contribution or strategy promotion.
+Read ibkr-paper-pilot.md for recovery, SDK provenance and remaining validation.
+
 October20 auction announcement collection moves to CNINFO/SSE/SZSE public
 interfaces. Full-response evidence precedes normalization and pinned cleaned
 exports. The consolidated CNINFO/SZSE identities feed one event per stock and

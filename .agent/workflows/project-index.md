@@ -102,6 +102,19 @@ Before changing a file, state a three-point plan in the working update.
 Do not report work as complete until an appropriate verification command or
 test has passed.
 
+### Paper Execution Pilot
+
+October26 owner requests the custom unattended IBKR route with a USD200/70:30
+pilot. Current implementation covers an isolated paper plumbing test only;
+do not describe it as the requested live investment. Read ibkr-paper-pilot.md.
+The fixed one-shot worker requires localhost7497, one pinned DU account,
+fresh real-time quotes, a local paper-only enable flag, durable intent and
+broker/position reconciliation. It cannot cancel or submit live orders.
+The general clients retain ibapi9.81; only this process may load the checksum-
+pinned official1051.1 SDK/protobuf5.29.5 from ignored artifacts. Never replace
+the main environment, delete its journal, change live gates or reset strategy
+authorization to bypass a pilot failure.
+
 ### Session Contact
 
 October12 user authorized persistent Deepstock session contact: after30
