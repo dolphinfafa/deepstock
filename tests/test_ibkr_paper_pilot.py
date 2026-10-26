@@ -224,7 +224,7 @@ def test_tws_adapter_rejects_live_or_unknown_account(monkeypatch, accounts):
 
 def test_tws_order_guard_blocks_real_submission_even_with_valid_paper_pin(monkeypatch):
     client = PaperClient("salt")
-    client.account = "DU123"
+    client.account = "DU123456"
     client.account_hash = client.expected_hash = hashlib.sha256(b"salt:DU123").hexdigest()
     monkeypatch.setattr(client, "isConnected", lambda: True)
     from scripts.ibkr_pilot_tws import contract_for
@@ -247,7 +247,7 @@ def test_tws_callbacks_reconcile_unset_quantity_execution_and_duplicate_fee():
     from ibapi.order_state import OrderState
     row = create_plan(snapshot(), NOW)[0]
     client = PaperClient("salt", plan=[row])
-    client.account = "DU123"
+    client.account = "DU123456"
     order = order_for(row, client.account, preview=False)
     order.permId = 123
     state = OrderState()
@@ -277,6 +277,22 @@ def test_sdk_error_signatures_and_private_account_redaction():
     client.error(2, 1234567890, 10248, "DU123 permission unavailable", "")
     assert [row["code"] for row in client.errors] == [10243, 10248]
     assert "DU123" not in json.dumps(client.errors)
+
+
+def test_alphanumeric_paper_account_is_pinned_without_loosening_live_guard(monkeypatch):
+    account = "DUABCDEFQ"  # Synthetic fixture, never an actual account ID.
+    expected = hashlib.sha256(f"test-salt:{account}".encode()).hexdigest()
+    client = PaperClient("test-salt", expected)
+    client.accounts = [account]
+    client.ready.set()
+    client.managed.set()
+    monkeypatch.setattr(client, "connect", lambda *args: None)
+    monkeypatch.setattr(client, "run", lambda: None)
+    client.start()
+    assert client.account_hash == expected
+    client.expected_hash = "changed-pin"
+    with pytest.raises(ValueError, match="local pin"):
+        client.start()
 
 
 def test_sdk_archive_and_source_tampering_are_rejected(tmp_path, monkeypatch):

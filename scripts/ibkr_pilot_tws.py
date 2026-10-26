@@ -21,6 +21,11 @@ from deepstock.ibkr_pilot import LEGS, number, reference, validate_rows, validat
 INFO_CODES = {2104, 2106, 2107, 2108, 2158}
 
 
+def is_paper_account(value: str) -> bool:
+    # DU is the simulated-account namespace; the suffix is not always numeric.
+    return bool(re.fullmatch(r"DU[A-Z0-9]{6,}", value))
+
+
 def execution_window(now: datetime) -> bool:
     calendar = calendars.get_calendar("XNYS")
     day = pd.Timestamp(now.date())
@@ -248,7 +253,7 @@ class PaperClient(EWrapper, EClient):
         self.thread.start()
         if not self.ready.wait(self.timeout) or not self.managed.wait(self.timeout):
             raise TimeoutError("paper TWS handshake timed out")
-        if len(self.accounts) != 1 or not re.fullmatch(r"DU\d+", self.accounts[0]):
+        if len(self.accounts) != 1 or not is_paper_account(self.accounts[0]):
             raise ValueError("localhost:7497 did not identify a single DU paper account")
         self.account = self.accounts[0]
         self.account_hash = hashlib.sha256(f"{self.salt}:{self.account}".encode()).hexdigest()
@@ -340,7 +345,7 @@ class PaperClient(EWrapper, EClient):
     def placeOrder(self, orderId, contract, order):
         if (not self.isConnected() or self.unsafe_connection or not self.expected_hash or
                 self.account_hash != self.expected_hash or order.account != self.account or
-                not re.fullmatch(r"DU\d+", self.account)):
+                not is_paper_account(self.account)):
             raise ValueError("paper-only order guard failed")
         leg = next((leg for leg in LEGS if leg[1] == contract.conId), None)
         if (leg is None or contract.symbol != leg[0] or contract.secType != "STK" or

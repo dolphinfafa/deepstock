@@ -16,7 +16,7 @@ to deploy the earlier USD10,000 plan. It does not resume frozen research.
   USD205 of both virtual USD ledger cash and available funds. Unknown settled
   cash is explicitly recorded; this is not proof of live settled-cash readiness.
 - The worker runs only on Windows, connects only to127.0.0.1:7497, requires
-  exactly one DU-number paper account and a salted local account pin. It has
+  exactly one DU-prefixed paper account and a salted local account pin. It has
   no live mode, host or port option, and cannot cancel/replace orders.
 - `.env.paper-pilot` is separate from the main `.env`, initially disabled.
   Account identifiers never enter source control or public output.
