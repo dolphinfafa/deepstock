@@ -142,13 +142,15 @@ def validate_rows(rows: list[dict]) -> None:
             raise ValueError("order exceeds its fixed notional budget")
 
 
-def run_cycle(broker, path: Path, trade_date: str, now: datetime) -> dict:
+def run_cycle(broker, path: Path, trade_date: str, now: datetime | None = None) -> dict:
     """Caller holds pilot_lock. Broker calls never precede durable intent.
 
     A missing broker acknowledgement leaves INTENT_RECORDED. Its absence from
     later broker snapshots is never treated as evidence that it was not sent.
     """
     snapshot = broker.snapshot()
+    # Compare after capture: a streaming tick arriving during capture is valid.
+    now = now or datetime.now(timezone.utc)
     validate_snapshot(snapshot, now, execution=False)
     journal = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
     observed = snapshot.get("orders", {})

@@ -40,6 +40,9 @@ Only its process loads the hash-verified official1051.1 API/protobuf5.29.5;
 existing9.81 clients and server authorizations remain separate. It has no live
 connection path and is not a recurring contribution or strategy promotion.
 Read ibkr-paper-pilot.md for recovery, SDK provenance and remaining validation.
+Native protocol226 still rejects API fractional orders with10243. A USD1-limit
+whole-share paper control was accepted and cancelled without filling; the
+USD200 allocation remains unfilled, locally disabled and unscheduled.
 
 October20 auction announcement collection moves to CNINFO/SSE/SZSE public
 interfaces. Full-response evidence precedes normalization and pinned cleaned

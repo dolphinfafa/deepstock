@@ -114,6 +114,11 @@ The general clients retain ibapi9.81; only this process may load the checksum-
 pinned official1051.1 SDK/protobuf5.29.5 from ignored artifacts. Never replace
 the main environment, delete its journal, change live gates or reset strategy
 authorization to bypass a pilot failure.
+Native1051.1/protocol226 still rejects fractional previews and a tiny actual
+paper probe with10243; whole-share submission/cancellation passed. This is not
+proof of missing permissions. The USD200 split has not filled; enablement stays
+false and no overnight order task is installed pending broker support or an
+explicitly different integer-share paper example. See the pilot native record.
 
 ### Session Contact
 

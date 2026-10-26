@@ -120,7 +120,7 @@ def main(argv=None):
                 return 0 if ready else 2
             deadline = time.monotonic() + args.watch_seconds
             while True:
-                result = run_cycle(broker, path, args.trade_date, datetime.now(timezone.utc))
+                result = run_cycle(broker, path, args.trade_date)
                 result.update(time_utc=datetime.now(timezone.utc).isoformat(), errors=broker.errors,
                               mode="paper", notional_cap_usd=200, fees_included_in_cap=False)
                 durable_json(RUNTIME / "latest.json", result)

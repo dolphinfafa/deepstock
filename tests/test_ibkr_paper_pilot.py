@@ -76,6 +76,18 @@ def test_two_leg_process_fills_and_repeated_restart_never_resubmits(tmp_path):
                for row in broker.submissions) <= 200
 
 
+def test_streaming_quote_received_during_snapshot_is_not_future_data(tmp_path):
+    class StreamingBroker(Broker):
+        def snapshot(self):
+            result = super().snapshot()
+            for quote in result["quotes"].values():
+                quote["observed_at"] = datetime.now(timezone.utc).isoformat()
+            return result
+    broker = StreamingBroker()
+    today = datetime.now(timezone.utc).date().isoformat()
+    assert run_cycle(broker, tmp_path / "journal.json", today)["status"] == "SUBMITTED"
+
+
 def test_intent_survives_death_and_missing_ack_is_not_retried(tmp_path):
     broker = Broker()
     broker.die = True

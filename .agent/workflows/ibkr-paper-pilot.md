@@ -40,9 +40,10 @@ to deploy the earlier USD10,000 plan. It does not resume frozen research.
 ## SDK isolation
 
 The project retains `ibapi==9.81.1.post1` for existing clients. Its negotiated
-protocol157 cannot submit fractional stock orders: actual paper what-if
+protocol157 predates current fractional-size support: actual paper what-if
 requests returned10243 for fractional quantities and10244 for stock cashQty.
-This does not establish missing account trading permissions.
+This does not establish missing account trading permissions or that an SDK
+upgrade alone resolves the broker rejection; see the native results below.
 
 The pilot may use an official1051.1 Python SDK only within its own process.
 The official download page moved from interactivebrokers.github.io to
@@ -93,3 +94,33 @@ Do not delete/recreate the journal or re-pin an account to bypass a block.
 After ambiguous submission, retain it for reconciliation. A one-shot pilot
 cannot become monthly just by invoking it on another date. A successful test
 does not enable live trading or prove unattended TWS login/re-authentication.
+
+## October26 native result and remaining blocker
+
+The quantitative computer cleanly pulled0483ef4 then7fa891c. Original SDK
+remains9.81.1.post1; isolated1051.1 successfully negotiated protocol226 and
+pinned the unique DU-prefixed account. DU suffixes can contain letters;
+validation accepts at least six alphanumeric suffix characters, still checks
+the exact salted pin and rejects live/unknown/multiple accounts.
+
+Both fractional what-if previews still returned10243 on protocol226. One
+separate, durably recorded paper VOO probe (0.01share, USD1 protected limit,
+maximum notionalUSD0.01, outsideRth=false) also returned10243 without being
+accepted. This distinguishes the failure from a what-if-only restriction.
+A whole-share control (one share at the same USD1 limit, maximum notionalUSD1)
+was accepted asPreSubmitted and explicitly cancelled with broker confirmation,
+without filling. Only that exact probe order was cancelled. Neither probe is
+a contribution or evidence of the proposed allocation's performance.
+
+Thus paper API order submission works, but API fractional trading is rejected
+in this environment. The cause is not proven to be an account permission
+deficit (10248 was never returned). An SDK upgrade alone did not resolve it.
+Broker confirmation of API fractional support/eligibility, or a separate
+decision to use an integer-share paper example, is needed before fill testing.
+Do not bypass this by enabling live, increasing the budget or substituting funds.
+
+Final native audit found no open orders for the pilot instruments and zero
+VOO/QQQM positions. PAPER_PILOT_ENABLED remainsfalse, the main .env is unchanged,
+and no overnight order task is installed. The USD200 allocation has not filled.
+Windows full regression:646passed/2Unix-only skips. SDK-targeted regressions
+also passed with the isolated API. Native receipts/probe journals stay local.
