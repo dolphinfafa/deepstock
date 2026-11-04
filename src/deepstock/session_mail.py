@@ -124,7 +124,7 @@ def contact_text(session, *, parent_id=None, task_label=None):
     intro = ('你通过邮件交办的任务已处理，结果如下。\n' if parent_id else
              '你尚未回复下面的 session 消息，现按你的设置发送一次提醒。\n')
     if task_label:
-        intro = '定时任务已结束，结果如下。\n'
+        intro = '定时任务汇总如下。\n' if session.get('scheduled_digest') else '定时任务已结束，结果如下。\n'
     return (f"发件人：deepstock\n\n{intro}"
             f"你可以回到 Codex 回复，也可以直接回复本邮件；请保留邮件的回复关联。\n\n"
             f"Session: {session['thread_id']}\n\n{session['final_text']}\n\n"
@@ -140,7 +140,7 @@ def send_contact(config, session, message_id, *, parent_id=None, references=(), 
     message['Date'] = format_datetime(datetime.now(timezone.utc))
     subject = '邮件任务处理结果' if parent_id else 'session 消息等待回复超过30分钟'
     if task_label:
-        subject = f'定时任务结果 · {task_label}'
+        subject = f'定时任务{task_label}' if session.get('scheduled_digest') else f'定时任务结果 · {task_label}'
     # Retain a narrow discovery token for providers that support subject search.
     # The current provider has demonstrated false negatives even for this token.
     message['Subject'] = f'[{search_token(message_id)}] [deepstock] {subject}'

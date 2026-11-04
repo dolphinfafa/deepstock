@@ -1,5 +1,50 @@
 # Scheduled task result mail
 
+## Current owner decision: twice-daily digests (November4)
+
+The owner explicitly selected09:50 and20:00 Asia/Shanghai, with failures and
+blocks included in these digests and no extra per-run exception emails. This
+supersedes the October13 separate-result rule and provisional `results` scope
+below. Production uses `DEEPSTOCK_SCHEDULED_EMAIL_SCOPE=digest`; `results` and
+`all` remain compatible legacy modes. Independent severe-risk alerts, session
+reminders and email-origin completion replies retain their existing rules.
+No task action, time, quota, strategy gate or order permission changes.
+
+The existing30-second bridge sends one nonempty digest per due boundary,
+without Codex/model availability or another timer. Morning covers the previous
+20:00 through09:50; evening covers09:50 through20:00. Queue-local first arrival
+assigns late uploads to the next boundary; actual data dates remain visible.
+Empty windows advance their watermark without sending. Activation adopts only
+pending/unclaimed receipts; sent/suppressed/previously claimed history never
+replays. High-frequency successes remain queued for digest counts.
+
+Deterministic Chinese templates group announcement collection, auction,
+minute backfill, ADX, Granville, defensiveETF and maintenance. Each task/node
+gets invocation/status counts, latest effective status, distinct reasons and
+relevant aggregates. Benign skips cannot clear an actual failure. Later success
+does not erase earlier exceptions or establish input repair. Additions/fills/
+closures sum per invocation; coverage/backlog/returns use the latest measured
+receipt, never the sum of repeated snapshots. Unconfirmed causes say so;
+raw logs, accounts, credentials and per-security data stay local.
+
+Private outbox schema version2 adds arrival timestamps, digest settings,
+immutable prepared batches and batch members without changing the three-column
+results table or HTTP receipt schema. Old arrivals are conservatively dated at
+migration. Receipt retries retain first arrival. Before production migration,
+back up both private databases; machine-local state never enters Git.
+An OS-owned delivery lock spans preparation/SMTP; SQLite receipt writers are
+not held during SMTP. A single transaction freezes body/members and advances
+the covered boundary. A never-contact-claimed preparation missed during an
+outage may be superseded by one catch-up batch, retaining its text/membership
+audit; only the replacement is sent. Already-claimed batches are reconciled,
+never re-submitted. Contact state persists the digest Message-ID/session/token/
+quoted text before SMTP, preserving direct-reply routing. Crashes and ambiguous
+SMTP outcomes never auto-resend or reassign those receipts; subsequent nonempty
+digests report the number of unconfirmed batches. Only SMTP-accepted batches
+are marked sent. Recovery merges missed boundaries into one catch-up message.
+
+## Historical October13 behavior and deployment record
+
 The verified October13 owner reply to the08:28 result email explicitly
 requests a separate result email when scheduled tasks complete. This extends
 the session-contact scope; it does not authorize strategy promotion or orders.
@@ -56,7 +101,7 @@ Enable only on the server in local `.env`:
 
 ```text
 DEEPSTOCK_SCHEDULED_EMAIL_ENABLED=true
-DEEPSTOCK_SCHEDULED_EMAIL_SCOPE=results
+DEEPSTOCK_SCHEDULED_EMAIL_SCOPE=digest
 DEEPSTOCK_SCHEDULED_EMAIL_THREAD_ID=<the owner's originating primary session>
 ```
 

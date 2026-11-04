@@ -147,9 +147,12 @@ reply, never on scan/download/queue/turn start. Persist processing evidence and
 flag retries; revalidate UID identity; respect later manual unread. Other
 agents' flags remain untouched. See session-mail-contact.md.
 The second verified October13 reply adds separate scheduled-task result
-emails. Read `scheduled-task-mail.md`: the provisional `results` scope
-suppresses only successful high-frequency collection/ingestion, pending owner
-preference; task times/parameters/quotas stay fixed. Only aggregate receipts
+emails. The November4 owner decision supersedes per-run notifications: use
+`digest` scope for09:50/20:00Asia/Shanghai summaries, with failures/blocks
+included and no extra exception emails. Read `scheduled-task-mail.md` for
+arrival-based batching, durable claim/ambiguity and reply routing. Legacy
+`results`/`all` modes remain available; task times/parameters/quotas stay fixed.
+Only aggregate receipts
 cross nodes. The provider missed real reply headers and tagged subject searches;
 local UID scanning now replaces that discovery mechanism. Preserve the two previously
 adopted replies' deduplication records. Live new-turn validation must use a new

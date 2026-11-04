@@ -31,6 +31,15 @@ period returns, not headline annualisation, and cannot authorize orders.
 
 ## Architecture and Data Flow
 
+November4 scheduled notifications use owner-selected09:50/20:00China digests
+instead of per-invocation mail. The existing bridge groups aggregate receipts
+into short Chinese progress/reason/action summaries, including repeated blocks
+and high-frequency successes. Private arrival/batch/member state and a delivery
+lock preserve at-most-once SMTP claims across restarts and late uploads;
+ambiguous sends remain unconfirmed. Replies retain original-session routing.
+Task schedules, quotas and strategy execution remain unchanged. See
+scheduled-task-mail.md for schema migration, batching and recovery.
+
 October26 adds a separate, fixed USD200/70:30 ETF paper execution pilot on the
 quantitative computer. It uses pinned VOO/QQQM example contracts, guarded
 fractional DAY limit orders, an isolated local account pin/enable file and a

@@ -91,6 +91,38 @@ def outbox(root: Path):
     path.chmod(0o600)
     db.execute('''CREATE TABLE IF NOT EXISTS results
         (event_id TEXT PRIMARY KEY, payload TEXT NOT NULL, state TEXT NOT NULL)''')
+    # Keep the original three-column receipt/wire format. Arrival time belongs
+    # to this node's queue, not the uploading computer's clock.
+    db.execute('BEGIN IMMEDIATE')
+    db.execute('''CREATE TABLE IF NOT EXISTS receipt_arrivals
+        (event_id TEXT PRIMARY KEY, received_at REAL NOT NULL)''')
+    db.execute('''CREATE TABLE IF NOT EXISTS digest_settings
+        (key TEXT PRIMARY KEY, value REAL NOT NULL)''')
+    db.execute('''CREATE TABLE IF NOT EXISTS digest_batches
+        (batch_id TEXT PRIMARY KEY, slot_at REAL UNIQUE NOT NULL, start_at REAL NOT NULL,
+         created_at REAL NOT NULL, thread_id TEXT NOT NULL, message_id TEXT NOT NULL,
+         task_label TEXT NOT NULL, final_text TEXT NOT NULL, state TEXT NOT NULL)''')
+    db.execute('''CREATE TABLE IF NOT EXISTS digest_members
+        (event_id TEXT NOT NULL, batch_id TEXT NOT NULL, PRIMARY KEY(batch_id, event_id))''')
+    db.execute('CREATE INDEX IF NOT EXISTS results_state ON results(state)')
+    db.execute('CREATE INDEX IF NOT EXISTS receipt_arrival_time ON receipt_arrivals(received_at)')
+    if db.execute('PRAGMA user_version').fetchone()[0] < 1:
+        db.execute('INSERT OR IGNORE INTO receipt_arrivals SELECT event_id, ? FROM results',
+                   (datetime.now(timezone.utc).timestamp(),))
+    if db.execute('PRAGMA user_version').fetchone()[0] < 2:
+        if sum(bool(r['pk']) for r in db.execute('PRAGMA table_info(digest_members)')) == 1:
+            db.execute('ALTER TABLE digest_members RENAME TO digest_members_v1')
+            db.execute('''CREATE TABLE digest_members
+                (event_id TEXT NOT NULL, batch_id TEXT NOT NULL, PRIMARY KEY(batch_id, event_id))''')
+            db.execute('INSERT INTO digest_members SELECT * FROM digest_members_v1')
+            db.execute('DROP TABLE digest_members_v1')
+        db.execute('PRAGMA user_version=2')
+    # During a rolling restart an older in-memory web worker can still append
+    # three-column receipts. Date those missing arrivals at first observation.
+    db.execute('''INSERT OR IGNORE INTO receipt_arrivals SELECT r.event_id, ? FROM results r
+        WHERE r.state='pending' AND NOT EXISTS
+        (SELECT 1 FROM receipt_arrivals a WHERE a.event_id=r.event_id)''',
+        (datetime.now(timezone.utc).timestamp(),))
     db.commit()
     return db
 
@@ -100,6 +132,8 @@ def enqueue(root: Path, result: TaskResult):
     db = outbox(root)
     try:
         db.execute("INSERT OR IGNORE INTO results VALUES (?, ?, 'pending')", (result.event_id, payload))
+        db.execute('INSERT OR IGNORE INTO receipt_arrivals VALUES (?, ?)',
+                   (result.event_id, datetime.now(timezone.utc).timestamp()))
         stored = db.execute('SELECT payload FROM results WHERE event_id=?', (result.event_id,)).fetchone()[0]
         if stored != payload:
             raise ValueError('A scheduled receipt identity cannot be overwritten')
@@ -164,6 +198,9 @@ def notify_pending(db, config, sender, *, thread_id: str, scope='results', now=N
     """Claim in contact state before SMTP; crashes/ambiguous sends never replay."""
     from email.utils import make_msgid
     from deepstock.session_mail import contact_text, search_token
+    if scope == 'digest':
+        from deepstock.scheduled_digest import notify_digest
+        return notify_digest(db, config, sender, thread_id=thread_id, now=now)
     if scope not in ('results', 'all'):
         raise ValueError('Invalid scheduled email scope')
     now = datetime.now(timezone.utc).timestamp() if now is None else now
