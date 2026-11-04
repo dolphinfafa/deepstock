@@ -43,6 +43,14 @@ SMTP outcomes never auto-resend or reassign those receipts; subsequent nonempty
 digests report the number of unconfirmed batches. Only SMTP-accepted batches
 are marked sent. Recovery merges missed boundaries into one catch-up message.
 
+November4 deployment verification: server672/full tests passed; quantitative
+Windows670/full tests passed with2Unix-only skips after clean GitHub fast-forward.
+Both private outboxes passed schema2 integrity checks with original receipts
+retained. Production switched to `digest` at19:44China after fresh private
+backups; original dashboard/mail services are healthy and crontab is identical.
+The first actual20:00SMTP delivery is pending its natural boundary; local
+preview and hermetic SMTP/reply tests do not claim that live acceptance.
+
 ## Historical October13 behavior and deployment record
 
 The verified October13 owner reply to the08:28 result email explicitly
