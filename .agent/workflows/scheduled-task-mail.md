@@ -48,6 +48,9 @@ Windows670/full tests passed with2Unix-only skips after clean GitHub fast-forwar
 Both private outboxes passed schema2 integrity checks with original receipts
 retained. Production switched to `digest` at19:44China after fresh private
 backups; original dashboard/mail services are healthy and crontab is identical.
+The first production watermark is the actual cutover time, before any batch;
+older pending receipts remain eligible. A real post-cutover ingestion receipt
+is pending with no per-run email and no missing arrival metadata.
 The first actual20:00SMTP delivery is pending its natural boundary; local
 preview and hermetic SMTP/reply tests do not claim that live acceptance.
 
