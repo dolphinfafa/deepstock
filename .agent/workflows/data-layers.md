@@ -55,6 +55,17 @@ common-inception trimming, never internal missing sessions. CLI reports pin
 
 ## Operation and recovery
 
+November5 QMT read-only continuation adds `qmt_native_minutes` cleaning under
+the independent `qmt-native-minute-v1` contract. Provider milliseconds become
+Shanghai labels; lots×100becomes shares, preserving the original volume field.
+Opening-auction observations remain separate from `[start,end)` continuous
+bars; no native bar is relabelled as Tushare's endpoint convention. Dataset kind
+`qmt_minute_bars`, restricted previews and explicit non-admission keep these
+captures outside existing strategy inputs. Tick/quote JSON stays evidence-only.
+The native worker is token-locked, deadline-bound and contained in a Windows
+Job Object; the parent validates immutable receipts/hashes before supervised
+termination and listener-release verification. See qmt-vip-data-evaluation.md.
+
 ```bash
 conda run -n deepstock python scripts/clean_existing_data.py
 conda run -n deepstock python scripts/rerun_clean_research.py --strategy spy_mean_reversion

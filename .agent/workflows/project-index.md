@@ -79,6 +79,11 @@ Minute boundary differences and native SDK shutdown/exit failure prevent a
 production cutover; no source/schedule/strategy changes follow from this probe.
 Read qmt-vip-data-evaluation.md before further QMT work. The existing Tushare
 aware/naive minute filtering bug remains a separate repair, not a VIP fix.
+The owner's subsequent continuation authorizes the independent read-only
+adapter and lifecycle/boundary verification. A Job-contained supervised worker
+retains immutable native evidence and registers private, explicitly non-admitted
+QMT minutes. Manual capture/audit CLIs do not alter schedules or source routing;
+native shutdown remains unavailable. Read the evaluation's latest additions.
 
 Read `data-layers.md` before download/cleaner/loader work. Raw evidence is
 immutable; cleaning owns normalisation/audit and research entrances validate

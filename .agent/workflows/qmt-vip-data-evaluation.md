@@ -112,6 +112,43 @@ result, recover saved state/check workers before repeating any native login.
 
 ## Recommendation and remaining conditions
 
+The owner subsequently said to continue. The read-only adapter is implemented
+as `deepstock.data.qmt`, `qmt_runtime`, `qmt_worker` and manual
+`scripts/capture_qmt_minutes.py`. It has a single OS-owned token lock, a hard
+deadline and a Windows kill-on-close Job Object. A worker cannot import the
+native SDK before assignment to that Job Object and an explicit parent start
+gate. It disconnects its RPC client, atomically writes a request-bound receipt,
+then waits for parent termination. The parent verifies every evidence hash,
+uses TerminateProcess and verifies that the local listener is released. Worker
+exit1 is the expected supervised termination, not a repaired vendor shutdown.
+Missing/corrupt receipts, premature native exit, deadline or Job failure block;
+no automatic login/download retry is made. Native verification follows the
+server test → GitHub → clean Windows pull sequence; see the dated work log.
+
+The wheel and all126original SDK files are rechecked before capture; unexpected
+Python/native executable files are rejected. Only the child imports xtquant.
+Captured unadjusted minute CSV is immutable, then registered through DataStore
+with `normalizer=qmt-native-minute-v1`, explicit units/boundary, private previews
+and `strategy_input_approved=false`.09:30observations stay separately labelled
+`opening_auction`, with no invented continuous-bar interval. Tick/subscribed
+snapshot JSON is registered as evidence, not an executable input. Raw provider
+returns remain unchanged; unit normalization belongs to the cleaner.
+
+The first three real tick samples have entirely zero `pvolume`, including rows
+with positive `volume`; raw shares are unavailable in that SDK response. The
+diagnostic uses the documented lots×100conversion and explicitly marks the
+share count as rounded. Exact volume agreement and agreement within a declared
+100-share cumulative-difference rounding bound are reported separately; the
+bound was specified before expanded acquisition. A nonzero but inconsistent
+raw-share field blocks instead of silently changing units. Snapshot VWAP is
+diagnostic only; no intraminute OHLC is reconstructed from coarse snapshots.
+
+`scripts/audit_qmt_boundaries.py` performs offline reconciliation against the
+hash-verified pinned Tushare reference handoff, with fixed1bp/5bp VWAP thresholds
+and amount tolerance max(1CNY,1e-7relative). Diagnostic samples deliberately
+include known discrepancies and cannot estimate representative source accuracy.
+No CLI is wired into the auction scheduler or source selector.
+
 Prioritize historical/subscribed live minutes for a QMT adapter. The measured
 throughput avoids the existing Tushare `stk_mins`2/day bottleneck. No same-machine
 equal-sized Tushare network timing was measured, so no speed-multiple claim is

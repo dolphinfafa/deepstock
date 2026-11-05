@@ -37,6 +37,12 @@ bounded minute/tick/auction-volume access with an isolated optional SDK.
 Tushare valid code set. Quote-boundary discrepancies and native SDK exit failure
 remain unresolved, so production sources and strategy inputs are unchanged.
 Credentials/market rows stay Windows-local; see qmt-vip-data-evaluation.md.
+The subsequent owner continuation adds a manual read-only capture/audit adapter:
+a Windows Job Object contains each token-locked, bounded native worker; the
+parent verifies evidence, terminates the worker and checks listener release.
+Versioned native minutes preserve units/intervals and remain outside strategy
+inputs; snapshots are evidence-only. The vendor shutdown is not repaired by
+this process-isolation design. No existing provider route or schedule changes.
 
 November4 scheduled notifications use owner-selected09:50/20:00China digests
 instead of per-invocation mail. The existing bridge groups aggregate receipts
