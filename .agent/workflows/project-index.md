@@ -72,6 +72,14 @@ long-history/WBA queries merely to start this empty forward account.
 
 ### Think Before Act
 
+November5 owner-authorized QMT VIP evaluation verifies token login,300-stock
+minute acquisition (298valid09:31bars), historical tick and VIPopenVol on the
+quantitative node. SDK remains isolated and credentials/market rows stay local.
+Minute boundary differences and native SDK shutdown/exit failure prevent a
+production cutover; no source/schedule/strategy changes follow from this probe.
+Read qmt-vip-data-evaluation.md before further QMT work. The existing Tushare
+aware/naive minute filtering bug remains a separate repair, not a VIP fix.
+
 Read `data-layers.md` before download/cleaner/loader work. Raw evidence is
 immutable; cleaning owns normalisation/audit and research entrances validate
 registered versions. Never invent unknown executable prices/activity or

@@ -31,6 +31,13 @@ period returns, not headline annualisation, and cannot authorize orders.
 
 ## Architecture and Data Flow
 
+November5 QMT VIP read-only evaluation on Windows confirms token login and
+bounded minute/tick/auction-volume access with an isolated optional SDK.
+300-stock first minute download takes16.57seconds;298valid09:31bars match the
+Tushare valid code set. Quote-boundary discrepancies and native SDK exit failure
+remain unresolved, so production sources and strategy inputs are unchanged.
+Credentials/market rows stay Windows-local; see qmt-vip-data-evaluation.md.
+
 November4 scheduled notifications use owner-selected09:50/20:00China digests
 instead of per-invocation mail. The existing bridge groups aggregate receipts
 into short Chinese progress/reason/action summaries, including repeated blocks
