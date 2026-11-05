@@ -181,6 +181,23 @@ The interrupted runs remain private evidence, not completed datasets. See the
 work log for release/restart and live-quote validation; one-day tests still do
 not establish3–5trading-day stability.
 
+The exact-window recovery has now passed on the existing native capture:
+version `53cf18cfce6de08cf951129a6a48703857fea1390fc68da7002d3bb34f64ec1f`
+contains298valid09:31stocks and596declared other-minute exclusions. Original raw
+bytes and the old full-capture blocked report are hash-identical. The normalizer
+ran from7017bcc over the earlier41b9229capture; both commit identities persist.
+Server regression:715passed/1Windows-only skipped; Windows:714passed/2Unix-only
+skipped. No main-environment SDK dependency was installed.
+
+A fresh real-SDK restart after both fault tests passed at13:09China. A15-second
+watch received17callbacks; all three stocks advanced through six distinct source
+timestamps, and the oldest final snapshot was1.39seconds old by the local clock.
+This is a live snapshot freshness observation, not measured exchange-to-host
+latency. The post-subscription snapshot getter returned all three stocks. This
+does not verify next-day09:25auction arrival, finalized09:31live-bar delivery,
+automatic network-disconnect recovery or multi-day availability. No persistent
+observer, provider switch, new strategy input or broker operation was enabled.
+
 Prioritize historical/subscribed live minutes for a QMT adapter. The measured
 throughput avoids the existing Tushare `stk_mins`2/day bottleneck. No same-machine
 equal-sized Tushare network timing was measured, so no speed-multiple claim is

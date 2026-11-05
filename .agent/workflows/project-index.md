@@ -88,6 +88,10 @@ Actual native stop, deadline and parent-death cleanup now pass. Expanded28-stock
 right-closed flow diagnostics agree within1bp, but OHLC equivalence and multi-day
 stability remain unverified. Whole-capture16-row quarantine stays; the explicit
 session-bound09:31view retains unchanged validation and a separate version.
+The saved-capture target view is verified298/300without changing raw bytes or
+old blocked evidence. Real afternoon restart receives fresh three-stock updates;
+next-day auction/first-minute arrival, OHLC equivalence and3–5day stability are
+still pending. Use manual diagnostic CLIs, not a claimed production cutover.
 
 Read `data-layers.md` before download/cleaner/loader work. Raw evidence is
 immutable; cleaning owns normalisation/audit and research entrances validate

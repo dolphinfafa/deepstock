@@ -43,6 +43,11 @@ parent verifies evidence, terminates the worker and checks listener release.
 Versioned native minutes preserve units/intervals and remain outside strategy
 inputs; snapshots are evidence-only. The vendor shutdown is not repaired by
 this process-isolation design. No existing provider route or schedule changes.
+Native normal stop, hard deadline, parent-death containment and fresh afternoon
+restart now pass. An independently versioned09:31view recovers298/300historical
+stocks while retaining the full capture's16-row quarantine. Target-window price
+checks stay fixed; early-day arrival/OHLC/multi-day gates still prevent routing
+these diagnostic captures into the existing strategy.
 
 November4 scheduled notifications use owner-selected09:50/20:00China digests
 instead of per-invocation mail. The existing bridge groups aggregate receipts
