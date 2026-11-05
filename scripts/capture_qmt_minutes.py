@@ -5,6 +5,7 @@ import argparse
 from datetime import date
 import json
 from pathlib import Path
+import subprocess
 
 from deepstock.data.qmt import BOUNDARY, NORMALIZER, snapshot_window_activity
 from deepstock.data.qmt_runtime import SDK_VERSION, capture, verify_receipt
@@ -18,21 +19,27 @@ def register_capture(root: Path, run: Path, result: dict) -> dict:
         return {"status": "capture_failed", "error_type": result.get("error_type"), "run": run.name}
     verify_receipt(run, digest(run / "request.json"))
     request = json.loads((run / "request.json").read_text("utf-8"))
+    normalizer_commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, check=True).stdout.strip()
     metadata = {"provider": "QMT", "market": "CN", "origin": "provider_response", "restricted": True,
                 "endpoint": "qmt_native_minutes", "normalizer": NORMALIZER, "boundary": BOUNDARY,
                 "volume_unit": "lots_100_shares", "amount_unit": "CNY", "adjustment": "none", "fill_data": False,
                 "timezone": "Asia/Shanghai", "sdk_version": SDK_VERSION, "request_sha256": digest(run / "request.json"),
                 "code_commit": request["code_commit"],
+                "normalizer_code_commit": normalizer_commit, "trade_date": request["date"],
                 "retrieved_at_utc": result["receipt"]["finished_at_utc"], "strategy_input_approved": False}
-    manifest = DataStore(root, node="quant-computer").import_file(run / "minute.csv.gz", metadata)
-    report = {"status": "captured_diagnostic_only" if manifest["status"] == "ready" else "input_blocked",
+    store = DataStore(root, node="quant-computer")
+    manifest = store.import_file(run / "minute.csv.gz", metadata)
+    target = store.import_file(run / "minute.csv.gz", {**metadata, "minute_window": "exact_0931_v1"})
+    report = {"status": "captured_diagnostic_only" if target["status"] == "ready" else "input_blocked",
               "run": run.name, "minute_version": manifest["id"], "minute_rows": manifest["rows"],
+              "all_observations_quality": manifest["status"], "all_observations_quarantined_rows": manifest["quality"].get("invalid_rows"),
+              "target_minute_version": target["id"], "target_quality": target["status"],
               "cleanup": result["cleanup"], "worker_returncode": result["worker_returncode"],
               "local_port_released": result["local_port_released"], "strategy_input_approved": False,
               "operations": result["receipt"]["operations"], "boundary_diagnostics": []}
     # Registered input read revalidates source/raw/clean hashes, not an alias.
-    if manifest["status"] == "ready":
-        frame = read_clean_csv(run / "minute.csv.gz", version=manifest["id"])
+    if target["status"] == "ready":
+        frame = read_clean_csv(run / "minute.csv.gz", version=target["id"])
         exact = frame.loc[frame.bar_kind.eq("continuous") & frame.timestamp.str.contains("09:31:00")
                           & frame.volume.gt(0) & frame.amount.gt(0)]
         report["exact_0931_stocks"] = int(exact.symbol.nunique())
@@ -58,7 +65,11 @@ def register_capture(root: Path, run: Path, result: dict) -> dict:
                     private[symbol][key] = {"status": "blocked", "reason": str(exc)}
             report["boundary_diagnostics"].append({"symbol": symbol, "variants_available": sum("volume_shares" in v for v in private[symbol].values())})
         write_json(run / "boundary-activity-private.json", private)
-    write_json(run / "report.json", report)
+    # Preserve earlier diagnostic reports when normalizing a saved capture.
+    path = run / "report.json"
+    if path.exists() and json.loads(path.read_text("utf-8")) != report:
+        path = run / ("normalization-report-" + target["id"] + ".json")
+    write_json(path, report)
     return report
 
 

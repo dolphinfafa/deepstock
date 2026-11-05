@@ -27,10 +27,28 @@ def clean_qmt_minutes(raw: pd.DataFrame, metadata: dict):
     frame = raw.copy()
     millis = pd.to_numeric(frame["time"], errors="coerce")
     stamps = pd.to_datetime(millis, unit="ms", utc=True, errors="coerce").dt.tz_convert("Asia/Shanghai")
+    scope = metadata.get("minute_window", "all_observations")
+    if scope not in {"all_observations", "exact_0931_v1"}:
+        raise DataQualityError("Unknown QMT minute selection contract")
+    in_session = pd.Series(True, index=frame.index)
+    if metadata.get("trade_date"):
+        in_session = stamps.dt.date.eq(date.fromisoformat(metadata["trade_date"]))
+    excluded = 0
+    if scope == "exact_0931_v1":
+        if not metadata.get("trade_date"):
+            raise DataQualityError("Exact-minute view requires an explicit session")
+        # Keep unknown/cross-session timestamps so their invalidity still blocks.
+        wanted = (stamps.dt.hour.eq(9) & stamps.dt.minute.eq(31)) | stamps.isna() | ~in_session
+        excluded = int((~wanted).sum())
+        frame["provider_raw_row"] = np.arange(len(raw))
+        frame = frame.loc[wanted].reset_index(drop=True)
+        stamps = stamps.loc[wanted].reset_index(drop=True)
+        in_session = in_session.loc[wanted].reset_index(drop=True)
     minute = stamps.dt.hour * 60 + stamps.dt.minute
     auction = minute.eq(570) & stamps.dt.second.eq(0)
     legal = ((minute.between(571, 690) | minute.between(781, 900)) | auction)
     legal &= stamps.dt.second.eq(0) & stamps.dt.microsecond.eq(0)
+    legal &= in_session
     frame["timestamp"] = stamps.where(legal)
     frame["bar_start"] = (stamps - pd.Timedelta(minutes=1)).where(~auction & legal)
     frame["bar_end"] = stamps.where(~auction & legal)
@@ -56,6 +74,7 @@ def clean_qmt_minutes(raw: pd.DataFrame, metadata: dict):
     quality.update(normalizer=NORMALIZER, boundary=BOUNDARY, volume_unit="shares",
                    amount_unit="CNY", separate_auction_rows=int(auction.sum()),
                    non_session_labels=int((~legal).sum()),
+                   minute_window=scope, excluded_observations_outside_window=excluded,
                    strategy_input_approved=False)
     return clean, rejected, quality, "qmt_minute_bars"
 

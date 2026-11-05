@@ -81,6 +81,30 @@ def test_minute_conflicts_block_and_exact_duplicates_are_audited():
     assert len(clean) == 2 and len(rejected) == 2 and quality["conflict_rows"] == 2
 
 
+def test_exact_0931_view_does_not_inherit_out_of_scope_auction_failures():
+    source = minutes()
+    source.loc[0, "amount"] *= 10
+    source.loc[2, "amount"] *= 10
+    full, _, quality, _ = clean_frame(source, META)
+    assert quality["blocking"] and len(full) == 1
+    selected, rejected, quality, _ = clean_frame(source, {**META, "minute_window": "exact_0931_v1", "trade_date": DAY.isoformat()})
+    assert len(selected) == 1 and rejected.empty and not quality["blocking"]
+    assert selected.provider_raw_row.tolist() == [1]
+    assert quality["excluded_observations_outside_window"] == 2
+    assert quality["strategy_input_approved"] is False
+
+
+@pytest.mark.parametrize("problem", ["invalid_target", "fractional_second", "unknown_time", "wrong_session"])
+def test_exact_view_keeps_target_and_unknown_errors_blocking(problem):
+    source = minutes()
+    if problem == "invalid_target": source.loc[1, "amount"] *= 10
+    if problem == "fractional_second": source.loc[1, "time"] += 1
+    if problem == "unknown_time": source.loc[0, "time"] = float("nan")
+    if problem == "wrong_session": source.loc[0, "time"] -= 86_400_000
+    _, rejected, quality, _ = clean_frame(source, {**META, "minute_window": "exact_0931_v1", "trade_date": DAY.isoformat()})
+    assert quality["blocking"] and not rejected.empty
+
+
 def test_registered_native_capture_is_private_pinned_and_not_strategy_input(tmp_path):
     raw = tmp_path / "raw.csv.gz"
     minutes().to_csv(raw, index=False, compression={"method": "gzip", "mtime": 0})
@@ -95,6 +119,39 @@ def test_registered_native_capture_is_private_pinned_and_not_strategy_input(tmp_
     raw.write_bytes(b"changed")
     with pytest.raises(DataQualityError, match="Source changed"):
         read_clean_csv(raw, version=manifest["id"])
+
+
+def test_normalization_preserves_blocked_full_capture_and_old_report(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from scripts.capture_qmt_minutes import register_capture
+    run = tmp_path / "artifacts/qmt-vip/capture-test"
+    run.mkdir(parents=True)
+    raw = minutes()
+    raw.loc[0, "amount"] *= 10
+    raw.to_csv(run / "minute.csv.gz", index=False, compression={"method": "gzip", "mtime": 0})
+    write_json(run / "1m-download.json", {})
+    write_json(run / "request.json", {"schema": "qmt-readonly-v1", "date": DAY.isoformat(),
+                                      "code_commit": "a" * 40, "tick_symbols": [], "watch_seconds": 0})
+    receipt = {"status": "complete", "request_sha256": digest(run / "request.json"),
+               "finished_at_utc": "2026-11-05T05:00:00+00:00", "operations": [],
+               "files": [{"path": n, "bytes": (run/n).stat().st_size, "sha256": digest(run/n)}
+                         for n in ["minute.csv.gz", "1m-download.json"]]}
+    write_json(run / "receipt.json", receipt)
+    write_json(run / "report.json", {"old_evidence": True})
+    original = digest(run / "minute.csv.gz")
+    monkeypatch.setattr("scripts.capture_qmt_minutes.subprocess.run", lambda *a, **k: SimpleNamespace(stdout="b"*40))
+    report = register_capture(tmp_path, run, {"status": "complete", "local_port_released": True,
+        "receipt": receipt, "cleanup": "parent_supervised_termination", "worker_returncode": 1})
+    assert report["status"] == "captured_diagnostic_only" and report["target_quality"] == "ready"
+    assert report["all_observations_quality"] == "blocked" and report["all_observations_quarantined_rows"] == 1
+    assert report["exact_0931_stocks"] == 1 and report["strategy_input_approved"] is False
+    store = DataStore(tmp_path)
+    target = store.get(report["target_minute_version"])
+    assert target["contract"]["code_commit"] == "a"*40
+    assert target["contract"]["normalizer_code_commit"] == "b"*40
+    assert store.get(report["minute_version"])["status"] == "blocked"
+    assert digest(run / "minute.csv.gz") == original
+    assert json.loads((run / "report.json").read_text()) == {"old_evidence": True}
 
 
 def test_tick_endpoint_conventions_and_odd_lot_shares_are_not_fitted():

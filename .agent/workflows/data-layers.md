@@ -62,6 +62,10 @@ Opening-auction observations remain separate from `[start,end)` continuous
 bars; no native bar is relabelled as Tushare's endpoint convention. Dataset kind
 `qmt_minute_bars`, restricted previews and explicit non-admission keep these
 captures outside existing strategy inputs. Tick/quote JSON stays evidence-only.
+`minute_window=exact_0931_v1` is an explicit session-bound view with separately
+versioned metadata; it excludes only known other-minute observations, logs the
+count/original row mapping, and keeps unknown/wrong-session/invalid target rows
+blocking. The original full-capture quarantine and prior reports remain intact.
 The native worker is token-locked, deadline-bound and contained in a Windows
 Job Object; the parent validates immutable receipts/hashes before supervised
 termination and listener-release verification. See qmt-vip-data-evaluation.md.

@@ -149,6 +149,38 @@ and amount tolerance max(1CNY,1e-7relative). Diagnostic samples deliberately
 include known discrepancies and cannot estimate representative source accuracy.
 No CLI is wired into the auction scheduler or source selector.
 
+The raw300-stock supervised capture completed with894minute rows and642tick
+rows for the28frozen diagnostic symbols. Controlled stop returned the expected
+worker code1 and released the listener. Registration correctly quarantined16
+whole-capture observations for nominal VWAP/OHLC disagreement:15opening-auction
+rows and one09:32row. All16are compatible with the previously declared100-share
+rounding interval, but remain quarantined under the original price test.
+No threshold was relaxed. All298exact09:31bars passed the same test.
+
+Cleaning also supports the explicit `minute_window=exact_0931_v1` contract,
+requiring the requested session. It retains unknown/cross-session timestamps
+as blocking errors, selects the exact minute, records out-of-scope exclusions
+and preserves original row numbers. Full-capture and exact-minute views get
+different immutable versions over the same retained raw bytes. The full view's
+blocked status and older diagnostic reports are preserved; the target view
+does not authorize strategy use or redefine a native bar as a Tushare bar.
+Capture and normalization code commits are recorded separately for recovery.
+
+Expanded offline comparison passed28/28amount checks and28/28VWAP differences
+within1bp using right-closed snapshot endpoints;17share counts match exactly,
+all28are within the declared lot-rounding bound. Native left-closed endpoints
+pass only2amount checks and3VWAP checks within1bp. This is strong evidence of
+boundary mismatch for the deliberately selected discrepancies, not full OHLC
+equivalence or representative accuracy. Receipt hashes/reference provenance
+were verified and no new Tushare request was made.
+
+Actual-native fault tests verified a15-second hard deadline after minute data
+was captured, and termination of the supervisor while the SDK was active.
+Both released the local listener; parent-death also released the token lock.
+The interrupted runs remain private evidence, not completed datasets. See the
+work log for release/restart and live-quote validation; one-day tests still do
+not establish3–5trading-day stability.
+
 Prioritize historical/subscribed live minutes for a QMT adapter. The measured
 throughput avoids the existing Tushare `stk_mins`2/day bottleneck. No same-machine
 equal-sized Tushare network timing was measured, so no speed-multiple claim is

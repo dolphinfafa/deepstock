@@ -84,6 +84,10 @@ adapter and lifecycle/boundary verification. A Job-contained supervised worker
 retains immutable native evidence and registers private, explicitly non-admitted
 QMT minutes. Manual capture/audit CLIs do not alter schedules or source routing;
 native shutdown remains unavailable. Read the evaluation's latest additions.
+Actual native stop, deadline and parent-death cleanup now pass. Expanded28-stock
+right-closed flow diagnostics agree within1bp, but OHLC equivalence and multi-day
+stability remain unverified. Whole-capture16-row quarantine stays; the explicit
+session-bound09:31view retains unchanged validation and a separate version.
 
 Read `data-layers.md` before download/cleaner/loader work. Raw evidence is
 immutable; cleaning owns normalisation/audit and research entrances validate
