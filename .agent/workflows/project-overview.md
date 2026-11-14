@@ -287,6 +287,11 @@ local research data, emits deterministic target weights and a `plan_id`, and
 supports a kill switch. It has no broker dependency and never submits an order;
 the laptop is the only paper TWS connection point.
 
+November15 owner identifies the separately connected computer as **伦敦 Mac**
+(London Mac): SSH hostname `Mac`, user `jay`, destination port20009 via
+`root@frps.yios.cn`. Existing local identity authentication succeeded and the
+read-only hostname/user check exited0. See project-index.md for its route.
+
 The active Windows data and execution node is `DESKTOP-ORNLESD` (the
 quantitative computer), reachable through SSH FRP port 20008. From
 `xnous-dev-01`, use `root@frps.yios.cn` as the SSH jump host to reach

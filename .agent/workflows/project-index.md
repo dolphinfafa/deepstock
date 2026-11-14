@@ -247,6 +247,23 @@ control plane. New major infrastructure still requires user confirmation.
 
 ## 7. Project Configuration
 
+### London Mac
+
+November15 owner names the computer reached at FRPS remote port20009
+**伦敦 Mac** (London Mac). The verified SSH hostname is `Mac`, and login user
+is `jay`. From this server, use the same existing local identity for the jump
+and destination:
+
+```bash
+ssh -o BatchMode=yes -o ConnectTimeout=8 -o IdentitiesOnly=yes \
+  -o 'ProxyCommand=ssh -o BatchMode=yes -o ConnectTimeout=8 -o IdentitiesOnly=yes -i /home/zheyang/.ssh/lq_1101 -W %h:%p root@frps.yios.cn' \
+  -p 20009 -i /home/zheyang/.ssh/lq_1101 jay@127.0.0.1 'hostname && whoami'
+```
+
+The read-only login check returned `Mac` and `jay`, exit0. Use the owner's
+name in subsequent communication; this records a device identity, not a change
+to its system hostname or deployment role.
+
 ### Windows Node Synchronization
 
 `DESKTOP-ORNLESD` (the quantitative computer) is the active Norgate, TWS,
